@@ -19,6 +19,21 @@ type Hist = {row: number; col: number; value: number}
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard']
 
+const StatsRow = memo(function StatsRow({
+  seconds,
+  steps,
+}: {
+  seconds: number
+  steps: number
+}) {
+  return (
+    <View className="stats">
+      <Text className="stats__t">计时 {formatSeconds(seconds)}</Text>
+      <Text className="stats__t">步数 {steps}</Text>
+    </View>
+  )
+})
+
 function cloneGrid(g: number[][]): number[][] {
   return g.map(row => [...row])
 }
@@ -392,10 +407,7 @@ export default function IndexPage() {
           </View>
         </View>
 
-        <View className="stats">
-          <Text className="stats__t">计时 {formatSeconds(seconds)}</Text>
-          <Text className="stats__t">步数 {steps}</Text>
-        </View>
+        <StatsRow seconds={seconds} steps={steps} />
 
         <View className="board-section">
           <SudokuGrid

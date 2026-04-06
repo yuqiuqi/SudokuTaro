@@ -1,17 +1,18 @@
 {
-  "miniprogramRoot": "dist/",
-  "projectname": "SudokuTaro",
-  "description": "数独 — Taro 微信小程序",
-  "appid": "wx5831ab74d2aacc97",
+  "description": "SudokuTaro 微信小游戏（Canvas，与仓库根目录 Taro 小程序并行）",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
   "setting": {
     "urlCheck": true,
     "es6": true,
-    "enhance": true,
     "postcss": true,
     "minified": true,
     "compileWorklet": false,
     "uglifyFileName": false,
     "uploadWithSourceMap": true,
+    "enhance": false,
     "packNpmManually": false,
     "packNpmRelationList": [],
     "minifyWXSS": true,
@@ -28,12 +29,10 @@
       "outputPath": ""
     }
   },
-  "compileType": "miniprogram",
+  "compileType": "game",
+  "appid": "wx5831ab74d2aacc97",
+  "projectname": "SudokuTaro-minigame",
   "simulatorPluginLibVersion": {},
-  "packOptions": {
-    "ignore": [],
-    "include": []
-  },
-  "editorSetting": {},
-  "isGameTourist": false
+  "isGameTourist": false,
+  "editorSetting": {}
 }

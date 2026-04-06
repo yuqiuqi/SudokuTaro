@@ -2,7 +2,7 @@
   "name": "SudokuTaro",
   "version": "1.0.0",
   "private": true,
-  "description": "数独 — Taro 微信小程序 / 抖音小程序",
+  "description": "数独 — Taro 多端（H5/微信与抖音小程序）+ minigame-wechat 微信小游戏",
   "templateInfo": {
     "name": "default",
     "typescript": true,
@@ -16,6 +16,7 @@
     "dev:weapp": "npm run build:weapp -- --watch",
     "dev:tt": "npm run build:tt -- --watch",
     "dev:h5": "npm run build:h5 -- --watch",
+    "build:minigame": "tsc -p minigame-wechat/tsconfig.json",
     "upload:weapp": "dotenv -e .env.upload -- taro build --type weapp --upload",
     "upload:tt": "dotenv -e .env.upload -- taro build --type tt --upload",
     "upload:mini": "npm run upload:weapp && npm run upload:tt",

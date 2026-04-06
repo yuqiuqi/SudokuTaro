@@ -15,3 +15,6 @@ Thumbs.db
 key/*
 !key/README.md
 !key/.gitkeep
+
+# 微信开发者工具本地私有配置（含本机 AppID 等）
+project.private.config.json
