@@ -62,6 +62,14 @@ export interface NumKeyRect {
   h: number
 }
 
+/** 顶部「玩法说明 / 设置」胶囊 */
+export interface MetaButtonLayout {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 /** 布局结果（getLayout） */
 export interface LayoutResult {
   W: number
@@ -77,6 +85,11 @@ export interface LayoutResult {
   monoY: number
   titleY: number
   statsY: number
+  /** meta 按钮行（玩法说明 / 设置）起始 Y */
+  metaTopY: number
+  metaH: number
+  metaHelp: MetaButtonLayout
+  metaSettings: MetaButtonLayout
   pills: PillRect[]
   actions: ActionRect[]
   board: BoardLayout
@@ -90,6 +103,12 @@ export type HitModal =
   | { kind: 'modal_again' }
   | { kind: 'modal_close' }
   | { kind: 'modal_ignore' }
+  | { kind: 'help_close' }
+  | { kind: 'help_mask' }
+  | { kind: 'help_content' }
+  | { kind: 'settings_close' }
+  | { kind: 'settings_mask' }
+  | { kind: 'set_vibration' }
 
 /** 命中测试（主界面） */
 export type HitMain =
@@ -97,6 +116,8 @@ export type HitMain =
   | { kind: ActionKind }
   | { kind: 'cell'; row: number; col: number }
   | { kind: 'num'; num: number }
+  | { kind: 'meta_help' }
+  | { kind: 'meta_settings' }
 
 export type HitResult = HitModal | HitMain | null
 
@@ -148,6 +169,12 @@ export interface GameState {
   timerId: ReturnType<typeof setInterval> | null
   numPressed: number | null
   numReleaseAnim: NumReleaseAnim | null
+  helpOpen: boolean
+  settingsOpen: boolean
+  /** 玩法说明正文滚动偏移（像素） */
+  helpScrollY: number
+  /** 底部操作键按下中（用于视觉反馈） */
+  actionPressed: ActionKind | null
 }
 
 /** 布局缓存 */

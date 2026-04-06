@@ -40,6 +40,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * 视觉与 src/pages/index/index.scss 对齐（暖色渐变、hero 光斑、胶囊、棋盘与弹窗）。
  */
 const engine = __importStar(require("./sudokuEngine"));
+const gameEconomy_1 = require("./gameEconomy");
 let canvas;
 let ctx;
 /** 布局仅随窗口尺寸变化，缓存避免每帧分配 */
@@ -136,6 +137,33 @@ function cloneGrid(g) {
         return row.slice();
     });
 }
+/** 与 Taro 端共用的经济存档 */
+let economy = (0, gameEconomy_1.loadEconomy)();
+function syncEconomy(e) {
+    economy = e;
+    (0, gameEconomy_1.saveEconomy)(e);
+}
+/** 玩法说明正文（每行独立绘制，便于滚动） */
+const HELP_LINES = [
+    '【基本规则】',
+    '在 9×9 盘面填入 1～9，使每一行、每一列、',
+    '每一个 3×3「宫」内，1～9 各出现一次且不重复。',
+    '开局题面数字不可修改。',
+    '',
+    '【操作】',
+    '点选格子后，按底部数字键输入。',
+    '同行、列或宫内重复会标红，错误填入会短时撤回。',
+    '',
+    '【难度】',
+    '初/中/高级挖空不同；切换难度会新开局。',
+    '',
+    '【道具】',
+    '撤销、擦除消耗道具；不足时无法使用。',
+    '',
+    '【其它】',
+    '「设置」可开关按下数字时的震动。',
+    '全盘正确填满即胜利。',
+];
 const state = {
     difficulty: 'easy',
     solution: [],
@@ -152,7 +180,14 @@ const state = {
     timerId: null,
     numPressed: null,
     numReleaseAnim: null,
+    helpOpen: false,
+    settingsOpen: false,
+    helpScrollY: 0,
+    actionPressed: null,
 };
+let helpDragStartY = 0;
+let helpScrollAtDrag = 0;
+let helpDragging = false;
 /** 冲突倒计时期间若再次输入/切格，需按此回滚（与 setTimeout 回调一致） */
 let pendingConflictRevert = null;
 function flushPendingConflict() {
@@ -214,7 +249,7 @@ function digitFromKeyEvent(res) {
     return 0;
 }
 function onKeyboardDown(res) {
-    if (state.wonOpen) {
+    if (state.wonOpen || state.helpOpen || state.settingsOpen) {
         return;
     }
     const d = digitFromKeyEvent(res);
@@ -223,17 +258,19 @@ function onKeyboardDown(res) {
     }
 }
 function newGame(d) {
-    const diff = d || state.difficulty;
-    state.difficulty = diff;
+    const targetDiff = d !== undefined ? d : state.difficulty;
     if (state.conflictTimer) {
         clearTimeout(state.conflictTimer);
         state.conflictTimer = null;
     }
     pendingConflictRevert = null;
+    const e = (0, gameEconomy_1.applyDailyBonus)(economy);
+    syncEconomy(e);
+    state.difficulty = targetDiff;
     const sol = engine.generateSolution();
     const b = cloneGrid(sol);
     const init = cloneGrid(sol);
-    engine.digHoles(b, init, engine.getHoleCount(diff));
+    engine.digHoles(b, init, engine.getHoleCount(targetDiff));
     state.solution = sol;
     state.board = b;
     state.initialBoard = init;
@@ -251,6 +288,9 @@ function newGame(d) {
     draw();
 }
 function fillNumber(num) {
+    if (economy.settings.vibration && typeof wx.vibrateShort === 'function') {
+        wx.vibrateShort({ type: 'light' });
+    }
     flushPendingConflict();
     state.conflictCells.clear();
     if (!state.selected) {
@@ -296,6 +336,8 @@ function fillNumber(num) {
     if (engine.boardsEqual(next, state.solution)) {
         stopTimer();
         state.wonOpen = true;
+        state.helpOpen = false;
+        state.settingsOpen = false;
     }
     draw();
 }
@@ -307,8 +349,15 @@ function undo() {
     }
     state.conflictCells.clear();
     if (state.history.length === 0) {
+        wx.showToast({ title: '无可撤销', icon: 'none' });
         return;
     }
+    const ur = (0, gameEconomy_1.tryConsumeUndoProp)(economy);
+    if (!ur.ok) {
+        wx.showToast({ title: '撤销道具不足', icon: 'none' });
+        return;
+    }
+    syncEconomy(ur.next);
     const last = state.history[state.history.length - 1];
     state.history.pop();
     const b = cloneGrid(state.board);
@@ -330,6 +379,12 @@ function erase() {
     if (state.board[row][col] === 0) {
         return;
     }
+    const er = (0, gameEconomy_1.tryConsumeEraseProp)(economy);
+    if (!er.ok) {
+        wx.showToast({ title: '擦除道具不足', icon: 'none' });
+        return;
+    }
+    syncEconomy(er.next);
     state.history.push({ row: row, col: col, value: state.board[row][col] });
     const b = cloneGrid(state.board);
     b[row][col] = 0;
@@ -363,9 +418,12 @@ function getLayout() {
     const pillH = Math.max(36, v(72));
     const btnH = Math.max(36, v(72));
     const titleGap = compact ? v(20) : rp(W, 32);
-    const sectionRel = v(22) +
+    const metaH = v(52);
+    const sectionRel = v(56) +
+        v(22) +
         v(10) +
-        v(56) +
+        metaH +
+        v(8) +
         titleGap +
         pillH +
         v(20) +
@@ -381,9 +439,12 @@ function getLayout() {
     let heroH = Math.min(heroIdeal, Math.max(v(56), H * 0.16));
     let monoY = 0;
     let titleY = 0;
+    let metaTopY = 0;
     let statsY = 0;
     let pills = [];
     let actions = [];
+    let metaHelp = { x: 0, y: 0, w: 0, h: 0 };
+    let metaSettings = { x: 0, y: 0, w: 0, h: 0 };
     let boardSize = maxW;
     let boardTop = 0;
     let board = {
@@ -439,6 +500,22 @@ function getLayout() {
     y += v(56);
     monoY = y + v(11);
     y += v(22) + v(10);
+    metaTopY = y;
+    /** 与难度行、操作行一致：左右贴齐 padX～padX+maxW，中间一道间距 */
+    const metaW = (maxW - gap) / 2;
+    metaHelp = {
+        x: padX,
+        y: metaTopY,
+        w: metaW,
+        h: metaH,
+    };
+    metaSettings = {
+        x: padX + metaW + gap,
+        y: metaTopY,
+        w: metaW,
+        h: metaH,
+    };
+    y += metaH + v(8);
     y += titleGap;
     const pillW = Math.max(0, (maxW - 2 * gap) / 3);
     pills = [];
@@ -510,6 +587,10 @@ function getLayout() {
         monoY: monoY,
         titleY: titleY,
         statsY: statsY,
+        metaTopY: metaTopY,
+        metaH: metaH,
+        metaHelp: metaHelp,
+        metaSettings: metaSettings,
         pills: pills,
         actions: actions,
         board: board,
@@ -523,6 +604,81 @@ function getLayout() {
     layoutCache.key = layoutKey;
     layoutCache.L = result;
     return result;
+}
+function helpTextTotalHeight(lineH) {
+    let t = 0;
+    for (let i = 0; i < HELP_LINES.length; i++) {
+        const line = HELP_LINES[i];
+        if (line === '') {
+            t += lineH * 0.35;
+        }
+        else {
+            t += lineH;
+        }
+    }
+    return t;
+}
+function helpModalGeom(L) {
+    const W = L.W;
+    const mh = Math.min(rp(W, 580), L.usableH * 0.82);
+    const mw = L.maxW;
+    const mx = L.padX;
+    const my = Math.max(L.topInset, L.topInset + (L.usableH - mh) / 2);
+    const pad = rp(W, 28);
+    const titleBlock = rp(W, 44);
+    const closeH = rp(W, 76);
+    const innerTop = my + pad + titleBlock + rp(W, 8);
+    const innerH = mh - pad * 2 - titleBlock - closeH - rp(W, 18);
+    const lineH = rp(W, 30);
+    const totalText = helpTextTotalHeight(lineH);
+    const maxScroll = Math.max(0, totalText - innerH);
+    const closeY = my + mh - pad - closeH;
+    return {
+        mx: mx,
+        my: my,
+        mw: mw,
+        mh: mh,
+        pad: pad,
+        innerTop: innerTop,
+        innerLeft: mx + pad,
+        innerW: mw - 2 * pad,
+        innerH: innerH,
+        lineH: lineH,
+        maxScroll: maxScroll,
+        closeX: mx + pad,
+        closeY: closeY,
+        closeW: mw - 2 * pad,
+        closeH: closeH,
+    };
+}
+function settingsModalGeom(L) {
+    const W = L.W;
+    const mh = Math.min(rp(W, 320), L.usableH * 0.42);
+    const mw = L.maxW;
+    const mx = L.padX;
+    const my = Math.max(L.topInset, L.topInset + (L.usableH - mh) / 2);
+    const pad = rp(W, 28);
+    const titleBlock = rp(W, 44);
+    const closeH = rp(W, 76);
+    const rowH = rp(W, 64);
+    const innerTop = my + pad + titleBlock + rp(W, 12);
+    const rowVibrationY = innerTop;
+    const closeY = my + mh - pad - closeH;
+    return {
+        mx: mx,
+        my: my,
+        mw: mw,
+        mh: mh,
+        pad: pad,
+        innerLeft: mx + pad,
+        innerW: mw - 2 * pad,
+        rowVibrationY: rowVibrationY,
+        rowH: rowH,
+        closeX: mx + pad,
+        closeY: closeY,
+        closeW: mw - 2 * pad,
+        closeH: closeH,
+    };
 }
 function hitTest(x, y) {
     const L = getLayout();
@@ -544,6 +700,51 @@ function hitTest(x, y) {
             return { kind: 'modal_close' };
         }
         return { kind: 'modal_ignore' };
+    }
+    if (state.settingsOpen) {
+        const g = settingsModalGeom(L);
+        if (x >= g.closeX &&
+            x <= g.closeX + g.closeW &&
+            y >= g.closeY &&
+            y <= g.closeY + g.closeH) {
+            return { kind: 'settings_close' };
+        }
+        if (x < g.mx || x > g.mx + g.mw || y < g.my || y > g.my + g.mh) {
+            return { kind: 'settings_mask' };
+        }
+        if (y >= g.rowVibrationY &&
+            y < g.rowVibrationY + g.rowH &&
+            x >= g.innerLeft) {
+            return { kind: 'set_vibration' };
+        }
+        return { kind: 'settings_mask' };
+    }
+    if (state.helpOpen) {
+        const g = helpModalGeom(L);
+        if (x >= g.closeX &&
+            x <= g.closeX + g.closeW &&
+            y >= g.closeY &&
+            y <= g.closeY + g.closeH) {
+            return { kind: 'help_close' };
+        }
+        if (x < g.mx || x > g.mx + g.mw || y < g.my || y > g.my + g.mh) {
+            return { kind: 'help_mask' };
+        }
+        if (x >= g.innerLeft &&
+            x <= g.innerLeft + g.innerW &&
+            y >= g.innerTop &&
+            y <= g.innerTop + g.innerH) {
+            return { kind: 'help_content' };
+        }
+        return { kind: 'help_mask' };
+    }
+    const mh = L.metaHelp;
+    if (x >= mh.x && x <= mh.x + mh.w && y >= mh.y && y <= mh.y + mh.h) {
+        return { kind: 'meta_help' };
+    }
+    const ms = L.metaSettings;
+    if (x >= ms.x && x <= ms.x + ms.w && y >= ms.y && y <= ms.y + ms.h) {
+        return { kind: 'meta_settings' };
     }
     for (let p = 0; p < L.pills.length; p++) {
         const pl = L.pills[p];
@@ -708,27 +909,121 @@ function drawPill(x, y, w, h, on, W) {
         ctx.stroke();
     }
 }
-function drawGlassButton(x, y, w, h, label, W, fontRpx) {
+function drawGlassButton(x, y, w, h, label, W, fontRpx, pressed) {
     const fr = fontRpx != null ? fontRpx : 28;
     const rr = rp(W, 16);
+    const inset = pressed ? Math.max(1, rp(W, 2)) : 0;
+    const bx = x + inset;
+    const by = y + inset;
+    const bw = w - 2 * inset;
+    const bh = h - 2 * inset;
     ctx.shadowColor = 'rgba(28, 25, 23, 0.06)';
     ctx.shadowBlur = rp(W, 8);
     ctx.shadowOffsetY = rp(W, 2);
-    roundRectPath(x, y, w, h, rr);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    roundRectPath(bx, by, bw, bh, rr);
+    ctx.fillStyle = pressed ? 'rgba(255, 255, 255, 0.62)' : 'rgba(255, 255, 255, 0.75)';
     ctx.fill();
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
     ctx.strokeStyle = 'rgba(28, 25, 23, 0.1)';
     ctx.lineWidth = Math.max(1, rp(W, 2));
-    roundRectPath(x, y, w, h, rr);
+    roundRectPath(bx, by, bw, bh, rr);
     ctx.stroke();
+    if (pressed) {
+        roundRectPath(bx, by, bw, bh, rr);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+        ctx.fill();
+    }
     ctx.fillStyle = '#292524';
     ctx.font = '600 ' + rp(W, fr) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, x + w / 2, y + h / 2);
+}
+function drawHelpModal(L) {
+    const W = L.W;
+    const H = L.H;
+    const g = helpModalGeom(L);
+    state.helpScrollY = Math.min(Math.max(0, state.helpScrollY), g.maxScroll);
+    ctx.fillStyle = 'rgba(28, 25, 23, 0.48)';
+    ctx.fillRect(0, 0, W, H);
+    const cardR = rp(W, 28);
+    const cg = ctx.createLinearGradient(g.mx, g.my, g.mx, g.my + g.mh);
+    cg.addColorStop(0, '#ffffff');
+    cg.addColorStop(1, '#fafaf9');
+    ctx.shadowColor = 'rgba(28, 25, 23, 0.22)';
+    ctx.shadowBlur = rp(W, 12);
+    ctx.shadowOffsetY = rp(W, 8);
+    roundRectPath(g.mx, g.my, g.mw, g.mh, cardR);
+    ctx.fillStyle = cg;
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = 'rgba(28, 25, 23, 0.06)';
+    ctx.lineWidth = 1;
+    roundRectPath(g.mx, g.my, g.mw, g.mh, cardR);
+    ctx.stroke();
+    ctx.fillStyle = '#1c1917';
+    ctx.font = '700 ' + rp(W, 36) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('玩法说明', W / 2, g.my + g.pad + rp(W, 20));
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(g.innerLeft, g.innerTop, g.innerW, g.innerH);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(68, 64, 60, 0.92)';
+    ctx.font = '400 ' + rp(W, 24) + 'px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    let ty = g.innerTop - state.helpScrollY;
+    for (let i = 0; i < HELP_LINES.length; i++) {
+        const line = HELP_LINES[i];
+        if (line === '') {
+            ty += g.lineH * 0.35;
+            continue;
+        }
+        ctx.fillText(line, g.innerLeft, ty);
+        ty += g.lineH;
+    }
+    ctx.restore();
+    drawSolidButton(g.closeX, g.closeY, g.closeW, g.closeH, '我知道了', W);
+}
+function drawSettingsModal(L) {
+    const W = L.W;
+    const H = L.H;
+    const g = settingsModalGeom(L);
+    ctx.fillStyle = 'rgba(28, 25, 23, 0.48)';
+    ctx.fillRect(0, 0, W, H);
+    const cardR = rp(W, 28);
+    const cg = ctx.createLinearGradient(g.mx, g.my, g.mx, g.my + g.mh);
+    cg.addColorStop(0, '#ffffff');
+    cg.addColorStop(1, '#fafaf9');
+    roundRectPath(g.mx, g.my, g.mw, g.mh, cardR);
+    ctx.fillStyle = cg;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(28, 25, 23, 0.06)';
+    ctx.lineWidth = 1;
+    roundRectPath(g.mx, g.my, g.mw, g.mh, cardR);
+    ctx.stroke();
+    ctx.fillStyle = '#1c1917';
+    ctx.font = '700 ' + rp(W, 36) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('设置', W / 2, g.my + g.pad + rp(W, 20));
+    ctx.font = '400 ' + rp(W, 28) + 'px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#292524';
+    ctx.fillText('按下数字时震动', g.innerLeft, g.rowVibrationY + g.rowH / 2);
+    const onC = '#16a34a';
+    const offC = 'rgba(120, 113, 108, 0.85)';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = economy.settings.vibration ? onC : offC;
+    ctx.fillText(economy.settings.vibration ? '开' : '关', g.innerLeft + g.innerW, g.rowVibrationY + g.rowH / 2);
+    drawGlassButton(g.closeX, g.closeY, g.closeW, g.closeH, '关闭', W, 26);
 }
 /**
  * 数字键盘：抬起全键统一玻璃色；按下为对应鲜艳色；
@@ -793,15 +1088,20 @@ function drawNumPadButton(x, y, w, h, label, W, num) {
     ctx.fillStyle = textC;
     ctx.fillText(label, x + w / 2, y + h / 2);
 }
-function drawSolidButton(x, y, w, h, label, W) {
+function drawSolidButton(x, y, w, h, label, W, pressed) {
     const rr = rp(W, 16);
-    const lg = ctx.createLinearGradient(x, y, x + w, y + h);
-    lg.addColorStop(0, '#292524');
-    lg.addColorStop(1, '#1c1917');
+    const inset = pressed ? Math.max(1, rp(W, 2)) : 0;
+    const bx = x + inset;
+    const by = y + inset;
+    const bw = w - 2 * inset;
+    const bh = h - 2 * inset;
+    const lg = ctx.createLinearGradient(bx, by, bx + bw, by + bh);
+    lg.addColorStop(0, pressed ? '#1c1917' : '#292524');
+    lg.addColorStop(1, pressed ? '#0c0a09' : '#1c1917');
     ctx.shadowColor = 'rgba(28, 25, 23, 0.22)';
     ctx.shadowBlur = rp(W, 12);
     ctx.shadowOffsetY = rp(W, 6);
-    roundRectPath(x, y, w, h, rr);
+    roundRectPath(bx, by, bw, bh, rr);
     ctx.fillStyle = lg;
     ctx.fill();
     ctx.shadowColor = 'transparent';
@@ -809,8 +1109,13 @@ function drawSolidButton(x, y, w, h, label, W) {
     ctx.shadowOffsetY = 0;
     ctx.strokeStyle = '#1c1917';
     ctx.lineWidth = Math.max(1, rp(W, 2));
-    roundRectPath(x, y, w, h, rr);
+    roundRectPath(bx, by, bw, bh, rr);
     ctx.stroke();
+    if (pressed) {
+        roundRectPath(bx, by, bw, bh, rr);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        ctx.fill();
+    }
     ctx.fillStyle = '#fafaf9';
     ctx.font = '600 ' + rp(W, 28) + 'px sans-serif';
     ctx.textAlign = 'center';
@@ -856,6 +1161,8 @@ function draw() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('SUDOKU', W / 2, L.monoY);
+    drawGlassButton(L.metaHelp.x, L.metaHelp.y, L.metaHelp.w, L.metaHelp.h, '玩法说明', W, 24);
+    drawGlassButton(L.metaSettings.x, L.metaSettings.y, L.metaSettings.w, L.metaSettings.h, '设置', W, 24);
     ctx.fillStyle = 'rgba(55, 48, 40, 0.58)';
     ctx.font =
         '400 ' + rp(W, L.compact ? 24 : 26) + 'px sans-serif';
@@ -879,11 +1186,12 @@ function draw() {
     }
     for (let ai = 0; ai < L.actions.length; ai++) {
         const ac = L.actions[ai];
+        const pressed = state.actionPressed === ac.kind;
         if (ac.kind === 'newgame') {
-            drawSolidButton(ac.x, ac.y, ac.w, ac.h, ac.label, W);
+            drawSolidButton(ac.x, ac.y, ac.w, ac.h, ac.label, W, pressed);
         }
         else {
-            drawGlassButton(ac.x, ac.y, ac.w, ac.h, ac.label, W);
+            drawGlassButton(ac.x, ac.y, ac.w, ac.h, ac.label, W, undefined, pressed);
         }
     }
     const br = L.board;
@@ -1034,6 +1342,12 @@ function draw() {
         const nk = L.nums[nki];
         drawNumPadButton(nk.x, nk.y, nk.w, nk.h, CELL_DIGITS[nk.num], W, nk.num);
     }
+    if (state.settingsOpen) {
+        drawSettingsModal(L);
+    }
+    if (state.helpOpen) {
+        drawHelpModal(L);
+    }
     if (state.wonOpen) {
         ctx.fillStyle = 'rgba(28, 25, 23, 0.48)';
         ctx.fillRect(0, 0, W, H);
@@ -1091,15 +1405,17 @@ function onTouchStart(x, y) {
         state.highlightNum = null;
         state.numPressed = null;
         state.numReleaseAnim = null;
+        state.actionPressed = null;
         draw();
         return;
     }
     if (state.wonOpen) {
+        state.actionPressed = null;
         state.numPressed = null;
         state.numReleaseAnim = null;
         if (h.kind === 'modal_again') {
             state.wonOpen = false;
-            newGame(state.difficulty);
+            newGame();
         }
         else if (h.kind === 'modal_close') {
             state.wonOpen = false;
@@ -1107,7 +1423,42 @@ function onTouchStart(x, y) {
         }
         return;
     }
+    if (state.settingsOpen) {
+        state.actionPressed = null;
+        state.numPressed = null;
+        state.numReleaseAnim = null;
+        if (h.kind === 'settings_close' || h.kind === 'settings_mask') {
+            state.settingsOpen = false;
+            draw();
+            return;
+        }
+        if (h.kind === 'set_vibration') {
+            syncEconomy((0, gameEconomy_1.mergeSettings)(economy, { vibration: !economy.settings.vibration }));
+            draw();
+            return;
+        }
+        return;
+    }
+    if (state.helpOpen) {
+        state.actionPressed = null;
+        state.numPressed = null;
+        state.numReleaseAnim = null;
+        if (h.kind === 'help_close' || h.kind === 'help_mask') {
+            state.helpOpen = false;
+            helpDragging = false;
+            draw();
+            return;
+        }
+        if (h.kind === 'help_content') {
+            helpDragStartY = y;
+            helpScrollAtDrag = state.helpScrollY;
+            helpDragging = true;
+            return;
+        }
+        return;
+    }
     if (h.kind === 'num') {
+        state.actionPressed = null;
         state.numReleaseAnim = null;
         state.numPressed = h.num;
         draw();
@@ -1115,23 +1466,33 @@ function onTouchStart(x, y) {
     }
     state.numPressed = null;
     state.numReleaseAnim = null;
+    if (h.kind === 'meta_help') {
+        state.actionPressed = null;
+        state.helpOpen = true;
+        state.settingsOpen = false;
+        state.helpScrollY = 0;
+        draw();
+        return;
+    }
+    if (h.kind === 'meta_settings') {
+        state.actionPressed = null;
+        state.settingsOpen = true;
+        state.helpOpen = false;
+        draw();
+        return;
+    }
     if (h.kind === 'diff') {
+        state.actionPressed = null;
         newGame(h.diff);
         return;
     }
-    if (h.kind === 'undo') {
-        undo();
-        return;
-    }
-    if (h.kind === 'erase') {
-        erase();
-        return;
-    }
-    if (h.kind === 'newgame') {
-        newGame();
+    if (h.kind === 'undo' || h.kind === 'erase' || h.kind === 'newgame') {
+        state.actionPressed = h.kind;
+        draw();
         return;
     }
     if (h.kind === 'cell') {
+        state.actionPressed = null;
         flushPendingConflict();
         const sel = { row: h.row, col: h.col };
         state.selected = sel;
@@ -1148,6 +1509,35 @@ function onTouchStart(x, y) {
 }
 function onTouchEnd(x, y) {
     if (state.wonOpen) {
+        return;
+    }
+    if (state.actionPressed != null) {
+        const k = state.actionPressed;
+        state.actionPressed = null;
+        const h = hitTest(x, y);
+        if (h && h.kind === k) {
+            if (k === 'undo') {
+                undo();
+            }
+            else if (k === 'erase') {
+                erase();
+            }
+            else {
+                newGame();
+            }
+        }
+        else {
+            draw();
+        }
+        return;
+    }
+    if (state.helpOpen) {
+        if (helpDragging) {
+            helpDragging = false;
+        }
+        return;
+    }
+    if (state.settingsOpen) {
         return;
     }
     if (state.numPressed == null) {
@@ -1167,7 +1557,27 @@ function onTouchEnd(x, y) {
     }
     draw();
 }
+function onTouchMove(x, y) {
+    if (state.actionPressed != null) {
+        const h = hitTest(x, y);
+        if (!h || h.kind !== state.actionPressed) {
+            state.actionPressed = null;
+            draw();
+        }
+    }
+    if (!state.helpOpen || !helpDragging) {
+        return;
+    }
+    const L = getLayout();
+    const g = helpModalGeom(L);
+    const dy = y - helpDragStartY;
+    state.helpScrollY = Math.max(0, Math.min(g.maxScroll, helpScrollAtDrag + dy));
+    draw();
+}
 function init() {
+    let e = (0, gameEconomy_1.loadEconomy)();
+    e = (0, gameEconomy_1.applyDailyBonus)(e);
+    syncEconomy(e);
     canvas = wx.createCanvas();
     const c = canvas.getContext('2d');
     if (!c) {
@@ -1191,11 +1601,25 @@ function init() {
         }
         onTouchEnd(t.clientX, t.clientY);
     });
+    if (typeof wx.onTouchMove === 'function') {
+        wx.onTouchMove(function (e) {
+            const t = e.touches[0];
+            if (!t) {
+                return;
+            }
+            onTouchMove(t.clientX, t.clientY);
+        });
+    }
     if (typeof wx.onTouchCancel === 'function') {
         wx.onTouchCancel(function () {
-            if (state.numPressed != null || state.numReleaseAnim != null) {
-                state.numPressed = null;
-                state.numReleaseAnim = null;
+            helpDragging = false;
+            const needDraw = state.actionPressed != null ||
+                state.numPressed != null ||
+                state.numReleaseAnim != null;
+            state.actionPressed = null;
+            state.numPressed = null;
+            state.numReleaseAnim = null;
+            if (needDraw) {
                 draw();
             }
         });

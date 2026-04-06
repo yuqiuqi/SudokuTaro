@@ -1,4 +1,5 @@
-import {Input, ScrollView, Text, View} from '@tarojs/components'
+import {Input, ScrollView, Switch, Text, View} from '@tarojs/components'
+import Taro from '@tarojs/taro'
 import React, {memo, useCallback, useEffect, useRef, useState} from 'react'
 
 import {
@@ -10,6 +11,15 @@ import {
   getHoleCount,
   hasConflict,
 } from '../../utils/sudokuEngine'
+import {
+  applyDailyBonus,
+  loadEconomy,
+  mergeSettings,
+  type GameEconomyState,
+  saveEconomy,
+  tryConsumeEraseProp,
+  tryConsumeUndoProp,
+} from '../../utils/gameEconomy'
 import {logRuntimeDiagnostics} from '../../utils/devDiagnostics'
 
 import './index.scss'
@@ -46,6 +56,19 @@ function formatSeconds(total: number): string {
 
 function cellIndex(r: number, c: number): number {
   return r * 9 + c
+}
+
+function vibrateLight(enabled: boolean): void {
+  if (!enabled) {
+    return
+  }
+  try {
+    Taro.vibrateShort?.({type: 'light'})
+  } catch {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
+  }
 }
 
 type SudokuGridProps = {
@@ -154,14 +177,24 @@ export default function IndexPage() {
   const [wonOpen, setWonOpen] = useState(false)
   const [hiddenFocus, setHiddenFocus] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [economy, setEconomy] = useState<GameEconomyState>(() => {
+    let s = loadEconomy()
+    s = applyDailyBonus(s)
+    saveEconomy(s)
+    return s
+  })
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const conflictTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const boardRef = useRef(board)
   const historyRef = useRef(history)
+  const economyRef = useRef(economy)
   const pendingConflictRevert = useRef<{row: number; col: number; revertTo: number} | null>(null)
 
   boardRef.current = board
   historyRef.current = history
+  economyRef.current = economy
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
@@ -184,7 +217,16 @@ export default function IndexPage() {
         conflictTimer.current = null
       }
       pendingConflictRevert.current = null
-      const diff = d ?? difficulty
+
+      const e = applyDailyBonus(economyRef.current)
+      economyRef.current = e
+      setEconomy(e)
+      saveEconomy(e)
+
+      const diff: Difficulty = d !== undefined ? d : difficulty
+      if (d !== undefined) {
+        setDifficulty(d)
+      }
       const sol = generateSolution()
       const b = cloneGrid(sol)
       const init = cloneGrid(sol)
@@ -236,7 +278,6 @@ export default function IndexPage() {
 
   const onDifficulty = useCallback(
     (d: Difficulty) => {
-      setDifficulty(d)
       newGame(d)
     },
     [newGame],
@@ -277,6 +318,7 @@ export default function IndexPage() {
 
   const fillNumber = useCallback(
     (num: number) => {
+      vibrateLight(economyRef.current.settings.vibration)
       flushPendingConflict()
       setConflictCells(new Set())
 
@@ -339,6 +381,19 @@ export default function IndexPage() {
       setConflictCells(new Set())
       return
     }
+    if (historyRef.current.length === 0) {
+      Taro.showToast({title: '无可撤销', icon: 'none'})
+      return
+    }
+    const r = tryConsumeUndoProp(economyRef.current)
+    if (!r.ok) {
+      Taro.showToast({title: '撤销道具不足', icon: 'none'})
+      return
+    }
+    economyRef.current = r.next
+    setEconomy(r.next)
+    saveEconomy(r.next)
+
     setConflictCells(new Set())
     setHistory(h => {
       if (h.length === 0) {
@@ -370,6 +425,15 @@ export default function IndexPage() {
     if (boardRef.current[row][col] === 0) {
       return
     }
+    const er = tryConsumeEraseProp(economyRef.current)
+    if (!er.ok) {
+      Taro.showToast({title: '擦除道具不足', icon: 'none'})
+      return
+    }
+    economyRef.current = er.next
+    setEconomy(er.next)
+    saveEconomy(er.next)
+
     const prev = boardRef.current[row][col]
     historyRef.current = [...historyRef.current, {row, col, value: prev}]
     setHistory(historyRef.current)
@@ -417,6 +481,15 @@ export default function IndexPage() {
   const diffLabel = (d: Difficulty) =>
     d === 'easy' ? '初级' : d === 'medium' ? '中级' : '高级'
 
+  const patchSettings = useCallback((patch: Partial<GameEconomyState['settings']>) => {
+    setEconomy(prev => {
+      const n = mergeSettings(prev, patch)
+      economyRef.current = n
+      saveEconomy(n)
+      return n
+    })
+  }, [])
+
   return (
     <ScrollView className="page" scrollY showScrollbar={false}>
       <View className="hero">
@@ -429,6 +502,15 @@ export default function IndexPage() {
       <View className="content-wrap">
         <Text className="title">数独</Text>
         <Text className="mono">SUDOKU</Text>
+
+        <View className="meta-row">
+          <View className="meta-row__pill-btn" onClick={() => setHelpOpen(true)}>
+            <Text className="meta-row__pill-btn-txt">玩法说明</Text>
+          </View>
+          <View className="meta-row__settings" onClick={() => setSettingsOpen(true)}>
+            <Text className="meta-row__settings-txt">设置</Text>
+          </View>
+        </View>
 
         <View className="diff">
           {DIFFICULTIES.map(d => (
@@ -444,13 +526,28 @@ export default function IndexPage() {
         </View>
 
         <View className="actions">
-          <View className="btn btn--glass" onClick={undo}>
+          <View
+            className={`btn btn--action btn--glass ${economy.undoProps < 1 ? 'btn--disabled' : ''}`}
+            hoverClass={economy.undoProps < 1 ? 'none' : 'btn--action-tap'}
+            hoverStartTime={0}
+            hoverStayTime={0}
+            onClick={undo}>
             <Text className="btn__txt">撤销</Text>
           </View>
-          <View className="btn btn--glass" onClick={erase}>
+          <View
+            className={`btn btn--action btn--glass ${economy.eraseProps < 1 ? 'btn--disabled' : ''}`}
+            hoverClass={economy.eraseProps < 1 ? 'none' : 'btn--action-tap'}
+            hoverStartTime={0}
+            hoverStayTime={0}
+            onClick={erase}>
             <Text className="btn__txt">擦除</Text>
           </View>
-          <View className="btn btn--solid" onClick={() => newGame()}>
+          <View
+            className="btn btn--action btn--solid"
+            hoverClass="btn--action-tap"
+            hoverStartTime={0}
+            hoverStayTime={0}
+            onClick={() => newGame()}>
             <Text className="btn__txt btn__txt--inv">新局</Text>
           </View>
         </View>
@@ -503,6 +600,64 @@ export default function IndexPage() {
                 newGame()
               }}>
               <Text className="modal__btn-txt">再来一局</Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {settingsOpen ? (
+        <View className="modal modal--settings" catchMove>
+          <View className="modal__mask" onClick={() => setSettingsOpen(false)} />
+          <View className="modal__card modal__card--settings">
+            <Text className="modal__title">设置</Text>
+            <View className="settings-row">
+              <Text className="settings-row__label">按下数字时震动</Text>
+              <Switch
+                color="#1c1917"
+                checked={economy.settings.vibration}
+                onChange={e => patchSettings({vibration: e.detail.value})}
+              />
+            </View>
+            <Text className="settings-hint">关闭后，按下数字键时不再轻震动。</Text>
+            <View className="modal__btn modal__btn--ghost" onClick={() => setSettingsOpen(false)}>
+              <Text className="modal__btn-txt modal__btn-txt--ghost">关闭</Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {helpOpen ? (
+        <View className="modal modal--help" catchMove>
+          <View className="modal__mask" onClick={() => setHelpOpen(false)} />
+          <View className="modal__card modal__card--help">
+            <Text className="modal__title">玩法说明</Text>
+            <ScrollView scrollY className="help-scroll" showScrollbar>
+              <View className="help-scroll__inner">
+                <Text className="help-h">基本规则</Text>
+                <Text className="help-p">
+                  在 9×9 盘面中填入数字 1～9，使每一行、每一列、每一个粗线围成的 3×3「宫」内，1～9
+                  各出现一次且不重复。开局已给出的数字（题面）不能修改。
+                </Text>
+                <Text className="help-h">基本操作</Text>
+                <Text className="help-p">
+                  点选空格后，用键盘输入 1～9 填数；再次点击同一格可配合数字键改数字。若与同行、同列或同宫已有数字冲突，格子会标红提示，错误填入会在短时间内自动撤回。
+                </Text>
+                <Text className="help-h">难度</Text>
+                <Text className="help-p">
+                  初级 / 中级 / 高级对应不同挖空数量，难度越高需推理越多。切换难度会开启新局。
+                </Text>
+                <Text className="help-h">道具</Text>
+                <Text className="help-p">
+                  撤销、擦除需消耗对应道具，数量不足时无法使用。每日首次进入可领取道具。
+                </Text>
+                <Text className="help-h">其它</Text>
+                <Text className="help-p">
+                  可使用撤销逐步回退、擦除清空当前选中格中的自填数字。新局将重新生成题目。完成全盘且符合规则即胜利。
+                </Text>
+              </View>
+            </ScrollView>
+            <View className="modal__btn modal__btn--ghost" onClick={() => setHelpOpen(false)}>
+              <Text className="modal__btn-txt modal__btn-txt--ghost">我知道了</Text>
             </View>
           </View>
         </View>

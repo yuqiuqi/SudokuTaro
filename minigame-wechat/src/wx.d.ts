@@ -36,11 +36,22 @@ interface WxCanvas {
   requestAnimationFrame?(cb: () => void): number
 }
 
+interface WxShowToastOption {
+  readonly title: string
+  readonly icon?: 'success' | 'error' | 'loading' | 'none'
+  readonly duration?: number
+}
+
 interface WxNamespace {
   getSystemInfoSync(): WxSystemInfo
   createCanvas(): WxCanvas
+  getStorageSync(key: string): unknown
+  setStorageSync(key: string, data: unknown): void
+  showToast(opt: WxShowToastOption): void
+  vibrateShort?(opt?: { type?: 'heavy' | 'medium' | 'light' }): void
   onKeyDown?(cb: (res: { key?: string; code?: string }) => void): void
   onTouchStart(cb: (e: WxTouchEvent) => void): void
+  onTouchMove?(cb: (e: WxTouchEvent) => void): void
   onTouchEnd(cb: (e: WxTouchEvent) => void): void
   onTouchCancel?(cb: (e: WxTouchEvent) => void): void
   onWindowResize?(cb: () => void): void

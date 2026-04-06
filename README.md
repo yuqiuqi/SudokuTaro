@@ -13,11 +13,16 @@
 ## 功能概览
 
 - **难度**：初级 / 中级 / 高级（挖空数量不同）
-- **操作**：点选格子输入数字；支持撤销、擦除、新开一局
+- **操作**：点选格子输入数字；支持撤销、擦除、新开一局（**无体力限制**）
+- **道具**：撤销、擦除消耗道具；不足时提示；每日首次进入可领取道具（见 `src/utils/gameEconomy.ts`）
+- **设置**：仅「按下数字时震动」开关；与微信小游戏共用存档 **KEY**（`gameEconomy.ts`）
 - **规则**：填入与同行/同列/同宫冲突时会高亮并在约 1.5 秒后回退
 - **通关**：完成后弹窗展示用时与步数
 - **输入**：H5 下使用系统键盘（隐藏输入框唤起软键盘 + 物理键盘快捷键）；无屏幕数字键盘
+- **微信小游戏**：`minigame-wechat/` 内 Canvas 实现，逻辑与 Taro 页对齐；改源码后执行 `npm run build:minigame`
 - **性能**：棋盘使用 `React.memo`，计时器更新时不重复渲染 81 格；冲突检测与引擎路径做了轻量优化
+
+**协作 / AI 上下文**：请先阅读仓库根目录 **[`CONTEXT.md`](./CONTEXT.md)**（目录索引、经济与小游戏约定、常用命令与上架备忘）。
 
 ## 技术栈
 
@@ -128,6 +133,7 @@ SudokuTaro/
 │   ├── project.config.json
 │   └── js/
 │       ├── main.js           # 绘制与触摸
+│       ├── gameEconomy.js    # 由 src/gameEconomy.ts 编译
 │       └── sudokuEngine.js   # 与 src/utils/sudokuEngine.ts 逻辑对齐
 ├── config/
 │   └── index.ts          # Taro、@tarojs/plugin-mini-ci（上传）等配置
@@ -145,6 +151,7 @@ SudokuTaro/
 │   │   └── index/        # 首页：数独 UI 与交互
 │   └── utils/
 │       ├── sudokuEngine.ts   # 生成终盘、挖洞、冲突检测等
+│       ├── gameEconomy.ts    # 道具、每日赠送、震动设置（与小游戏同 KEY）
 │       └── devDiagnostics.ts
 ├── package.json
 └── README.md
