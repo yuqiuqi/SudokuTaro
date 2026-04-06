@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width,initial-scale=1,user-scalable=no" name="viewport">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-touch-fullscreen" content="yes">
+  <meta name="format-detection" content="telephone=no,address=no">
+  <meta name="apple-mobile-web-app-status-bar-style" content="white">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" >
+  <title>数独</title>
+  <script><%= htmlWebpackPlugin.options.script %></script>
+</head>
+<body>
+  <!-- 若整页 HTTP 404，浏览器不会执行此处；若能看到下面 log，说明 index.html 已成功返回 -->
+  <script>
+    (function () {
+      try {
+        var w = window
+        w.__SUDOKU_BOOT__ = {
+          at: new Date().toISOString(),
+          href: w.location.href,
+          origin: w.location.origin,
+          pathname: w.location.pathname,
+          hash: w.location.hash,
+          search: w.location.search
+        }
+        console.log('[SudokuTaro:boot] index.html 已到达，可继续加载 JS', w.__SUDOKU_BOOT__)
+      } catch (e) {
+        console.error('[SudokuTaro:boot] 内联脚本异常', e)
+      }
+    })()
+  </script>
+  <div id="app"></div>
+</body>
+</html>
