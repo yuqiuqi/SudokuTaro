@@ -1,6 +1,7 @@
 {
   "name": "SudokuTaro",
   "version": "1.0.0",
+  "license": "CC-BY-NC-ND-4.0",
   "private": true,
   "description": "数独 — Taro 多端（H5/微信与抖音小程序）+ minigame-wechat 微信小游戏",
   "templateInfo": {
