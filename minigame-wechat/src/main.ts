@@ -376,7 +376,8 @@ function getLayout(): LayoutResult {
     return compact ? rp(W, n) * 0.88 : rp(W, n)
   }
 
-  const gapBoardNum = Math.max(6, v(10))
+  /** 棋盘与底部数字键区间距（设计稿 rpx，略大于原 v(10)） */
+  const gapBoardNum = Math.max(10, v(20))
   const gapK = Math.min(rp(W, 10), Math.max(4, maxW * 0.025))
   const keyW = Math.max(0, (maxW - 2 * gapK) / 3)
   const marginBottom = Math.max(v(8), 12)
