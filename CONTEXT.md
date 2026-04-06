@@ -1,134 +1,145 @@
-# SudokuTaro — 上下文交接文档
+# SudokuTaro — 上下文与协作总览（CONTEXT）
 
-> 由对话整理，便于在新会话中恢复背景。  
-> 生成日期：以本机为准。
-
----
-
-## 一、本会话中的用户诉求（Prompt 摘要）
-
-| 顺序 | 用户意图 |
-|------|----------|
-| 1 | 「分析并启动」— 分析 Taro 项目并启动开发环境 |
-| 2 | 「npm 却换 cmpn」— 理解为切换/使用 cnpm 与国内镜像 |
-| 3 | 「你打开浏览器自己先玩…」— 代码审查、修复数独逻辑与体验 |
-| 4 | 「重新在终端运行 npm run dev:h5」— 启动 H5 dev server |
-| 5 | 页面显示 `listing directory` / 非游戏界面 — 修复 devServer 与 `index.html` |
-| 6 | PowerShell 找不到 `npm` / PATH |
-| 7 | PowerShell 禁止运行 `npm.ps1`（Execution Policy） |
-| 8 | 终端日志是否报错 — 确认为成功 |
-| 9 | `@Browser` / HTTP 404 — 排查并加控制台诊断 |
-| 10 | 「上下文快超了写一个 md…包括 prompt 和 skills」— **本文档** |
+> **用途**：新会话或新协作者用 **Read 工具** 读本文件，快速恢复：项目事实、用户偏好、规则路径、Skills、常见坑与后续可做。  
+> **原则**：具体实现以仓库代码为准；此处为索引与摘要，避免与源码长期不同步。
 
 ---
 
-## 二、项目概览
+## 1. 项目卡片
 
-- **名称**：SudokuTaro  
-- **描述**：数独 — Taro 微信小程序 / 抖音小程序（含 H5）  
-- **栈**：Taro **4.0.9** + React 18 + TypeScript + Sass + Webpack 5  
-- **路径**：`c:\Users\yuqiu\SudokuTaro`
-
-### 常用脚本（`package.json`）
-
-- `npm run dev:h5` — H5 开发（watch）  
-- `npm run build:h5` — H5 生产构建  
-- `npm run dev:weapp` / `build:weapp` — 微信小程序  
-- `npm run dev:tt` / `build:tt` — 抖音小程序  
-
-### 仓库内辅助
-
-- `dev-h5.cmd` — 使用 `npm.cmd` 调用，减轻 PowerShell 对 `npm.ps1` 的策略拦截（若仍存在可双击试）。
-
----
-
-## 三、关键配置与文件
-
-| 项 | 说明 |
+| 项 | 内容 |
 |----|------|
-| `config/index.ts` | `h5.publicPath: '/'`，`h5.devServer.static: false`（避免空 `dist` 下列目录页） |
-| `src/index.html` | **必须存在**，否则不生成 `HtmlWebpackPlugin`，`dist` 可能无 `index.html` |
-| `src/app.config.js` | CommonJS，避免 `defineAppConfig` 在 Node 读配置时拉 `@tarojs/taro` 触发 `window` |
-| `src/pages/index/index.config.js` | 同上 |
-| `src/utils/devDiagnostics.ts` | 控制台诊断 `[SudokuTaro:diag]`，便于排查 404 / 路由 |
-| `src/utils/sudokuEngine.ts` | 生成、挖洞、冲突检测；`digHoles` 已改为洗牌位置遍历 |
+| 名称 | SudokuTaro |
+| 路径 | `c:\Users\yuqiu\SudokuTaro`（以本机为准） |
+| 描述 | 数独 — Taro 多端：H5 / 微信小程序 / 抖音小程序 |
+| 栈 | Taro **4.0.9** + React 18 + TypeScript + Sass + Webpack 5 |
+| 设计稿 | `designWidth: 750`，样式多用 `rpx` |
+| 仓库 | 可配合 `README.md`、`scripts/setup-git-github.ps1` 与 `gh` 上传 GitHub |
 
-### 已知的游戏逻辑修复（摘要）
+### 常用命令
 
-- 允许覆盖非题面格；冲突回退到**上一格值**而非恒为 0。  
-- `digHoles`：洗牌 81 格再挖，避免随机重试过慢。  
-- H5：`formatSeconds`、`Taro.getEnv()===WEB` 时键盘 1–9 / Esc。
-
----
-
-## 四、Windows 环境备忘
-
-### PATH 中需包含
-
-- `C:\Program Files\nodejs`（`node` / `npm.cmd`）  
-- 若用全局 cnpm：`%AppData%\npm`（或 `$env:APPDATA\npm`）
-
-**当前会话临时设置：**
-
-```powershell
-$env:Path = "C:\Program Files\nodejs;$env:APPDATA\npm;" + $env:Path
+```bash
+npm install
+npm run dev:h5          # H5 开发，默认常显 http://localhost:10086/
+npm run build:h5        # 输出 dist/
+npm run dev:weapp       # 微信小程序 watch
+npm run build:weapp
+npm run dev:tt          # 抖音小程序 watch
+npm run build:tt
 ```
 
-### PowerShell 执行策略（`npm.ps1` 被拦截）
+---
 
-- 临时：使用 **`npm.cmd run dev:h5`** 代替 `npm`。  
-- 长期（当前用户）：`Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`  
-- 说明见：[about_Execution_Policies](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
+## 2. 本会话与历史诉求摘要（Prompt 时间线）
 
-### 预览地址
+以下为对话中出现过的意图，便于检索「当时为什么这样改」：
 
-- 以终端为准，例如 `http://localhost:10086/`；端口被占用时会自动换端口。  
-- Hash 路由若白屏可试：`#/pages/index/index`。
+| 主题 | 摘要 |
+|------|------|
+| 启动与依赖 | 分析项目、修依赖/配置、`npm run dev:h5`；Windows PATH（`Program Files\nodejs`、`%AppData%\npm`）；cnpm/镜像 |
+| 数独逻辑 | 覆盖非题面格、冲突回退到上一值、`digHoles` 洗牌位置避免慢循环、`formatSeconds` 等 |
+| H5 白屏/目录列表 | `h5.devServer.static: false`；保证 `src/index.html` 存在以便 HtmlWebpackPlugin |
+| 404 / 诊断 | `h5.publicPath: '/'`；`devDiagnostics.ts`、启动日志 |
+| PowerShell | `npm` 找不到 → PATH；`npm.ps1` 被拦 → `npm.cmd` 或 `RemoteSigned`；可用 `dev-h5.cmd` |
+| 键盘与输入 | 去掉页面数字键盘与键盘提示；物理键/隐藏 `Input` 填数；修复 hook 顺序避免 `fillNumber` 暂存死区错误 |
+| 布局与 UI | 宫格线均匀（CSS Grid）、按钮与棋盘同宽、标题区宽度、去掉副标题、难度与操作按钮位置与居中 |
+| 性能与视觉 | `React.memo` 棋盘、冲突 `Set<number>`、`hasConflict`/`collectConflictIndices` 优化、引擎洗牌；暖色纸感 UI、九宫格底纹 |
+| 文档与 Git | `.gitignore`；`README.md`；winget 安装 Git/gh；`gh auth login` 后 `gh repo create ... --push` |
+| 本文档 | 汇总 prompt、上下文、skills、规则路径 |
 
 ---
 
-## 五、HTTP 404 / 浏览器问题排查
+## 3. 目录与关键文件
 
-1. **整页 404、控制台无日志**：多半是 **文档请求**失败（错端口、非 dev server）。  
-2. **有 `[SudokuTaro:boot]`**：HTML 已到；若仍白屏，看 **Network** 里 `*.js` 是否 404（`publicPath`）。  
-3. 复制控制台里 **`复制下面整行给开发者 →`** 后的 JSON 便于继续分析。
+```
+SudokuTaro/
+├── config/index.ts           # h5.publicPath、devServer.static 等
+├── scripts/setup-git-github.ps1
+├── README.md                  # 对外说明与上传步骤
+├── CONTEXT.md                 # 本文件（对内交接）
+├── src/
+│   ├── app.tsx / app.config.js
+│   ├── index.html             # H5 模板（必须存在）
+│   ├── pages/index/           # 首页：数独 UI（index.tsx / index.scss / index.config.js）
+│   └── utils/
+│       ├── sudokuEngine.ts    # 生成、挖洞、冲突检测、collectConflictIndices
+│       └── devDiagnostics.ts
+└── package.json
+```
 
 ---
 
-## 六、Cursor Skills（本机路径，按需阅读）
+## 4. 架构与实现要点（易忘）
 
-以下为 **用户环境中曾列出的 Skills** 路径；新会话若需遵循，请用 Read 打开对应 `SKILL.md`：
+- **配置用 JS**：`app.config.js`、`pages/index/index.config.js` 避免 Node 读配置时触发 `window`。
+- **棋盘**：`display: grid` + `repeat(9, minmax(0,1fr))` + `aspect-ratio: 1`；主内容 `content-wrap` `max-width: 690rpx` 与棋盘对齐。
+- **输入**：无屏上 1–9 键盘；H5 `document` 捕获 `keydown`；可选格聚焦隐藏 `Input`。
+- **状态**：`SudokuGrid` 使用 `React.memo`，计时器在父组件时减少 81 格无意义重绘。
+- **冲突**：`Set<number>`，键 `row * 9 + col`；高亮用 `collectConflictIndices`。
+
+---
+
+## 5. Cursor / 用户规则（路径索引）
+
+以下由工作区或用户配置，**需要遵循时应用 Read 打开原文**（勿假设全文已在上下文）：
+
+| 名称 | 路径（本机） |
+|------|----------------|
+| PUA 万能激励引擎 | `C:\Users\yuqiu\.cursor\rules\pua.mdc` |
+| 提问前先读 PUA | `C:\Users\yuqiu\.cursor\rules\read-pua-before-questions.mdc` |
+| Awesome DESIGN.md | `C:\Users\yuqiu\.cursor\rules\awesome-design-md.mdc`（品牌 UI 时从 `C:\Users\yuqiu\awesome-design-md\design-md\<品牌>\DESIGN.md` 对照） |
+
+**用户偏好（摘要）**：中文简体回复；先工具自查再提问；可跑命令则实际执行；代码改动克制、匹配现有风格；用户明确要求时才新增大段文档。
+
+---
+
+## 6. Agent Skills（本机路径）
+
+与任务相关时 **必须先 Read 对应 `SKILL.md` 再执行**：
 
 | Skill | 路径 |
 |-------|------|
-| babysit（PR/CI） | `C:\Users\yuqiu\.cursor\skills-cursor\babysit\SKILL.md` |
-| create-rule | `C:\Users\yuqiu\.cursor\skills-cursor\create-rule\SKILL.md` |
-| create-skill | `C:\Users\yuqiu\.cursor\skills-cursor\create-skill\SKILL.md` |
+| babysit（PR / CI / 合并） | `C:\Users\yuqiu\.cursor\skills-cursor\babysit\SKILL.md` |
+| create-rule（写 Cursor 规则） | `C:\Users\yuqiu\.cursor\skills-cursor\create-rule\SKILL.md` |
+| create-skill（写 Skill） | `C:\Users\yuqiu\.cursor\skills-cursor\create-skill\SKILL.md` |
 | update-cursor-settings | `C:\Users\yuqiu\.cursor\skills-cursor\update-cursor-settings\SKILL.md` |
 
 ---
 
-## 七、工作区规则（路径，勿全文贴入）
+## 7. Windows 与终端备忘
 
-- PUA / 能动性：`C:\Users\yuqiu\.cursor\rules\pua.mdc`  
-- 提问前读 PUA：`read-pua-before-questions.mdc`  
-- Awesome DESIGN.md 资源：`awesome-design-md.mdc`（本地 `design-md\<品牌>\DESIGN.md`）
-
----
-
-## 八、依赖与锁文件
-
-- 曾删除损坏的 `package-lock.json` 后重装；若再次 `Invalid Version`，检查 lock 中是否出现 **无 `version` 字段** 的包条目。  
-- `devDependencies` 含 `@babel/plugin-proposal-class-properties`（`babel-preset-taro` 引用）。
+- **PATH**：`C:\Program Files\nodejs`；全局 npm 包：`%AppData%\npm`。
+- **`npm.ps1` 被策略拦截**：用 `npm.cmd`，或 `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`。
+- **Git / gh**：可用 `winget install Git.Git`、`winget install GitHub.cli`；安装后新开终端；`gh auth login` 需本机浏览器/Token，**勿把 Token 贴给 AI**。
+- **H5 预览**：以终端为准（常见 `10086`）；白屏可查 Network 与 `[SudokuTaro:diag]` 类日志。
 
 ---
 
-## 九、后续可做事项（可选）
+## 8. 依赖与构建备忘
 
-- 小程序端真机再验 `app.config` 的 `window` 字段（H5 用纯 `*.config.js` 规避 Node 侧 `window`）。  
-- 需要唯一解题目时，可再实现挖洞后求解计数。  
-- 体积：`EntrypointsOverSizeLimitWarning` 仅为 webpack 提示，非错误。
+- 锁文件损坏时可删 `package-lock.json` 后重装；注意是否有条目缺失 `version`。
+- `@babel/plugin-proposal-class-properties` 在 devDependencies 中（babel-preset-taro 需要）。
+- Webpack `EntrypointsOverSizeLimitWarning` 为体积提示，非编译失败。
 
 ---
 
-*文档用途：交接上下文；具体代码以仓库为准。*
+## 9. 后续可选事项
+
+- 小程序真机再验各端配置与输入聚焦。
+- 若需「唯一解」题目，可在挖洞后增加求解计数逻辑。
+- 设计改版时可按 `awesome-design-md` 中某品牌 `DESIGN.md` 对齐 token。
+
+---
+
+## 10. 新会话建议 Prompt 模板（可复制）
+
+```
+先 Read 仓库内 CONTEXT.md 与（若改 UI）pua.mdc / DESIGN 规则。
+项目：SudokuTaro，Taro 4 + React + TS，路径 c:\Users\yuqiu\SudokuTaro。
+需求：<在此写你的任务>
+约束：只改必要文件；改完跑 npm run build:h5 验证。
+```
+
+---
+
+*文档随仓库迭代；重大架构或配置变更时请同步更新本节或 README。*
