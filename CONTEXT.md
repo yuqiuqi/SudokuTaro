@@ -15,6 +15,7 @@
 | 栈 | Taro **4.0.9** + React 18 + TypeScript + Sass + Webpack 5 |
 | 设计稿 | `designWidth: 750`，样式多用 `rpx` |
 | 仓库 | 可配合 `README.md`、`scripts/setup-git-github.ps1` 与 `gh` 上传 GitHub |
+| 小程序 CI | `@tarojs/plugin-mini-ci`；凭据见 **`.env.upload`**（从 `.env.upload.example` 复制），微信私钥放 `key/` |
 
 ### 常用命令
 
@@ -26,6 +27,10 @@ npm run dev:weapp       # 微信小程序 watch
 npm run build:weapp
 npm run dev:tt          # 抖音小程序 watch
 npm run build:tt
+# 配置 .env.upload 后：上传体验版/构建并上传
+npm run upload:weapp
+npm run upload:tt
+npm run upload:mini     # 先微信后抖音（两次构建）
 ```
 
 ---

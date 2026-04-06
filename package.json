@@ -15,7 +15,16 @@
     "build:h5": "taro build --type h5",
     "dev:weapp": "npm run build:weapp -- --watch",
     "dev:tt": "npm run build:tt -- --watch",
-    "dev:h5": "npm run build:h5 -- --watch"
+    "dev:h5": "npm run build:h5 -- --watch",
+    "upload:weapp": "dotenv -e .env.upload -- taro build --type weapp --upload",
+    "upload:tt": "dotenv -e .env.upload -- taro build --type tt --upload",
+    "upload:mini": "npm run upload:weapp && npm run upload:tt",
+    "preview:weapp": "dotenv -e .env.upload -- taro build --type weapp --preview",
+    "preview:tt": "dotenv -e .env.upload -- taro build --type tt --preview"
+  },
+  "taroConfig": {
+    "version": "1.0.0",
+    "desc": "SudokuTaro CI upload"
   },
   "browserslist": [
     "defaults and fully supports es6-module",
@@ -43,11 +52,13 @@
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.5",
     "@tarojs/cli": "4.0.9",
     "@tarojs/taro-loader": "4.0.9",
+    "@tarojs/plugin-mini-ci": "^4.1.11",
     "@tarojs/webpack5-runner": "4.0.9",
     "@types/node": "^18",
     "@types/react": "^18.3.3",
     "@types/webpack-env": "^1.18.5",
     "babel-preset-taro": "4.0.9",
+    "dotenv-cli": "^7.4.2",
     "eslint": "^8.57.0",
     "eslint-config-taro": "4.0.9",
     "postcss": "^8.5.6",

@@ -10,3 +10,8 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+!.env.upload.example
+.env.upload
+key/*
+!key/README.md
+!key/.gitkeep

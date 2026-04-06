@@ -2,6 +2,7 @@
 
 数独游戏 — 基于 [Taro 4](https://taro.zone/) + React 18 + TypeScript，一套代码可编译为 **H5**、**微信小程序**、**抖音小程序**。
 
+[![GitHub](https://img.shields.io/badge/GitHub-yuqiuqi%2FSudokuTaro-181717?logo=github)](https://github.com/yuqiuqi/SudokuTaro)
 ![Taro](https://img.shields.io/badge/Taro-4.0.9-07c160)
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178c6?logo=typescript&logoColor=white)
@@ -39,6 +40,17 @@ npm install
 
 若国内网络较慢，可使用镜像或 cnpm，详见下方「常见问题」。
 
+## 日常推送代码（已有 GitHub 仓库）
+
+```bash
+git add .
+git status
+git commit -m "描述你的修改"
+git push origin main
+```
+
+若远程分支名不是 `main`，以 `git branch -vv` 与平台显示为准。
+
 ## 开发与构建
 
 | 命令 | 说明 |
@@ -52,12 +64,59 @@ npm install
 
 H5 本地预览：执行 `npm run dev:h5` 后，在浏览器打开终端里提示的地址（如 `http://localhost:10086/`）。
 
+## 微信小程序 / 抖音小程序 自动上传（CI）
+
+使用 Taro 官方插件 [`@tarojs/plugin-mini-ci`](https://docs.taro.zone/docs/plugin-mini-ci)：在**本地构建完成后**，将 `dist/` 上传到微信后台 / 抖音后台（体验版/开发版流程以各平台后台为准）。
+
+### 1. 准备授权信息（由你本人完成）
+
+| 平台 | 你需要准备 |
+|------|------------|
+| **微信** | 小程序 **AppID**；在[微信公众平台](https://mp.weixin.qq.com/) → 开发 → 开发设置 → **小程序代码上传密钥**，下载 **私钥文件** 放到仓库 `key/` 目录（勿提交私钥）。 |
+| **抖音** | 开发者账号 **邮箱 + 密码**（与抖音开放平台一致，插件文档要求）。 |
+
+### 2. 配置环境变量
+
+```bash
+# Windows（cmd/PowerShell）
+copy .env.upload.example .env.upload
+
+# macOS / Linux
+# cp .env.upload.example .env.upload
+```
+
+编辑 `.env.upload`，填写 `WECHAT_*`、`TT_*` 等（见文件内注释）。
+
+将 `project.config.json` 里的 `appid` 改为你的**正式微信小程序 AppID**（与 `WECHAT_APPID` 一致）。
+
+### 3. 一键上传命令
+
+| 命令 | 说明 |
+|------|------|
+| `npm run upload:weapp` | 构建微信小程序并 **上传体验版** |
+| `npm run upload:tt` | 构建抖音小程序并 **上传** |
+| `npm run upload:mini` | 先微信后抖音（会依次覆盖 `dist/`，两次完整构建） |
+| `npm run preview:weapp` | 构建并 **预览**（开发版二维码，微信） |
+| `npm run preview:tt` | 构建并 **预览**（抖音） |
+
+上传的版本号与说明默认读取 `package.json` 的 `version` 与 `taroConfig`；也可在 `.env.upload` 里设置 `CI_VERSION`、`CI_DESC`。
+
+**说明**：`dotenv-cli` 会读取项目根目录的 **`.env.upload`**；若文件不存在，请先复制示例文件。私钥与密码**不要**提交到 Git（已在 `.gitignore` 中忽略）。
+
+Windows 也可在项目根目录执行：`.\scripts\release-mini.ps1`（会检查 `.env.upload` 是否存在，再执行 `npm run upload:mini`）。
+
 ## 项目结构（摘要）
 
 ```
 SudokuTaro/
 ├── config/
-│   └── index.ts          # Taro 编译与 H5 devServer 等配置
+│   └── index.ts          # Taro、@tarojs/plugin-mini-ci（上传）等配置
+├── scripts/
+│   ├── setup-git-github.ps1   # Windows：安装 Git / gh 提示
+│   └── release-mini.ps1       # 上传微信+抖音前检查 .env.upload
+├── key/                  # 微信上传私钥放此处（见 key/README.md，勿提交私钥）
+├── .env.upload.example   # 复制为 .env.upload 填写凭据
+├── CONTEXT.md            # AI/协作者上下文交接（可选阅读）
 ├── src/
 │   ├── app.tsx           # 应用入口
 │   ├── app.config.js     # 全局页面路由等（JS，避免配置阶段访问 window）
@@ -78,7 +137,9 @@ SudokuTaro/
 
 ## 首次上传到 GitHub（Git + GitHub CLI）
 
-下面使用 **GitHub CLI (`gh`)** 完成登录与建库推送。若尚未安装，可执行仓库内脚本（需管理员 PowerShell）：
+本仓库远程示例：**https://github.com/yuqiuqi/SudokuTaro**。若你已在本地 `git clone` 并配置好 `origin`，只需「日常推送代码」一节即可。
+
+下面说明 **从零** 使用 **GitHub CLI (`gh`)** 登录与建库推送。若尚未安装，可执行仓库内脚本（需管理员 PowerShell）：
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
@@ -172,6 +233,8 @@ git push -u origin main
 - **PowerShell 无法运行 `npm`**：将 Node 安装目录加入用户 PATH，或使用 `npm.cmd`；若执行策略限制 `.ps1`，可改用 `cmd` 或对当前用户设置 `RemoteSigned`。
 - **H5 根路径显示目录列表**：确保存在 `src/index.html` 且 `h5.devServer.static: false`（本仓库已配置）。
 - **构建报 Babel / 依赖错误**：删除 `node_modules` 与锁文件后重新 `npm install`（谨慎操作，团队项目需与负责人确认）。
+- **`npm run upload:*` 提示找不到 `.env.upload`**：先复制 `.env.upload.example` 为 `.env.upload` 并填写凭据。
+- **小程序 CI 依赖较多**：`npm install` 后若仅开发 H5，可不配置 `.env.upload`；上传前再配置即可。
 
 ## 许可证
 

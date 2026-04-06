@@ -1,4 +1,49 @@
+import {readFileSync} from 'fs'
+import {join} from 'path'
+
 import {defineConfig, type UserConfigExport} from '@tarojs/cli'
+
+function loadPackageJson(): {
+  version?: string
+  taroConfig?: {version?: string; desc?: string}
+} {
+  try {
+    const raw = readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')
+    return JSON.parse(raw) as {
+      version?: string
+      taroConfig?: {version?: string; desc?: string}
+    }
+  } catch {
+    return {}
+  }
+}
+
+/** @tarojs/plugin-mini-ci 配置：凭据来自环境变量（见 .env.upload.example） */
+function miniCiOptions() {
+  const pkg = loadPackageJson()
+  const tc = pkg.taroConfig
+  const weapp =
+    process.env.WECHAT_APPID && process.env.WECHAT_PRIVATE_KEY_PATH
+      ? {
+          appid: process.env.WECHAT_APPID,
+          privateKeyPath: process.env.WECHAT_PRIVATE_KEY_PATH,
+        }
+      : undefined
+  const tt =
+    process.env.TT_EMAIL && process.env.TT_PASSWORD
+      ? {
+          email: process.env.TT_EMAIL,
+          password: process.env.TT_PASSWORD,
+        }
+      : undefined
+
+  return {
+    version: process.env.CI_VERSION || tc?.version || pkg.version || '1.0.0',
+    desc: process.env.CI_DESC || tc?.desc || 'SudokuTaro',
+    weapp,
+    tt,
+  }
+}
 
 export default defineConfig({
   projectName: 'SudokuTaro',
@@ -12,7 +57,10 @@ export default defineConfig({
   },
   sourceRoot: 'src',
   outputRoot: 'dist',
-  plugins: ['@tarojs/plugin-framework-react'],
+  plugins: [
+    '@tarojs/plugin-framework-react',
+    ['@tarojs/plugin-mini-ci', miniCiOptions()],
+  ],
   compiler: {
     type: 'webpack5',
     prebundle: {enable: false},
@@ -27,10 +75,8 @@ export default defineConfig({
     },
   },
   h5: {
-    /** 与资源路径一致，避免子路径或预览工具请求错 publicPath */
     publicPath: '/',
     devServer: {
-      // 避免对空 dist 目录走 serve-index 导致根路径异常
       static: false,
     },
   },
