@@ -78,7 +78,22 @@ SudokuTaro/
 
 ## 首次上传到 GitHub（Git + GitHub CLI）
 
-下面使用 **GitHub CLI (`gh`)** 完成登录与建库推送。请先在本机安装 **Git** 与 **gh**（见仓库内 `scripts/setup-git-github.ps1`，或手动用 winget）。
+下面使用 **GitHub CLI (`gh`)** 完成登录与建库推送。若尚未安装，可执行仓库内脚本（需管理员 PowerShell）：
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+cd c:\Users\yuqiu\SudokuTaro   # 按你的路径修改
+.\scripts\setup-git-github.ps1
+```
+
+或用手动命令：`winget install Git.Git`、`winget install GitHub.cli`。安装后**新开一个终端**，确保 `git`、`gh` 在 PATH 中。
+
+**配置提交者信息（建议一次性设置）：**
+
+```powershell
+git config --global user.name "你的名字或昵称"
+git config --global user.email "你的邮箱@example.com"
+```
 
 ### 1. 安装 Git 与 GitHub CLI（Windows 推荐）
 
