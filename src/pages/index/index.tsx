@@ -156,6 +156,12 @@ export default function IndexPage() {
   const [inputValue, setInputValue] = useState('')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const conflictTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const boardRef = useRef(board)
+  const historyRef = useRef(history)
+  const pendingConflictRevert = useRef<{row: number; col: number; revertTo: number} | null>(null)
+
+  boardRef.current = board
+  historyRef.current = history
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
@@ -173,6 +179,11 @@ export default function IndexPage() {
 
   const newGame = useCallback(
     (d?: Difficulty) => {
+      if (conflictTimer.current) {
+        clearTimeout(conflictTimer.current)
+        conflictTimer.current = null
+      }
+      pendingConflictRevert.current = null
       const diff = d ?? difficulty
       const sol = generateSolution()
       const b = cloneGrid(sol)
@@ -180,9 +191,11 @@ export default function IndexPage() {
       digHoles(b, init, getHoleCount(diff))
       setSolution(sol)
       setBoard(b)
+      boardRef.current = b
       setInitialBoard(init)
       setSelected(null)
       setHistory([])
+      historyRef.current = []
       setSeconds(0)
       setSteps(0)
       setConflictCells(new Set())
@@ -229,29 +242,42 @@ export default function IndexPage() {
     [newGame],
   )
 
-  const clearConflictTimer = () => {
-    if (conflictTimer.current) {
-      clearTimeout(conflictTimer.current)
-      conflictTimer.current = null
+  const flushPendingConflict = useCallback(() => {
+    if (!conflictTimer.current) {
+      return
     }
-  }
+    clearTimeout(conflictTimer.current)
+    conflictTimer.current = null
+    const p = pendingConflictRevert.current
+    pendingConflictRevert.current = null
+    if (!p) {
+      return
+    }
+    const b = cloneGrid(boardRef.current)
+    b[p.row][p.col] = p.revertTo
+    boardRef.current = b
+    historyRef.current = historyRef.current.slice(0, -1)
+    setBoard(b)
+    setHistory(historyRef.current)
+  }, [])
 
   const selectCell = useCallback(
     (row: number, col: number) => {
+      flushPendingConflict()
       setSelected({row, col})
       setConflictCells(new Set())
-      if (board[row][col] !== 0) {
-        setHighlightNum(board[row][col])
+      if (boardRef.current[row][col] !== 0) {
+        setHighlightNum(boardRef.current[row][col])
       } else {
         setHighlightNum(null)
       }
     },
-    [board],
+    [flushPendingConflict],
   )
 
   const fillNumber = useCallback(
     (num: number) => {
-      clearConflictTimer()
+      flushPendingConflict()
       setConflictCells(new Set())
 
       if (!selected) {
@@ -263,27 +289,37 @@ export default function IndexPage() {
         return
       }
 
-      const prevCell = board[row][col]
+      const prevCell = boardRef.current[row][col]
       if (prevCell === num) {
         return
       }
 
-      const next = cloneGrid(board)
+      const next = cloneGrid(boardRef.current)
       next[row][col] = num
-      setHistory(h => [...h, {row, col, value: prevCell}])
+      historyRef.current = [...historyRef.current, {row, col, value: prevCell}]
+      boardRef.current = next
+      setHistory(historyRef.current)
       setBoard(next)
       setHighlightNum(num)
 
       if (hasConflict(next, row, col, num)) {
         setConflictCells(collectConflictIndices(next, row, col, num))
+        pendingConflictRevert.current = {row, col, revertTo: prevCell}
         conflictTimer.current = setTimeout(() => {
+          pendingConflictRevert.current = null
           setBoard(b => {
             const t = cloneGrid(b)
             t[row][col] = prevCell
+            boardRef.current = t
             return t
           })
+          setHistory(h => {
+            const n = h.slice(0, -1)
+            historyRef.current = n
+            return n
+          })
           setConflictCells(new Set())
-          setHistory(h => h.slice(0, -1))
+          conflictTimer.current = null
         }, 1500)
         return
       }
@@ -294,11 +330,15 @@ export default function IndexPage() {
         setWonOpen(true)
       }
     },
-    [board, initialBoard, selected, solution, stopTimer],
+    [initialBoard, selected, solution, stopTimer, flushPendingConflict],
   )
 
   const undo = useCallback(() => {
-    clearConflictTimer()
+    if (conflictTimer.current) {
+      flushPendingConflict()
+      setConflictCells(new Set())
+      return
+    }
     setConflictCells(new Set())
     setHistory(h => {
       if (h.length === 0) {
@@ -308,14 +348,17 @@ export default function IndexPage() {
       setBoard(b => {
         const t = cloneGrid(b)
         t[row][col] = value
+        boardRef.current = t
         return t
       })
-      return h.slice(0, -1)
+      const nextH = h.slice(0, -1)
+      historyRef.current = nextH
+      return nextH
     })
-  }, [])
+  }, [flushPendingConflict])
 
   const erase = useCallback(() => {
-    clearConflictTimer()
+    flushPendingConflict()
     setConflictCells(new Set())
     if (!selected) {
       return
@@ -324,16 +367,19 @@ export default function IndexPage() {
     if (initialBoard[row][col] !== 0) {
       return
     }
-    if (board[row][col] === 0) {
+    if (boardRef.current[row][col] === 0) {
       return
     }
-    setHistory(h => [...h, {row, col, value: board[row][col]}])
+    const prev = boardRef.current[row][col]
+    historyRef.current = [...historyRef.current, {row, col, value: prev}]
+    setHistory(historyRef.current)
     setBoard(b => {
       const t = cloneGrid(b)
       t[row][col] = 0
+      boardRef.current = t
       return t
     })
-  }, [board, initialBoard, selected])
+  }, [initialBoard, selected, flushPendingConflict])
 
   useEffect(() => {
     if (process.env.TARO_ENV !== 'h5' || typeof document === 'undefined') {
@@ -358,13 +404,15 @@ export default function IndexPage() {
       }
       if (e.key === 'Escape') {
         e.preventDefault()
+        flushPendingConflict()
+        setConflictCells(new Set())
         setSelected(null)
         setHighlightNum(null)
       }
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [wonOpen, fillNumber, erase])
+  }, [wonOpen, fillNumber, erase, flushPendingConflict])
 
   const diffLabel = (d: Difficulty) =>
     d === 'easy' ? '初级' : d === 'medium' ? '中级' : '高级'
@@ -379,8 +427,8 @@ export default function IndexPage() {
       </View>
 
       <View className="content-wrap">
-        <Text className="mono">SUDOKU</Text>
         <Text className="title">数独</Text>
+        <Text className="mono">SUDOKU</Text>
 
         <View className="diff">
           {DIFFICULTIES.map(d => (

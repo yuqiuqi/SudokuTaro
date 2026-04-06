@@ -2,7 +2,8 @@
   position: relative;
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 0 32rpx 48rpx;
+  /* 顶部紧贴安全区，数独标题作为整块内容的视觉顶端 */
+  padding: calc(8rpx + env(safe-area-inset-top)) 32rpx 48rpx;
   padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
   background:
     radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 252, 248, 0.95) 0%, transparent 55%),
@@ -51,8 +52,9 @@
 .hero {
   position: relative;
   z-index: 1;
-  height: 200rpx;
-  margin: 0 -32rpx 28rpx;
+  /* 原 200rpx：压缩光斑区，把主内容整体上移 */
+  height: 96rpx;
+  margin: 0 -32rpx 12rpx;
   overflow: hidden;
 }
 
@@ -67,37 +69,37 @@
 }
 
 .hero__a {
-  width: 280rpx;
-  height: 200rpx;
+  width: 200rpx;
+  height: 140rpx;
   left: -40rpx;
-  top: 20rpx;
+  top: -8rpx;
   background: linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%);
   animation: heroDriftA 22s ease-in-out infinite;
 }
 
 .hero__b {
-  width: 240rpx;
-  height: 180rpx;
-  left: 180rpx;
-  top: -20rpx;
+  width: 180rpx;
+  height: 120rpx;
+  left: 140rpx;
+  top: -28rpx;
   background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
   animation: heroDriftB 26s ease-in-out infinite;
 }
 
 .hero__c {
-  width: 260rpx;
-  height: 220rpx;
-  right: 80rpx;
-  top: 40rpx;
+  width: 200rpx;
+  height: 140rpx;
+  right: 40rpx;
+  top: -4rpx;
   background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 100%);
   animation: heroDriftC 20s ease-in-out infinite;
 }
 
 .hero__d {
-  width: 200rpx;
-  height: 160rpx;
-  right: -30rpx;
-  top: 0;
+  width: 160rpx;
+  height: 120rpx;
+  right: -24rpx;
+  top: -12rpx;
   background: linear-gradient(135deg, #f9a8d4 0%, #ec4899 100%);
   animation: heroDriftD 24s ease-in-out infinite;
 }
@@ -159,7 +161,8 @@
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
-  padding: 20rpx 28rpx 36rpx;
+  /* 数独为卡片内视觉顶端：减小上内边距 */
+  padding: 8rpx 28rpx 32rpx;
   border-radius: 36rpx;
   background: linear-gradient(
     165deg,
@@ -174,47 +177,48 @@
   -webkit-backdrop-filter: blur(18px);
 }
 
-.mono {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  font-size: 22rpx;
-  letter-spacing: 0.42em;
-  color: rgba(55, 48, 40, 0.5);
-  text-align: center;
-  margin-bottom: 10rpx;
-}
-
+/* 数独为第一行（整块内容视觉顶端）；SUDOKU 为副标在其下 */
 .title {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  font-size: 56rpx;
+  font-size: 52rpx;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: #141210;
-  line-height: 1.15;
+  line-height: 1.12;
   text-align: center;
-  margin-bottom: 32rpx;
+  margin-bottom: 6rpx;
   text-shadow:
     0 1rpx 0 rgba(255, 255, 255, 0.35),
     0 8rpx 32rpx rgba(28, 25, 23, 0.08);
+}
+
+.mono {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 20rpx;
+  letter-spacing: 0.38em;
+  color: rgba(55, 48, 40, 0.5);
+  text-align: center;
+  margin-bottom: 18rpx;
 }
 
 .diff {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  gap: 16rpx;
+  gap: 12rpx;
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 24rpx;
+  margin-bottom: 16rpx;
 }
 
 .pill {
   flex: 1;
   min-width: 0;
-  min-height: 72rpx;
+  min-height: 64rpx;
   padding: 0 12rpx;
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.72);
@@ -264,7 +268,7 @@
   justify-content: space-between;
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 24rpx;
+  margin-bottom: 16rpx;
 }
 
 .stats__t {
@@ -278,7 +282,7 @@
 .board-section {
   position: relative;
   width: 100%;
-  margin-bottom: 24rpx;
+  margin-bottom: 16rpx;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -413,18 +417,18 @@
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  gap: 16rpx;
+  gap: 12rpx;
   justify-content: stretch;
   align-items: stretch;
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 24rpx;
+  margin-bottom: 16rpx;
 }
 
 .btn {
   flex: 1;
   min-width: 0;
-  min-height: 72rpx;
+  min-height: 64rpx;
   padding: 0 16rpx;
   border-radius: 16rpx;
   display: flex;

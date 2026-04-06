@@ -154,6 +154,27 @@ const state: GameState = {
   numReleaseAnim: null,
 }
 
+/** 冲突倒计时期间若再次输入/切格，需按此回滚（与 setTimeout 回调一致） */
+let pendingConflictRevert: { row: number; col: number; revertTo: number } | null = null
+
+function flushPendingConflict(): void {
+  if (!state.conflictTimer) {
+    return
+  }
+  clearTimeout(state.conflictTimer)
+  state.conflictTimer = null
+  const p = pendingConflictRevert
+  pendingConflictRevert = null
+  if (!p) {
+    return
+  }
+  const b = cloneGrid(state.board)
+  b[p.row]![p.col] = p.revertTo
+  state.board = b
+  state.history.pop()
+  state.conflictCells.clear()
+}
+
 function formatSeconds(total: number): string {
   const m = Math.floor(total / 60)
   const s = total % 60
@@ -217,6 +238,7 @@ function newGame(d?: Difficulty): void {
     clearTimeout(state.conflictTimer)
     state.conflictTimer = null
   }
+  pendingConflictRevert = null
   const sol = engine.generateSolution()
   const b = cloneGrid(sol)
   const init = cloneGrid(sol)
@@ -239,10 +261,7 @@ function newGame(d?: Difficulty): void {
 }
 
 function fillNumber(num: number): void {
-  if (state.conflictTimer) {
-    clearTimeout(state.conflictTimer)
-    state.conflictTimer = null
-  }
+  flushPendingConflict()
   state.conflictCells.clear()
 
   if (!state.selected) {
@@ -273,7 +292,9 @@ function fillNumber(num: number): void {
     ci.forEach(function (idx) {
       state.conflictCells.add(idx)
     })
+    pendingConflictRevert = { row: row, col: col, revertTo: prevCell }
     state.conflictTimer = setTimeout(function () {
+      pendingConflictRevert = null
       const b = cloneGrid(state.board)
       b[row]![col] = prevCell
       state.board = b
@@ -296,8 +317,9 @@ function fillNumber(num: number): void {
 
 function undo(): void {
   if (state.conflictTimer) {
-    clearTimeout(state.conflictTimer)
-    state.conflictTimer = null
+    flushPendingConflict()
+    draw()
+    return
   }
   state.conflictCells.clear()
   if (state.history.length === 0) {
@@ -312,10 +334,7 @@ function undo(): void {
 }
 
 function erase(): void {
-  if (state.conflictTimer) {
-    clearTimeout(state.conflictTimer)
-    state.conflictTimer = null
-  }
+  flushPendingConflict()
   state.conflictCells.clear()
   if (!state.selected) {
     return
@@ -378,7 +397,7 @@ function getLayout(): LayoutResult {
     v(16)
 
   const usableH = Math.max(0, H - topInset - bottomInset)
-  const heroIdeal = rp(W, 200)
+  const heroIdeal = rp(W, 96)
   const marginHero = v(12)
 
   let keyH = Math.max(36, Math.min(keyW, rp(W, 72)))
@@ -445,10 +464,12 @@ function getLayout(): LayoutResult {
   contentTop = heroTop + heroH + marginHero
 
   let y = contentTop
+  /* 数独为第一行，SUDOKU 副标在其下（与 Taro 页一致） */
+  titleY = y + v(28)
+  y += v(56)
   monoY = y + v(11)
   y += v(22) + v(10)
-  titleY = y + v(28)
-  y += v(56) + titleGap
+  y += titleGap
 
   const pillW = Math.max(0, (maxW - 2 * gap) / 3)
   pills = []
@@ -952,13 +973,6 @@ function draw(): void {
   drawVignette(W, H)
   drawHeroBlobs(W, L.heroTop, L.heroH)
 
-  ctx.fillStyle = 'rgba(55, 48, 40, 0.5)'
-  ctx.font =
-    '500 ' + rp(W, L.compact ? 20 : 22) + 'px sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('SUDOKU', W / 2, L.monoY)
-
   ctx.fillStyle = '#1c1917'
   ctx.font =
     '700 ' + rp(W, L.compact ? 46 : 56) + 'px sans-serif'
@@ -969,6 +983,13 @@ function draw(): void {
   ctx.fillText('数独', W / 2, L.titleY)
   ctx.shadowColor = 'transparent'
   ctx.shadowBlur = 0
+
+  ctx.fillStyle = 'rgba(55, 48, 40, 0.5)'
+  ctx.font =
+    '500 ' + rp(W, L.compact ? 20 : 22) + 'px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('SUDOKU', W / 2, L.monoY)
 
   ctx.fillStyle = 'rgba(55, 48, 40, 0.58)'
   ctx.font =
@@ -1233,6 +1254,7 @@ function draw(): void {
 function onTouchStart(x: number, y: number): void {
   const h = hitTest(x, y)
   if (!h) {
+    flushPendingConflict()
     state.selected = null
     state.highlightNum = null
     state.numPressed = null
@@ -1277,6 +1299,7 @@ function onTouchStart(x: number, y: number): void {
     return
   }
   if (h.kind === 'cell') {
+    flushPendingConflict()
     const sel: SelectedCell = { row: h.row, col: h.col }
     state.selected = sel
     state.conflictCells.clear()
