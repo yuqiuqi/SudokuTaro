@@ -1,0 +1,16 @@
+/* Apple 向设计 token — 与 src/utils/theme.ts appleUi 一致 */
+$ui-bg: #f5f2eb;
+$ui-surface: #ffffff;
+$ui-separator: #e5e5ea;
+$ui-label-primary: #1c1c1e;
+$ui-label-secondary: #8e8e93;
+$ui-accent: #007aff;
+$ui-destructive: #ff3b30;
+$ui-conflict-tint: rgba(255, 59, 48, 0.22);
+
+$ui-ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+$ui-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+$ui-dur-tap: 160ms;
+$ui-dur-focus: 200ms;
+$ui-dur-sheet-enter: 360ms;
+$ui-dur-sheet-exit: 280ms;

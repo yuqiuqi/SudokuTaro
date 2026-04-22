@@ -1,0 +1,843 @@
+@use 'sass:color';
+@use './ui-tokens' as *;
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  box-sizing: border-box;
+  /* 顶部紧贴安全区，数独标题作为整块内容的视觉顶端 */
+  padding: calc(8rpx + env(safe-area-inset-top)) 32rpx 48rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 252, 248, 0.95) 0%, transparent 55%),
+    linear-gradient(
+      165deg,
+      $ui-bg 0%,
+      color.mix(#1c1c1e, $ui-bg, 5%) 42%,
+      color.mix(#1c1c1e, $ui-bg, 10%) 100%
+    );
+  color-scheme: light;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    'SF Pro Text',
+    'Segoe UI',
+    Roboto,
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    sans-serif;
+}
+
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.45;
+  background-image: repeating-linear-gradient(
+    -11deg,
+    transparent,
+    transparent 3rpx,
+    rgba(28, 25, 23, 0.018) 3rpx,
+    rgba(28, 25, 23, 0.018) 4rpx
+  );
+}
+
+.page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 85% 65% at 50% 50%,
+    transparent 35%,
+    rgba(28, 25, 23, 0.04) 100%
+  );
+}
+
+.hero {
+  position: relative;
+  z-index: 1;
+  /* 原 200rpx：压缩光斑区，把主内容整体上移 */
+  height: 96rpx;
+  margin: 0 -32rpx 12rpx;
+  overflow: hidden;
+}
+
+.hero__a,
+.hero__b,
+.hero__c,
+.hero__d {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(56rpx);
+  opacity: 0.42;
+}
+
+/* hero 光斑 — 装饰色，非语义 token */
+.hero__a {
+  width: 200rpx;
+  height: 140rpx;
+  left: -40rpx;
+  top: -8rpx;
+  background: linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%);
+  animation: heroDriftA 22s ease-in-out infinite;
+}
+
+.hero__b {
+  width: 180rpx;
+  height: 120rpx;
+  left: 140rpx;
+  top: -28rpx;
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+  animation: heroDriftB 26s ease-in-out infinite;
+}
+
+.hero__c {
+  width: 200rpx;
+  height: 140rpx;
+  right: 40rpx;
+  top: -4rpx;
+  background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 100%);
+  animation: heroDriftC 20s ease-in-out infinite;
+}
+
+.hero__d {
+  width: 160rpx;
+  height: 120rpx;
+  right: -24rpx;
+  top: -12rpx;
+  background: linear-gradient(135deg, #f9a8d4 0%, #ec4899 100%);
+  animation: heroDriftD 24s ease-in-out infinite;
+}
+
+@keyframes heroDriftA {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(12rpx, -8rpx) scale(1.04);
+  }
+}
+
+@keyframes heroDriftB {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-10rpx, 14rpx);
+  }
+}
+
+@keyframes heroDriftC {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(8rpx, 10rpx);
+  }
+}
+
+@keyframes heroDriftD {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-14rpx, -6rpx) scale(1.06);
+  }
+}
+
+@keyframes modalSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(24rpx) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalMaskIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__a,
+  .hero__b,
+  .hero__c,
+  .hero__d {
+    animation: none !important;
+  }
+
+  .modal__card {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  .modal__mask {
+    animation: none !important;
+    opacity: 1;
+  }
+
+  .modal__btn,
+  .modal__btn--ghost {
+    transition: opacity 100ms ease !important;
+  }
+
+  .modal__btn:active,
+  .modal__btn--ghost:active {
+    transform: none;
+  }
+}
+
+.content-wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 690rpx;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  /* 数独为卡片内视觉顶端：减小上内边距 */
+  padding: 8rpx 28rpx 32rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(
+    165deg,
+    rgba($ui-surface, 0.58) 0%,
+    rgba($ui-surface, 0.42) 100%
+  );
+  border: 1rpx solid rgba($ui-surface, 0.75);
+  box-shadow:
+    0 8rpx 40rpx rgba($ui-label-primary, 0.07),
+    0 1rpx 0 rgba($ui-surface, 0.85) inset;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* 数独为第一行（整块内容视觉顶端）；SUDOKU 为副标在其下 */
+.title {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 52rpx;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: $ui-label-primary;
+  line-height: 1.12;
+  text-align: center;
+  margin-bottom: 6rpx;
+  text-shadow:
+    0 1rpx 0 rgba($ui-surface, 0.35),
+    0 8rpx 32rpx rgba($ui-label-primary, 0.08);
+}
+
+.mono {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 20rpx;
+  letter-spacing: 0.38em;
+  color: $ui-label-secondary;
+  text-align: center;
+  margin-bottom: 12rpx;
+}
+
+.meta-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 16rpx;
+  gap: 12rpx;
+}
+
+.meta-row__pill-btn,
+.meta-row__settings {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meta-row__pill-btn {
+  box-sizing: border-box;
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba($ui-surface, 0.72);
+  border: 2rpx solid rgba($ui-label-primary, 0.08);
+  box-shadow: 0 4rpx 16rpx rgba($ui-label-primary, 0.06);
+}
+
+.meta-row__pill-btn:active {
+  opacity: 0.92;
+}
+
+.meta-row__pill-btn-txt {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: $ui-label-primary;
+}
+
+.meta-row__settings {
+  box-sizing: border-box;
+  padding: 12rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba($ui-surface, 0.72);
+  border: 2rpx solid rgba($ui-label-primary, 0.08);
+  box-shadow: 0 4rpx 16rpx rgba($ui-label-primary, 0.06);
+}
+
+.meta-row__settings:active {
+  opacity: 0.92;
+}
+
+.meta-row__settings-txt {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: $ui-label-primary;
+}
+
+.diff {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 12rpx;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 16rpx;
+}
+
+.pill {
+  flex: 1;
+  min-width: 0;
+  min-height: 64rpx;
+  padding: 0 12rpx;
+  border-radius: 999rpx;
+  background: rgba($ui-surface, 0.72);
+  border: 2rpx solid rgba($ui-label-primary, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  box-shadow: 0 4rpx 20rpx rgba($ui-label-primary, 0.06);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform $ui-dur-tap $ui-ease-standard;
+}
+
+.pill:active {
+  transform: scale(0.97);
+}
+
+.pill--on {
+  background: linear-gradient(
+    145deg,
+    color.mix($ui-label-primary, #000000, 92%) 0%,
+    $ui-label-primary 100%
+  );
+  border-color: $ui-label-primary;
+  box-shadow:
+    0 8rpx 28rpx rgba($ui-label-primary, 0.28),
+    inset 0 1rpx 0 rgba($ui-surface, 0.08);
+}
+
+.pill__txt {
+  display: block;
+  width: 100%;
+  font-size: 26rpx;
+  line-height: 1.3;
+  text-align: center;
+  color: $ui-label-secondary;
+}
+
+.pill__txt--on {
+  color: $ui-surface;
+  font-weight: 600;
+}
+
+.stats {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 16rpx;
+}
+
+.stats__t {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: $ui-label-secondary;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.board-section {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border: 2rpx solid rgba($ui-label-primary, 0.35);
+  border-radius: 18rpx;
+  overflow: hidden;
+  background: $ui-surface;
+  box-shadow:
+    0 2rpx 4rpx rgba($ui-label-primary, 0.04),
+    0 28rpx 56rpx -14rpx rgba($ui-label-primary, 0.16),
+    0 0 0 1rpx rgba($ui-separator, 0.9),
+    inset 0 1rpx 0 rgba($ui-surface, 0.95);
+}
+
+.cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  border-right: 1rpx solid rgba($ui-label-primary, 0.12);
+  border-bottom: 1rpx solid rgba($ui-label-primary, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $ui-surface;
+  transition:
+    background $ui-dur-tap $ui-ease-standard,
+    box-shadow $ui-dur-tap $ui-ease-standard;
+}
+
+.cell--block-alt {
+  background: color.mix($ui-separator, $ui-surface, 35%);
+}
+
+.cell:nth-child(9n) {
+  border-right: none;
+}
+
+.cell:nth-child(n + 73) {
+  border-bottom: none;
+}
+
+.cell--thick-r {
+  border-right-width: 2rpx;
+  border-right-color: $ui-label-primary;
+}
+
+.cell--thick-b {
+  border-bottom-width: 2rpx;
+  border-bottom-color: $ui-label-primary;
+}
+
+.cell--dim {
+  background: rgba(45, 212, 191, 0.09);
+}
+
+.cell--dim.cell--block-alt {
+  background: rgba(45, 212, 191, 0.11);
+}
+
+.cell--same:not(.cell--bad) {
+  background: rgba(52, 211, 153, 0.22);
+}
+
+.cell--same.cell--block-alt:not(.cell--bad) {
+  background: rgba(52, 211, 153, 0.24);
+}
+
+.cell--bad {
+  background: $ui-conflict-tint;
+}
+
+.cell--bad.cell--block-alt {
+  background: rgba(255, 59, 48, 0.26);
+}
+
+.cell__txt {
+  font-size: 34rpx;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: $ui-label-secondary;
+}
+
+.cell__txt--fixed {
+  color: $ui-label-primary;
+  font-weight: 700;
+}
+
+/* 用户填入数字：保持数独语义色（非 Apple 语义 token） */
+.cell__txt--user {
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.cell__txt--sel {
+  font-weight: 700;
+}
+
+.cell__txt--bad {
+  color: $ui-destructive;
+  font-weight: 700;
+}
+
+.cell__ring {
+  position: absolute;
+  left: 3rpx;
+  top: 3rpx;
+  right: 3rpx;
+  bottom: 3rpx;
+  border: 2rpx solid $ui-accent;
+  border-radius: 10rpx;
+  pointer-events: none;
+  box-shadow: 0 0 0 1rpx rgba($ui-accent, 0.25);
+}
+
+.hidden-input {
+  position: absolute;
+  left: -2000px;
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+}
+
+.actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 12rpx;
+  justify-content: stretch;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 16rpx;
+}
+
+.btn {
+  flex: 1;
+  min-width: 0;
+  min-height: 64rpx;
+  padding: 8rpx 12rpx;
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  gap: 2rpx;
+}
+
+.btn--disabled {
+  opacity: 0.45;
+}
+
+.btn__badge {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: $ui-label-secondary;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn__badge--inv {
+  color: rgba($ui-surface, 0.9);
+  font-size: 20rpx;
+}
+
+.btn--glass {
+  background: rgba($ui-surface, 0.75);
+  border: 2rpx solid rgba($ui-label-primary, 0.1);
+  box-shadow: 0 4rpx 16rpx rgba($ui-label-primary, 0.06);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform $ui-dur-tap $ui-ease-standard;
+}
+
+.btn--solid {
+  background: linear-gradient(
+    145deg,
+    color.mix($ui-label-primary, #000000, 90%) 0%,
+    $ui-label-primary 100%
+  );
+  border: 2rpx solid $ui-label-primary;
+  box-shadow: 0 8rpx 24rpx rgba($ui-label-primary, 0.22);
+  transition:
+    box-shadow 0.2s ease,
+    transform $ui-dur-tap $ui-ease-standard;
+}
+
+/**
+ * 仅撤销 / 擦除 / 新局：更快按下与回弹（不影响玩法说明、设置、弹窗等）
+ */
+.actions .btn--action {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/**
+ * 默认无 transition：松手去掉 hoverClass 后立刻回到原色/原尺寸，避免「抬不起来」的粘滞感。
+ * 仅在按下态（小程序 hoverClass / H5 :active）上带短过渡，按下时仍有一帧过渡。
+ */
+.actions .btn--action.btn--glass,
+.actions .btn--action.btn--solid {
+  transition: none;
+}
+
+/* 小程序：hoverClass 触摸态 */
+.actions .btn--action.btn--glass.btn--action-tap,
+.actions .btn--action.btn--solid.btn--action-tap {
+  opacity: 0.88;
+  transform: scale(0.97);
+  transition:
+    transform 120ms $ui-ease-standard,
+    opacity 120ms ease-out;
+}
+
+/* H5 */
+.actions .btn--action:not(.btn--disabled):active {
+  opacity: 0.88;
+  transform: scale(0.97);
+  transition:
+    transform 120ms $ui-ease-standard,
+    opacity 120ms ease-out;
+}
+
+.btn__txt {
+  display: block;
+  width: 100%;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  color: $ui-label-primary;
+}
+
+.btn__txt--inv {
+  color: $ui-surface;
+}
+
+.modal {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal__mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba($ui-label-primary, 0.4);
+  backdrop-filter: blur(8px);
+  animation: modalMaskIn $ui-dur-sheet-enter $ui-ease-standard forwards;
+}
+
+.modal__card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  width: calc(100% - 64rpx);
+  max-width: 690rpx;
+  box-sizing: border-box;
+  padding: 48rpx 40rpx 40rpx;
+  border-radius: 24rpx;
+  background: $ui-surface;
+  border: 1rpx solid $ui-separator;
+  box-shadow: 0 8rpx 32rpx rgba($ui-label-primary, 0.12);
+  animation: modalSheetIn $ui-dur-sheet-enter $ui-ease-sheet forwards;
+}
+
+.modal__card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 5rpx;
+  background: linear-gradient(
+    90deg,
+    rgba(212, 165, 116, 0.95) 0%,
+    rgba(196, 181, 253, 0.9) 45%,
+    rgba(94, 234, 212, 0.85) 100%
+  );
+}
+
+.modal__title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: $ui-label-primary;
+  text-align: center;
+  margin-bottom: 16rpx;
+  letter-spacing: 0.04em;
+}
+
+.modal__body {
+  display: block;
+  font-size: 28rpx;
+  line-height: 1.35;
+  color: $ui-label-primary;
+  text-align: center;
+  margin-bottom: 36rpx;
+}
+
+.modal__btn {
+  height: 88rpx;
+  border-radius: 16rpx;
+  background: $ui-accent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 12rpx 28rpx rgba($ui-accent, 0.35);
+  transition: transform $ui-dur-tap $ui-ease-standard, opacity $ui-dur-tap ease;
+}
+
+.modal__btn:active {
+  transform: scale(0.97);
+  opacity: 0.92;
+}
+
+.modal__btn-txt {
+  display: block;
+  width: 100%;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  color: $ui-surface;
+}
+
+.modal--settings {
+  z-index: 1100;
+}
+
+.modal__card--settings {
+  padding-top: 40rpx;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid $ui-separator;
+}
+
+.settings-row:last-of-type {
+  border-bottom: none;
+}
+
+.settings-row__label {
+  font-size: 30rpx;
+  color: $ui-label-primary;
+}
+
+.settings-hint {
+  display: block;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: $ui-label-secondary;
+  margin: 24rpx 0 28rpx;
+}
+
+.modal__btn--ghost {
+  background: rgba($ui-surface, 0.95);
+  border: 2rpx solid $ui-separator;
+  box-shadow: none;
+}
+
+.modal__btn--ghost:active {
+  transform: scale(0.97);
+}
+
+.modal__btn-txt--ghost {
+  color: $ui-label-primary;
+}
+
+.modal--help {
+  z-index: 1100;
+}
+
+.modal__card--help {
+  max-height: 78vh;
+  width: calc(100% - 64rpx);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding-bottom: 28rpx;
+}
+
+.help-scroll {
+  width: 100%;
+  /* 固定上限高度，保证小程序 ScrollView 可滑动 */
+  height: 520rpx;
+  max-height: 50vh;
+  min-height: 220rpx;
+  box-sizing: border-box;
+  margin-bottom: 8rpx;
+}
+
+.help-scroll__inner {
+  padding: 0 4rpx 8rpx;
+  box-sizing: border-box;
+}
+
+.help-h {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: $ui-label-primary;
+  margin: 20rpx 0 12rpx;
+}
+
+.help-h:first-child {
+  margin-top: 0;
+}
+
+.help-p {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.65;
+  color: $ui-label-primary;
+  margin-bottom: 4rpx;
+}

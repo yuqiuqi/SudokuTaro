@@ -1,0 +1,13 @@
+---
+description: GSD 工作流与 SudokuTaro 规划入口
+globs:
+  - "**/*"
+---
+
+# SudokuTaro · GSD
+
+- 项目上下文：`.planning/PROJECT.md`、`.planning/STATE.md`
+- 路线：`.planning/ROADMAP.md`；需求：`.planning/REQUIREMENTS.md`
+- Phase 1 UI 契约：`.planning/phases/01-apple-ui-motion/01-UI-SPEC.md`
+- 代码库地图：`.planning/codebase/`
+- 执行前优先阅读 UI-SPEC 中的 **Motion** 与 **Color**，动效以 `transform`/`opacity` 为主。

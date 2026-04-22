@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.swc/
+.taro/
+.temp/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+!.env.upload.example
+.env.upload
+key/*
+!key/README.md
+!key/.gitkeep
+
+# 微信开发者工具本地私有配置（含本机 AppID 等）
+project.private.config.json
