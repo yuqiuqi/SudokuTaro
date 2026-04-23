@@ -1,0 +1,35 @@
+/**
+ * Phase 4 — motion primitives（与 theme.ts `appleUi.motion` / `spring` 同提交）
+ * primary：cubic-bezier；注释中标明可用 CSS linear() 在支持环境替换
+ */
+
+// ---- Spring family（注释 = 建议的 linear() 回退名） ----
+// springSnappy — 主按钮 120ms 按下
+$ease-spring-snappy: cubic-bezier(0.2, 0.85, 0.2, 1.12);
+// springDefault — 通用 240ms 回弹
+$ease-spring-default: cubic-bezier(0.34, 1.28, 0.64, 1);
+// springGentle — 环境 / 大位移
+$ease-spring-gentle: cubic-bezier(0.25, 0.1, 0.25, 1);
+// springStiff — 快停
+$ease-spring-stiff: cubic-bezier(0.5, 0, 0.5, 1);
+
+// 与 BTN-01/REQ 回弹 240ms 同族
+$ease-overshoot-press: $ease-spring-default;
+
+// ---- Durations（REQ：80/100/120/140/180/200/220/240/280/300/380/400）----
+$dur-micro: 80ms;
+$dur-fast: 120ms;
+$dur-cell-select: 140ms;
+$dur-default: 200ms;
+$dur-shake: 220ms;
+$dur-btn-release: 240ms;
+$dur-modal-exit: 280ms;
+$dur-modal-mask: 300ms;
+$dur-modal-enter: 380ms;
+$dur-win-count: 400ms;
+$dur-ripple: 180ms;
+$dur-ambient: 2400ms;
+
+// 语义别名（供 component-tokens / mixin 引用）
+$dur-enter: $dur-modal-enter;
+$dur-exit: $dur-modal-exit;

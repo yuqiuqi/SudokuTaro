@@ -18,3 +18,55 @@ body {
   font-family: $ui-font-stack;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* A11Y-01/02/03（Phase 4）：全局 reduced-motion 基底 + 白名单；Hero/scroll 动画显式关闭 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* A11Y-02：必要反馈（特异度高于 *）— 短 opacity / 淡入 */
+  .btn,
+  .cell,
+  .settings-toggle,
+  .settings-toggle__thumb {
+    transition:
+      opacity 80ms $ui-ease-standard,
+      color 80ms $ui-ease-standard,
+      background-color 80ms $ui-ease-standard,
+      border-color 80ms $ui-ease-standard,
+      box-shadow 80ms $ui-ease-standard,
+      transform 80ms $ui-ease-standard !important;
+  }
+
+  .modal__card,
+  .modal__mask,
+  .content-wrap {
+    transition:
+      opacity 200ms $ui-ease-standard,
+      filter 200ms $ui-ease-standard,
+      backdrop-filter 200ms $ui-ease-standard,
+      -webkit-backdrop-filter 200ms $ui-ease-standard !important;
+  }
+
+  .modal__btn,
+  .modal__btn--ghost {
+    transition: opacity 100ms $ui-ease-standard !important;
+  }
+
+  /* A11Y-03：Hero 光斑与可能存在的 scroll-driven / view-timeline */
+  .hero,
+  .hero__a,
+  .hero__b,
+  .hero__c,
+  .hero__d {
+    animation: none !important;
+    animation-timeline: auto !important;
+    view-timeline: none !important;
+  }
+}

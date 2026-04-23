@@ -1,0 +1,27 @@
+/**
+ * Phase 4 — Liquid Glass 与可交互体 mixin
+ */
+@use 'motion-tokens' as motion;
+@use 'apple-ui-tokens' as ui;
+
+/// 参数化玻璃模糊（px 为 CSS 里 blur() 的数值，单位 px）
+@mixin liquid-glass($blur-px) {
+  backdrop-filter: blur($blur-px) saturate(1.8) brightness(1.02);
+  -webkit-backdrop-filter: blur($blur-px) saturate(1.8) brightness(1.02);
+  background: ui.$ui-glass-fill-strong;
+}
+
+/// 主操作按钮位移动画公共块
+@mixin spring-btn {
+  transition:
+    transform motion.$dur-fast motion.$ease-spring-snappy,
+    opacity motion.$dur-fast motion.$ease-spring-gentle;
+  will-change: transform, opacity;
+}
+
+/// 数独格交互（不默认永久 will-change，由状态类临时加）
+@mixin cell-interactive {
+  transition:
+    background-color motion.$dur-cell-select ui.$ui-ease-standard,
+    transform motion.$dur-cell-select motion.$ease-overshoot-press;
+}

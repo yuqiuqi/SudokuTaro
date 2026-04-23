@@ -1,0 +1,16 @@
+/**
+ * Phase 4 — 组件语义层（只引用 motion + apple 原始 token，无裸色 hex）
+ */
+@use 'motion-tokens' as motion;
+@use 'apple-ui-tokens' as ui;
+
+$btn-pressed-scale: 0.95;
+$btn-disabled-opacity: 0.38;
+$cell-selected-tint: ui.$ui-semantic-dim-2;
+$modal-enter-duration: motion.$dur-modal-enter;
+$modal-exit-duration: motion.$dur-modal-exit;
+$switch-squash-scale: 0.85;
+$switch-stretch-scale: 1.15;
+$cell-ripple-stagger: 8ms;
+$btn-press-ms: motion.$dur-fast;
+$btn-release-ms: motion.$dur-btn-release; // 与 theme `btnReleaseMs` 对齐

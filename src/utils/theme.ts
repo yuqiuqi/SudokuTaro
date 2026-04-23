@@ -53,6 +53,29 @@ export const appleUi = {
     durationSheetExitMs: 280,
     easeStandard: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
     easeSheet: 'cubic-bezier(0.32, 0.72, 0, 1)',
+    /** 与 `src/styles/_motion-tokens.scss` 的 `$ease-spring-*` 对齐 */
+    springSnappy: 'cubic-bezier(0.2, 0.85, 0.2, 1.12)',
+    springDefault: 'cubic-bezier(0.34, 1.28, 0.64, 1)',
+    springGentle: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+    springStiff: 'cubic-bezier(0.5, 0, 0.5, 1)',
+    enterModalMs: 380,
+    exitModalMs: 280,
+    cellRippleStaggerMs: 8,
+    maskEnterMs: 300,
+    maskExitMs: 220,
+    modalDimBlurToPx: 8,
+    btnPressMs: 120,
+    btnReleaseMs: 240,
+    /** 与 `_motion-tokens.$dur-win-count`、WIN-02 一致 */
+    durationWinCountMs: 400,
+  },
+  /** 弹层/主卡材质（与 MAT-01/02 及 `_mixins-lg.liquid-glass` 一致） */
+  glass: {
+    contentBlur: 18,
+    modalBlur: 22,
+    contentSaturate: 1.8,
+    contentBrightness: 1.02,
+    modalSaturate: 2,
   },
   /** OS 26 / Liquid Glass 在 Web 上仅模拟：层次、半透、顶缘高光（非实时光学） */
   liquidGlassSubset: {

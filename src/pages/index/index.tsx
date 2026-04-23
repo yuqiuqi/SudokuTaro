@@ -1,6 +1,10 @@
-import {Input, ScrollView, Switch, Text, View} from '@tarojs/components'
+import {Input, ScrollView, Text, View} from '@tarojs/components'
+/** H5 主操作行需 mousedown/leave 配合 data-state；Taro 类型未声明，运行时可用 */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ViewAction = View as any
 import Taro from '@tarojs/taro'
-import {memo, useCallback, useEffect, useRef, useState} from 'react'
+import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import type {CSSProperties} from 'react'
 
 import {
   type Difficulty,
@@ -55,6 +59,57 @@ function formatSeconds(total: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+/** 通关弹窗：统计数字 0→目标，WIN-02，cleanup cancelAnimationFrame */
+const WinResultBody = memo(function WinResultBody({
+  active,
+  seconds: secT,
+  steps: stT,
+}: {
+  active: boolean
+  seconds: number
+  steps: number
+}) {
+  const [dSec, setDSec] = useState(0)
+  const [dSt, setDSt] = useState(0)
+  const rafId = useRef(0)
+  const dur = appleUi.motion.durationWinCountMs
+
+  useEffect(() => {
+    if (!active) {
+      setDSec(0)
+      setDSt(0)
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current)
+        rafId.current = 0
+      }
+      return
+    }
+    const t0 = performance.now()
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / dur)
+      const e = 1 - (1 - p) ** 4
+      setDSec(Math.round(secT * e))
+      setDSt(Math.round(stT * e))
+      if (p < 1) {
+        rafId.current = requestAnimationFrame(tick)
+      }
+    }
+    rafId.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current)
+        rafId.current = 0
+      }
+    }
+  }, [active, dur, secT, stT])
+
+  return (
+    <Text className="modal__body modal--win-stg-3">
+      你在 {formatSeconds(dSec)}（{dSec} 秒）完成数独，步数 {dSt}。
+    </Text>
+  )
+})
+
 function cellIndex(r: number, c: number): number {
   return r * 9 + c
 }
@@ -79,6 +134,10 @@ type SudokuGridProps = {
   conflictCells: Set<number>
   highlightNum: number | null
   onCellClick: (row: number, col: number) => void
+  /** 非冲突填数后短暂用于入场动画 */
+  fillPopIndex: number | null
+  /** 方向键操作时为 true，用于 KBD-02 可见焦点 */
+  keyboardNav: boolean
 }
 
 const SudokuGrid = memo(function SudokuGrid({
@@ -88,6 +147,8 @@ const SudokuGrid = memo(function SudokuGrid({
   conflictCells,
   highlightNum,
   onCellClick,
+  fillPopIndex,
+  keyboardNav,
 }: SudokuGridProps) {
   const regionMask = (row: number, col: number) => {
     if (!selected) {
@@ -108,18 +169,42 @@ const SudokuGrid = memo(function SudokuGrid({
     board[row][col] === highlightNum &&
     board[row][col] !== 0
 
+  const rippleOrder = useMemo(() => {
+    const map = new Map<number, number>()
+    if (!selected || highlightNum == null) {
+      return map
+    }
+    const {row: sr, col: sc} = selected
+    const cells: {r: number; c: number; d: number}[] = []
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (!(sameNum(r, c) && regionMask(r, c))) {
+          continue
+        }
+        const d = Math.abs(r - sr) + Math.abs(c - sc)
+        cells.push({r, c, d})
+      }
+    }
+    cells.sort((a, b) => a.d - b.d || a.r - b.r || a.c - b.c)
+    cells.forEach((cell, i) => {
+      map.set(cell.r * 9 + cell.c, i)
+    })
+    return map
+  }, [board, highlightNum, selected])
+
   return (
     <View className="grid">
       {board.map((row, r) =>
         row.map((val, c) => {
           const isSel = selected?.row === r && selected?.col === c
+          const idx = cellIndex(r, c)
           const thickR = c === 2 || c === 5
           const thickB = r === 2 || r === 5
           const fixed = initialBoard[r][c] !== 0
           const user = !fixed && val !== 0
-          const conflict = conflictCells.has(cellIndex(r, c))
+          const conflict = conflictCells.has(idx)
           const dim = regionMask(r, c)
-          const hl = sameNum(r, c)
+          const hl = sameNum(r, c) && regionMask(r, c)
           const blockAlt = (Math.floor(r / 3) + Math.floor(c / 3)) % 2 === 1
           const cls = [
             'cell',
@@ -128,14 +213,23 @@ const SudokuGrid = memo(function SudokuGrid({
             blockAlt ? 'cell--block-alt' : '',
             dim ? 'cell--dim' : '',
             hl ? 'cell--same' : '',
+            isSel ? 'cell--sel' : '',
             conflict ? 'cell--bad' : '',
+            fillPopIndex === idx ? 'cell--fill-flash' : '',
           ]
             .filter(Boolean)
             .join(' ')
+          const h5Style: CSSProperties | undefined = hl
+            ? {
+                ['--cell-ripple-index' as string]: String(rippleOrder.get(idx) ?? 0),
+              }
+            : undefined
           return (
             <View
-              key={cellIndex(r, c)}
+              key={idx}
               className={cls}
+              style={h5Style}
+              data-keyboard-focus={isSel && keyboardNav ? 'true' : undefined}
               onClick={() => onCellClick(r, c)}>
               <Text
                 className={[
@@ -175,7 +269,10 @@ export default function IndexPage() {
   const [steps, setSteps] = useState(0)
   const [conflictCells, setConflictCells] = useState<Set<number>>(() => new Set())
   const [highlightNum, setHighlightNum] = useState<number | null>(null)
-  const [wonOpen, setWonOpen] = useState(false)
+  /** 弹层：'off' | 'on' | 'leaving' — leaving 时 DOM 仍挂载，播完 280ms 再 off（MOD-04） */
+  const [modalWon, setModalWon] = useState<'leaving' | 'off' | 'on'>('off')
+  const [modalSet, setModalSet] = useState<'leaving' | 'off' | 'on'>('off')
+  const [modalHelp, setModalHelp] = useState<'leaving' | 'off' | 'on'>('off')
   const [hiddenFocus, setHiddenFocus] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [economy, setEconomy] = useState<GameEconomyState>(() => {
@@ -184,14 +281,23 @@ export default function IndexPage() {
     saveEconomy(s)
     return s
   })
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
+  const [pageScrollTop, setPageScrollTop] = useState(0)
+  const [lowDeviceMemory, setLowDeviceMemory] = useState(false)
+  const [usedKeyboardNav, setUsedKeyboardNav] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const conflictTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const boardRef = useRef(board)
   const historyRef = useRef(history)
   const economyRef = useRef(economy)
   const pendingConflictRevert = useRef<{row: number; col: number; revertTo: number} | null>(null)
+  const fillPopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [fillPopIndex, setFillPopIndex] = useState<number | null>(null)
+  const [actionPress, setActionPress] = useState<null | 'erase' | 'new' | 'undo'>(null)
+  const leaveWonT = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const leaveSetT = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const leaveHelpT = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const MODAL_LEAVE_MS = appleUi.motion.exitModalMs
 
   boardRef.current = board
   historyRef.current = history
@@ -202,6 +308,62 @@ export default function IndexPage() {
       clearInterval(timerRef.current)
       timerRef.current = null
     }
+  }, [])
+
+  const beginCloseWon = useCallback(() => {
+    setModalWon(m => {
+      if (m !== 'on') {
+        return m
+      }
+      if (leaveWonT.current) {
+        clearTimeout(leaveWonT.current)
+      }
+      leaveWonT.current = setTimeout(() => {
+        setModalWon('off')
+        leaveWonT.current = null
+      }, MODAL_LEAVE_MS)
+      return 'leaving'
+    })
+  }, [MODAL_LEAVE_MS])
+
+  const beginCloseSet = useCallback(() => {
+    setModalSet(m => {
+      if (m !== 'on') {
+        return m
+      }
+      if (leaveSetT.current) {
+        clearTimeout(leaveSetT.current)
+      }
+      leaveSetT.current = setTimeout(() => {
+        setModalSet('off')
+        leaveSetT.current = null
+      }, MODAL_LEAVE_MS)
+      return 'leaving'
+    })
+  }, [MODAL_LEAVE_MS])
+
+  const beginCloseHelp = useCallback(() => {
+    setModalHelp(m => {
+      if (m !== 'on') {
+        return m
+      }
+      if (leaveHelpT.current) {
+        clearTimeout(leaveHelpT.current)
+      }
+      leaveHelpT.current = setTimeout(() => {
+        setModalHelp('off')
+        leaveHelpT.current = null
+      }, MODAL_LEAVE_MS)
+      return 'leaving'
+    })
+  }, [MODAL_LEAVE_MS])
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('deviceMemory' in navigator)) {
+      return
+    }
+    const m = (navigator as {deviceMemory?: number}).deviceMemory
+    setLowDeviceMemory(typeof m === 'number' && m > 0 && m < 4)
   }, [])
 
   const startTimer = useCallback(() => {
@@ -243,7 +405,7 @@ export default function IndexPage() {
       setSteps(0)
       setConflictCells(new Set())
       setHighlightNum(null)
-      setWonOpen(false)
+      setModalWon('off')
       stopTimer()
       startTimer()
     },
@@ -264,7 +426,7 @@ export default function IndexPage() {
 
   const wantsHiddenInput =
     selected != null &&
-    !wonOpen &&
+    modalWon === 'off' &&
     initialBoard[selected.row][selected.col] === 0
 
   useEffect(() => {
@@ -305,6 +467,7 @@ export default function IndexPage() {
 
   const selectCell = useCallback(
     (row: number, col: number) => {
+      setUsedKeyboardNav(false)
       flushPendingConflict()
       setSelected({row, col})
       setConflictCells(new Set())
@@ -367,10 +530,20 @@ export default function IndexPage() {
         return
       }
 
+      const placedIdx = cellIndex(row, col)
+      setFillPopIndex(placedIdx)
+      if (fillPopTimer.current) {
+        clearTimeout(fillPopTimer.current)
+      }
+      fillPopTimer.current = setTimeout(() => {
+        setFillPopIndex(null)
+        fillPopTimer.current = null
+      }, 120)
+
       setSteps(s => s + 1)
       if (boardsEqual(next, solution)) {
         stopTimer()
-        setWonOpen(true)
+        setModalWon('on')
       }
     },
     [initialBoard, selected, solution, stopTimer, flushPendingConflict],
@@ -451,7 +624,7 @@ export default function IndexPage() {
       return
     }
     const onKey = (e: KeyboardEvent) => {
-      if (wonOpen) {
+      if (modalWon !== 'off') {
         return
       }
       if (e.repeat) {
@@ -473,11 +646,29 @@ export default function IndexPage() {
         setConflictCells(new Set())
         setSelected(null)
         setHighlightNum(null)
+        return
+      }
+      const arrows: Record<string, [number, number]> = {
+        ArrowUp: [-1, 0],
+        ArrowDown: [1, 0],
+        ArrowLeft: [0, -1],
+        ArrowRight: [0, 1],
+      }
+      const delta = arrows[e.key]
+      if (delta && selected) {
+        e.preventDefault()
+        setUsedKeyboardNav(true)
+        const [dr, dc] = delta
+        const nr = Math.min(8, Math.max(0, selected.row + dr))
+        const nc = Math.min(8, Math.max(0, selected.col + dc))
+        if (nr !== selected.row || nc !== selected.col) {
+          selectCell(nr, nc)
+        }
       }
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [wonOpen, fillNumber, erase, flushPendingConflict])
+  }, [modalWon, fillNumber, erase, flushPendingConflict, selectCell, selected])
 
   const diffLabel = (d: Difficulty) =>
     d === 'easy' ? '初级' : d === 'medium' ? '中级' : '高级'
@@ -491,24 +682,40 @@ export default function IndexPage() {
     })
   }, [])
 
+  const anyModal = modalWon !== 'off' || modalSet !== 'off' || modalHelp !== 'off'
+  const heroOpacity = Math.max(0, 1 - Math.min(1, pageScrollTop / 200))
+
   return (
-    <ScrollView className="page" scrollY showScrollbar={false}>
-      <View className="hero">
+    <ScrollView
+      className={`page${lowDeviceMemory ? ' page--low-mem' : ''}`}
+      scrollY
+      showScrollbar={false}
+      onScroll={e => {
+        const t = (e as {detail?: {scrollTop?: number}}).detail?.scrollTop
+        if (typeof t === 'number') {
+          setPageScrollTop(t)
+        }
+      }}
+    >
+      <View
+        className="hero"
+        style={process.env.TARO_ENV === 'h5' ? {opacity: heroOpacity} : undefined}
+      >
         <View className="hero__a" />
         <View className="hero__b" />
         <View className="hero__c" />
         <View className="hero__d" />
       </View>
 
-      <View className="content-wrap">
+      <View className={`content-wrap${anyModal ? ' content-wrap--modal-dim' : ''}`}>
         <Text className="title">数独</Text>
         <Text className="mono">SUDOKU</Text>
 
         <View className="meta-row">
-          <View className="meta-row__pill-btn" onClick={() => setHelpOpen(true)}>
+          <View className="meta-row__pill-btn" onClick={() => setModalHelp('on')}>
             <Text className="meta-row__pill-btn-txt">玩法说明</Text>
           </View>
-          <View className="meta-row__settings" onClick={() => setSettingsOpen(true)}>
+          <View className="meta-row__settings" onClick={() => setModalSet('on')}>
             <Text className="meta-row__settings-txt">设置</Text>
           </View>
         </View>
@@ -527,30 +734,92 @@ export default function IndexPage() {
         </View>
 
         <View className="actions">
-          <View
-            className={`btn btn--action btn--glass ${economy.undoProps < 1 ? 'btn--disabled' : ''}`}
+          <ViewAction
+            className={`btn btn--action btn--glass ${
+              economy.undoProps < 1 ? 'btn--disabled' : ''
+            }`}
+            data-state={
+              economy.undoProps < 1
+                ? 'disabled'
+                : actionPress === 'undo'
+                  ? 'pressed'
+                  : 'idle'
+            }
             hoverClass={economy.undoProps < 1 ? 'none' : 'btn--action-tap'}
             hoverStartTime={0}
             hoverStayTime={0}
-            onClick={undo}>
+            onClick={undo}
+            onTouchStart={() => {
+              if (economy.undoProps < 1) {
+                return
+              }
+              setActionPress('undo')
+            }}
+            onTouchEnd={() => setActionPress(null)}
+            onTouchCancel={() => setActionPress(null)}
+            onMouseDown={e => {
+              if (e.button === 0 && economy.undoProps >= 1) {
+                setActionPress('undo')
+              }
+            }}
+            onMouseUp={() => setActionPress(null)}
+            onMouseLeave={() => setActionPress(null)}
+          >
             <Text className="btn__txt">撤销</Text>
-          </View>
-          <View
-            className={`btn btn--action btn--glass ${economy.eraseProps < 1 ? 'btn--disabled' : ''}`}
+          </ViewAction>
+          <ViewAction
+            className={`btn btn--action btn--glass ${
+              economy.eraseProps < 1 ? 'btn--disabled' : ''
+            }`}
+            data-state={
+              economy.eraseProps < 1
+                ? 'disabled'
+                : actionPress === 'erase'
+                  ? 'pressed'
+                  : 'idle'
+            }
             hoverClass={economy.eraseProps < 1 ? 'none' : 'btn--action-tap'}
             hoverStartTime={0}
             hoverStayTime={0}
-            onClick={erase}>
+            onClick={erase}
+            onTouchStart={() => {
+              if (economy.eraseProps < 1) {
+                return
+              }
+              setActionPress('erase')
+            }}
+            onTouchEnd={() => setActionPress(null)}
+            onTouchCancel={() => setActionPress(null)}
+            onMouseDown={e => {
+              if (e.button === 0 && economy.eraseProps >= 1) {
+                setActionPress('erase')
+              }
+            }}
+            onMouseUp={() => setActionPress(null)}
+            onMouseLeave={() => setActionPress(null)}
+          >
             <Text className="btn__txt">擦除</Text>
-          </View>
-          <View
+          </ViewAction>
+          <ViewAction
             className="btn btn--action btn--solid"
+            data-state={actionPress === 'new' ? 'pressed' : 'idle'}
             hoverClass="btn--action-tap"
             hoverStartTime={0}
             hoverStayTime={0}
-            onClick={() => newGame()}>
+            onClick={() => newGame()}
+            onTouchStart={() => setActionPress('new')}
+            onTouchEnd={() => setActionPress(null)}
+            onTouchCancel={() => setActionPress(null)}
+            onMouseDown={e => {
+              if (e.button === 0) {
+                setActionPress('new')
+              }
+            }}
+            onMouseUp={() => setActionPress(null)}
+            onMouseLeave={() => setActionPress(null)}
+          >
             <Text className="btn__txt btn__txt--inv">新局</Text>
-          </View>
+          </ViewAction>
         </View>
 
         <StatsRow seconds={seconds} steps={steps} />
@@ -562,6 +831,8 @@ export default function IndexPage() {
             selected={selected}
             conflictCells={conflictCells}
             highlightNum={highlightNum}
+            fillPopIndex={fillPopIndex}
+            keyboardNav={usedKeyboardNav}
             onCellClick={selectCell}
           />
 
@@ -586,50 +857,72 @@ export default function IndexPage() {
         </View>
       </View>
 
-      {wonOpen ? (
-        <View className="modal" catchMove>
-          <View className="modal__mask" onClick={() => setWonOpen(false)} />
+      {modalWon !== 'off' ? (
+        <View
+          className={`modal modal--win ${modalWon === 'leaving' ? 'modal--leaving' : ''}`}
+          catchMove
+        >
+          <View
+            className="modal__mask"
+            onClick={modalWon === 'on' ? beginCloseWon : undefined}
+          />
           <View className="modal__card">
-            <Text className="modal__title">恭喜</Text>
-            <Text className="modal__body">
-              你在 {formatSeconds(seconds)}（{seconds} 秒）完成数独，步数 {steps}。
-            </Text>
+            <Text className="modal__title modal--win-stg-1">恭喜</Text>
+            <WinResultBody active={modalWon === 'on'} seconds={seconds} steps={steps} />
             <View
-              className="modal__btn"
+              className="modal__btn modal--win-stg-4"
               onClick={() => {
-                setWonOpen(false)
-                newGame()
-              }}>
+                beginCloseWon()
+                setTimeout(() => newGame(), MODAL_LEAVE_MS)
+              }}
+            >
               <Text className="modal__btn-txt">再来一局</Text>
             </View>
           </View>
         </View>
       ) : null}
 
-      {settingsOpen ? (
-        <View className="modal modal--settings" catchMove>
-          <View className="modal__mask" onClick={() => setSettingsOpen(false)} />
+      {modalSet !== 'off' ? (
+        <View
+          className={`modal modal--settings ${modalSet === 'leaving' ? 'modal--leaving' : ''}`}
+          catchMove
+        >
+          <View
+            className="modal__mask"
+            onClick={modalSet === 'on' ? beginCloseSet : undefined}
+          />
           <View className="modal__card modal__card--settings">
             <Text className="modal__title">设置</Text>
             <View className="settings-row">
               <Text className="settings-row__label">按下数字时震动</Text>
-              <Switch
-                color={appleUi.color.accent}
-                checked={economy.settings.vibration}
-                onChange={e => patchSettings({vibration: e.detail.value})}
-              />
+              <View
+                className={`settings-toggle ${
+                  economy.settings.vibration ? 'settings-toggle--on' : ''
+                }`}
+                onClick={() => patchSettings({vibration: !economy.settings.vibration})}
+              >
+                <View className="settings-toggle__track">
+                  <View className="settings-toggle__thumb" />
+                </View>
+              </View>
             </View>
             <Text className="settings-hint">关闭后，按下数字键时不再轻震动。</Text>
-            <View className="modal__btn modal__btn--ghost" onClick={() => setSettingsOpen(false)}>
+            <View className="modal__btn modal__btn--ghost" onClick={beginCloseSet}>
               <Text className="modal__btn-txt modal__btn-txt--ghost">关闭</Text>
             </View>
           </View>
         </View>
       ) : null}
 
-      {helpOpen ? (
-        <View className="modal modal--help" catchMove>
-          <View className="modal__mask" onClick={() => setHelpOpen(false)} />
+      {modalHelp !== 'off' ? (
+        <View
+          className={`modal modal--help ${modalHelp === 'leaving' ? 'modal--leaving' : ''}`}
+          catchMove
+        >
+          <View
+            className="modal__mask"
+            onClick={modalHelp === 'on' ? beginCloseHelp : undefined}
+          />
           <View className="modal__card modal__card--help">
             <Text className="modal__title">玩法说明</Text>
             <ScrollView scrollY className="help-scroll" showScrollbar>
@@ -657,7 +950,7 @@ export default function IndexPage() {
                 </Text>
               </View>
             </ScrollView>
-            <View className="modal__btn modal__btn--ghost" onClick={() => setHelpOpen(false)}>
+            <View className="modal__btn modal__btn--ghost" onClick={beginCloseHelp}>
               <Text className="modal__btn-txt modal__btn-txt--ghost">我知道了</Text>
             </View>
           </View>
