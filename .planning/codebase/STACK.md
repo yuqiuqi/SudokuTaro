@@ -1,58 +1,102 @@
-# 技术栈（STACK）
+# Technology Stack
 
-**映射日期：** 2026-04-22  
-**仓库：** SudokuTaro — 数独多端应用（Taro）+ 独立微信小游戏子工程
+**Analysis Date:** 2026-04-23
 
-## 语言与运行时
+## Languages
 
-- **TypeScript**（主工程 `tsconfig.json`：`target` ES2017，`module` commonjs，`jsx` react-jsx，`strictNullChecks`，`noUnusedLocals` / `noUnusedParameters`）
-- **Node.js** 18+（`README.md` / `package.json` 的 `@types/node` ^18）
-- **JavaScript**：部分配置与入口为 JS，避免在 Node 配置阶段访问浏览器 API（如 `app.config.js`、`pages/index/index.config.js`）
+**Primary:**
+- **TypeScript** — Application and build config: `src/**/*.tsx`, `src/**/*.ts`, `config/index.ts`, `minigame-wechat/src/**/*.ts`.
+- **JavaScript** — Taro app routing config `src/app.config.js`, Babel entry `babel.config.js`, compiled minigame output under `minigame-wechat/js/*.js` (generated from `tsc`).
 
-## 应用框架与 UI
+**Secondary:**
+- **SCSS/Sass** — Styling per `package.json` `templateInfo.css: "Sass"`; example `src/app.scss`, `src/pages/index/index.scss`.
 
-- **Taro 4.0.9**（`@tarojs/*` 统一 4.0.9）
-- **React 18.3.x**（`react`、`react-dom`）
-- **样式**：**Sass**（`sass` ^1.75），设计稿宽度 **750**（`config/index.ts` 中 `designWidth: 750`）
+## Runtime
 
-## 构建与打包
+**Environment:**
+- **Node.js** — Required for `@tarojs/cli`, webpack 5, and TypeScript compilation (exact version not pinned in-repo; use an LTS aligned with Taro 4).
 
-- **Webpack 5**（`webpack` 5.91.0，`@tarojs/webpack5-runner` 4.0.9）
-- **Babel**：`@babel/core`、`babel-preset-taro`、`@babel/preset-react` 等（见 `package.json`、`babel.config.js`）
-- **编译器配置**：`config/index.ts` 中 `compiler.type: 'webpack5'`，`prebundle.enable: false`
+**Package Manager:**
+- **npm** — Lockfile present: `package-lock.json` (no `pnpm-lock.yaml` / `yarn.lock`).
 
-## 目标平台与脚本
+**Registry:**
+- `registry=https://registry.npmjs.org/` in `.npmrc` (comment notes prior mirror issues with `@swc` and `hls.js`).
 
-| 目标 | npm 脚本 | 说明 |
-|------|-----------|------|
-| H5 | `dev:h5` / `build:h5` | Web 端 |
-| 微信小程序 | `dev:weapp` / `build:weapp` | `dist/` 产出 |
-| 抖音小程序 | `dev:tt` / `build:tt` | |
-| 微信小游戏 | `build:minigame` | `tsc -p minigame-wechat/tsconfig.json` → `minigame-wechat/js/` |
+## Frameworks
 
-## 依赖摘要（生产）
+**Core:**
+- **Taro 4.0.9** — Cross-end React framework; packages pinned in `package.json` (`@tarojs/taro`, `@tarojs/components`, `@tarojs/react`, platform plugins `weapp` / `tt` / `h5`).
+- **React 18.3.x** — UI layer (`react`, `react-dom`).
 
-- `@tarojs/components`、`@tarojs/react`、`@tarojs/runtime`、`@tarojs/taro`
-- 平台插件：`@tarojs/plugin-platform-h5`、`@tarojs/plugin-platform-weapp`、`@tarojs/plugin-platform-tt`
-- `@babel/runtime`
+**Build / compiler:**
+- **Webpack 5.91.0** — Declared in `devDependencies`; Taro wires it via `@tarojs/webpack5-runner`. Central switch: `config/index.ts` → `compiler: { type: 'webpack5', prebundle: { enable: false } }`.
 
-## 开发依赖（节选）
+**Transpilation:**
+- **Babel 7.x** — `babel.config.js` uses preset `babel-preset-taro` with `{ framework: 'react', ts: true }`.
 
-- `@tarojs/cli`、`eslint` + `eslint-config-taro`
-- `dotenv-cli`（配合上传脚本读 `.env.upload`）
-- `@tarojs/plugin-mini-ci`（小程序 CI 上传）
-- `tsconfig-paths-webpack-plugin`（与 `paths` `@/*` 配合）
+## Key Dependencies
 
-## 配置文件（关键路径）
+**Critical (runtime):**
+- `@tarojs/*` **4.0.9** — Runtime, components, React bridge, per-target adapters.
+- `react` / `react-dom` **^18.3.1** — UI.
+- `hls.js` **1.6.15** — Listed in `dependencies`; no `import` from `hls.js` under `src/` at audit time (likely reserved for H5 media or pulled indirectly; still part of install surface).
 
-- `package.json` — 脚本、依赖、`taroConfig`（CI 版本说明等）
-- `config/index.ts` — Taro 主配置、mini-ci、H5 `publicPath` / `devServer`
-- `tsconfig.json` — `src`、`config`、`types`；`paths`: `@/*` → `./src/*`
-- `babel.config.js` — Babel 预设
-- `project.config.json` — 小程序侧工程（AppID 等，与微信开发者工具相关）
-- `minigame-wechat/tsconfig.json` — 小游戏 TS：`rootDir` `src`，`outDir` `js`
-- `minigame-wechat/game.json` / `game.js` — 小游戏入口
+**Build & DX:**
+- `@tarojs/cli` **4.0.9** — `taro build`, `defineConfig`.
+- `@tarojs/plugin-mini-ci` **^4.1.11** — CI upload integration (configured in `config/index.ts`).
+- `dotenv-cli` **^7.4.2** — Loads `.env.upload` for upload/preview scripts in `package.json`.
+- `typescript` **^5.4.5** — `tsconfig.json` and `minigame-wechat/tsconfig.json`.
+- `sass` **^1.75.0** — Stylesheet preprocessing.
+- `postcss` **^8.5.6** — Used by Taro pipeline; **no** root-level `postcss.config.*` — PostCSS behavior is configured inside Taro config (see below).
+- `tsconfig-paths-webpack-plugin` **^4.1.0** — Path resolution companion for webpack (Taro stack).
 
-## 许可证
+**Linting (installed, minimal project wiring):**
+- `eslint` **^8.57.0** and `eslint-config-taro` **4.0.9** are in `devDependencies`; **no** committed `.eslintrc*` or `eslint.config.*` — invoke ESLint only after adding a project config or CLI defaults.
 
-- 项目 `license` 字段：**CC-BY-NC-ND-4.0**（见 `LICENSE`、`README.md`）
+## Configuration Entry Points
+
+| Concern | File | Role |
+|--------|------|------|
+| Taro project | `config/index.ts` | `defineConfig`: `sourceRoot` `src`, `outputRoot` `dist`, plugins, webpack5, `mini.postcss.pxtransform`, H5 `devServer` |
+| TypeScript (main) | `tsconfig.json` | `paths`: `@/*` → `./src/*`; includes `src`, `config`, `types` |
+| TypeScript (minigame) | `minigame-wechat/tsconfig.json` | `rootDir` `src`, `outDir` `js`, `strict` |
+| Babel | `babel.config.js` | `babel-preset-taro` |
+| App routes | `src/app.config.js` | `pages: ['pages/index/index']` |
+| Browserslist | `package.json` `browserslist` | H5/target baseline |
+| WeChat minigame IDE | `minigame-wechat/project.config.json` | `compileType: "game"`, tooling flags |
+| Game manifest | `minigame-wechat/game.json` | Orientation / status bar |
+| npm registry | `.npmrc` | Official npm registry |
+
+**PostCSS (practical):** Mini-program build enables px transform via `config/index.ts`:
+
+```ts
+mini: {
+  postcss: {
+    pxtransform: { enable: true, config: {} },
+  },
+},
+```
+
+## Build Scripts (`package.json`)
+
+| Script | Command | Purpose |
+|--------|---------|---------|
+| `build:weapp` | `taro build --type weapp` | WeChat mini program production build → `dist` |
+| `build:tt` | `taro build --type tt` | Douyin (ByteDance) mini program |
+| `build:h5` | `taro build --type h5` | Web H5 |
+| `dev:*` | same as build + `--watch` | Watch mode for each target |
+| `build:minigame` | `tsc -p minigame-wechat/tsconfig.json` | Compiles `minigame-wechat/src` → `minigame-wechat/js` |
+| `upload:weapp` / `upload:tt` | `dotenv -e .env.upload -- taro build ... --upload` | CI upload (env file present locally only) |
+| `preview:*` | `dotenv -e .env.upload -- taro build ... --preview` | Preview builds |
+
+## Platform Requirements
+
+**Development:**
+- Node + npm; WeChat / Douyin devtools for respective mini programs; WeChat DevTools for `minigame-wechat` (opens `minigame-wechat/` as game project).
+
+**Production:**
+- Builds are static bundles under `dist/` (Taro targets) plus compiled JS under `minigame-wechat/js/`; hosting is platform-specific (WeChat/ByteDance review, or static H5 server).
+
+---
+
+*Stack analysis: 2026-04-23*

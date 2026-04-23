@@ -1,49 +1,121 @@
-# 代码约定（CONVENTIONS）
+# Coding Conventions
 
-**映射日期：** 2026-04-22
+**Analysis Date:** 2026-04-23
 
-## TypeScript 与类型
+## Naming Patterns
 
-- **`tsconfig.json`**：`strictNullChecks: true`；`noUnusedLocals` / `noUnusedParameters: true`；`noImplicitAny: false`（允许部分隐式 any）。
-- **导出类型**：广泛使用 `export type` / `export interface`（如 `Difficulty`、`GameEconomyState`、`SudokuGridProps`）。
-- **小游戏**：`minigame-wechat/src/wx.d.ts`、`types.d.ts` 补充全局与平台类型。
+**Files:**
+- Page entry: `index.tsx` under `src/pages/<route>/` (e.g. `src/pages/index/index.tsx`).
+- Page styles: `index.scss` co-located with the page; shared SCSS partials use leading underscore (e.g. `src/pages/index/_ui-tokens.scss`).
+- Utilities: `camelCase.ts` in `src/utils/` (e.g. `src/utils/gameEconomy.ts`, `src/utils/sudokuEngine.ts`).
+- App config uses **`.js`** for Taro global config to avoid Node evaluating browser APIs — see `src/app.config.js`, `src/pages/index/index.config.js` (per `README.md` / `CONTEXT.md`).
 
-## React（Taro 页）
+**Functions:**
+- `camelCase` for functions and hooks (`newGame`, `fillNumber`, `vibrateLight`).
+- `PascalCase` for React components and memo-wrapped subcomponents (`StatsRow`, `SudokuGrid`, default export `IndexPage`).
 
-- **函数组件** + Hooks（`useState`、`useEffect`、`useCallback`、`useRef`、`useMemo` 等，见 `src/pages/index/index.tsx`）。
-- **性能**：对棋盘等纯展示块使用 **`React.memo`**（`SudokuGrid`、`StatsRow`），避免父组件高频状态（计时器）触发无意义子树更新。
-- **Props 类型**：组件入参使用显式 `type`（如 `SudokuGridProps`）。
+**Variables:**
+- `camelCase` for locals; `const` UPPER_SNAKE for module-level constants where used (e.g. difficulty list as `DIFFICULTIES` in `src/pages/index/index.tsx`).
+- Ref + state mirror pattern: `boardRef` / `board`, `economyRef` / `economy` to avoid stale closures in callbacks.
 
-## 样式
+**Types:**
+- `PascalCase` for types/interfaces (`CellSel`, `SudokuGridProps`, `GameEconomyState` in `src/pages/index/index.tsx` and `src/utils/gameEconomy.ts`).
+- Use `type` for unions and simple aliases; `interface` for object shapes where exported from modules.
 
-- **Sass**：页面级 `index.scss`、`app.scss`；设计稿 **750**，样式中常见 **`rpx`**（Taro 转换）。
-- **BEM 风格类名**：如 `stats__t`、`grid` 下子元素（见 `index.tsx` 与对应 scss）。
+## Code Style
 
-## 模块与导入
+**Formatting:**
+- No Prettier or Biome config committed; style follows hand-formatted TypeScript/React in-tree.
+- Indentation and JSX match existing files (2 spaces in `src/pages/index/index.tsx`).
 
-- 路径别名 **`@/`** 指向 `src/`（用于 `utils` 等）。
-- 配置与页面配置优先 **`*.config.js`**，避免在 Node 读配置时执行依赖 `window` 的代码（`CONTEXT.md` 明确说明）。
+**Linting:**
+- `eslint` and `eslint-config-taro` appear in `package.json` devDependencies; **no** committed `.eslintrc*`, `eslint.config.*`, or root `lint` npm script.
+- **Use** Taro + React rules if you add an ESLint config; one inline exception exists: `// eslint-disable-next-line react-hooks/exhaustive-deps` on the mount-only `useEffect` in `src/pages/index/index.tsx` (intentional: run `newGame('easy')` once on mount).
 
-## 错误处理与健壮性
+**TypeScript (`tsconfig.json`):**
+- `strictNullChecks: true`, `noUnusedLocals` / `noUnusedParameters: true`.
+- `noImplicitAny: false` — new code should still prefer explicit types on public APIs.
 
-- **存储**：`gameEconomy.ts` 中 `loadEconomy` / `saveEconomy` 使用 **try/catch**，失败回退默认状态或静默忽略写入错误。
-- **震动**：`vibrateLight` 对 `Taro.vibrateShort` 与 `navigator.vibrate` 做 try/catch 与能力检测。
-- **诊断**：`devDiagnostics.ts` 在 `window` 不存在时直接返回，避免小程序/非 H5 报错。
+## Import Organization
 
-## 数独与状态局部工具
+**Order (observed in `src/app.tsx`, `src/pages/index/index.tsx`):**
+1. External packages (`@tarojs/components`, `@tarojs/taro`, `react`).
+2. Blank line.
+3. Parent/relative imports for project code (`../../utils/...`, `./utils/...`).
+4. Blank line.
+5. Side-effect style import: `import './index.scss'` last among imports.
 
-- **格索引**：`cellIndex(r, c) => r * 9 + c`，与 `Set` 冲突集合一致。
-- **网格拷贝**：`cloneGrid` 做浅行拷贝，避免直接突变共享引用（见 `index.tsx`）。
+**Path Aliases:**
+- `tsconfig.json` defines `"@/*": ["./src/*"]`, but current sources use **relative** paths (e.g. `../../utils/sudokuEngine`). Either convention is valid; pick one when adding files for consistency.
 
-## Lint
+## Error Handling
 
-- **ESLint**：`eslint` + `eslint-config-taro`（`package.json` devDependencies）；无单独 `eslint.config` 在 glob 中列出时以 Taro 默认约定为准。
+**Patterns:**
+- **User feedback:** `Taro.showToast({ title: '...', icon: 'none' })` for business rules (e.g. undo/erase props exhausted) in `src/pages/index/index.tsx`.
+- **Storage / parse:** `try` / `catch` with **fallback to defaults** in `src/utils/gameEconomy.ts` (`loadEconomy` → `defaultState()`; `saveEconomy` swallows errors).
+- **Platform APIs:** `vibrateLight` wraps `Taro.vibrateShort` in `try` / `catch` with H5 `navigator.vibrate` fallback (`src/pages/index/index.tsx`).
+- **Diagnostics:** `src/utils/devDiagnostics.ts` guards `typeof window === 'undefined'`, wraps `Taro.getEnv()` in `try` / `catch`, and ignores `JSON.stringify` failures in `catch` blocks.
+- **Config:** `config/index.ts` `loadPackageJson()` returns `{}` on read/parse failure.
 
-## 注释语言
+**Guidance:** Prefer silent degradation for non-critical persistence; use toast for actionable user-visible errors.
 
-- 关键常量与行为多为 **中文注释**（如 `gameEconomy.ts` 的存档版本、`config/index.ts` 的 mini-ci 说明），与 `README.md` / `CONTEXT.md` 一致。
+## Logging
 
-## 提交与协作
+**Framework:** `console` only for diagnostics.
 
-- 避免将 `key/` 私钥、`.env.upload` 真实内容写入文档或示例。
-- 修改引擎后若影响小游戏，务必同步 `minigame-wechat/src/sudokuEngine.ts` 并重新执行 `npm run build:minigame`。
+**Patterns:**
+- Prefix `console.log` with `[SudokuTaro:diag]` via `logRuntimeDiagnostics` in `src/utils/devDiagnostics.ts` (H5 boot debugging). Not used for production logging pipelines.
+
+## Comments
+
+**When to Comment:**
+- Section comments in large SCSS (e.g. `src/pages/index/index.scss`) and high-level notes in `src/utils/theme.ts` linking design tokens to `_ui-tokens.scss`.
+
+**JSDoc/TSDoc:**
+- Sparse; use for exported utilities that need contract clarity (e.g. `logRuntimeDiagnostics` in `src/utils/devDiagnostics.ts`).
+
+## Function Design
+
+**Size:** Main page component in `src/pages/index/index.tsx` is large; prefer extracting presentational pieces (already done for `StatsRow`, `SudokuGrid`).
+
+**Parameters:** Explicit small objects for component props (`SudokuGridProps`); avoid boolean soup.
+
+**Return Values:** Pure helpers return values; economy APIs return `{ ok, next }` tuples for consume operations (`tryConsumeUndoProp` in `src/utils/gameEconomy.ts`).
+
+## Module Design
+
+**Exports:** Default export for page components (`export default function IndexPage`); named exports for utilities and types from `src/utils/*`.
+
+**Barrel Files:** Not used; import from concrete modules.
+
+## React / Taro Hooks
+
+**Patterns:**
+- `useCallback` for event handlers and game actions passed deep or listed in dependency arrays (`newGame`, `fillNumber`, `undo`, `erase`).
+- `useRef` for **timer handles** and **latest state mirrors** (`boardRef`, `economyRef`) updated synchronously before async/timer callbacks.
+- `useEffect` for: mount bootstrap + cleanup (`stopTimer`, `clearTimeout`); H5-only `document` `keydown` listener with `TARO_ENV` guard; focus choreography for hidden `Input`.
+- `memo` on grid and stats rows to limit re-renders when parent timer state updates.
+
+## Styling (SCSS)
+
+**Structure:**
+- Global page chrome: `src/app.scss` (Taro `page` selector, base font stack).
+- Page scope: `src/pages/index/index.scss` uses `@use 'sass:color'` and `@use './ui-tokens' as *` for variables from `src/pages/index/_ui-tokens.scss`.
+- **BEM-like** class names: block `cell`, element `cell__txt`, modifier `cell--thick-r`, `cell--dim` (see `src/pages/index/index.tsx` `className` assembly).
+
+**Tokens:**
+- SCSS variables in `src/pages/index/_ui-tokens.scss` mirror `appleUi` in `src/utils/theme.ts` — keep both in sync when changing palette.
+
+## Internationalization (i18n)
+
+**Not used:** UI strings are **inline Simplified Chinese** in JSX and `Taro.showToast` calls (e.g. `src/pages/index/index.tsx`). No `i18n` / locale files or Taro i18n plugin detected.
+
+## CI / Automation (quality-related)
+
+**GitHub Actions:** No `.github/workflows` (or other `.github` content) in this repository — no automated lint/test on push.
+
+**Release / upload:** Documented in `README.md` — `@tarojs/plugin-mini-ci` and `npm run upload:*` with `dotenv-cli` and `.env.upload` (local/CI-agnostic; not a GitHub workflow file).
+
+---
+
+*Convention analysis: 2026-04-23*

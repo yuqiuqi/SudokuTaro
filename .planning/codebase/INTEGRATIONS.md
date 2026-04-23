@@ -1,41 +1,92 @@
-# 外部集成（INTEGRATIONS）
+# External Integrations
 
-**映射日期：** 2026-04-22
+**Analysis Date:** 2026-04-23
 
-## 平台 SDK（运行时）
+## APIs & External Services
 
-### Taro 多端
+**HTTP / REST clients:**
+- **Not used in application source** — No matches for `fetch`, `axios`, `Taro.request`, `wx.request`, or `tt.request` under `src/` at audit time. The product is offline-first puzzle gameplay.
 
-- **`@tarojs/taro`**：统一 API（存储、震动、环境等）
-- **示例**：`src/utils/gameEconomy.ts` 使用 `Taro.getStorageSync` / `Taro.setStorageSync` 持久化经济与设置
-- **示例**：`src/pages/index/index.tsx` 使用 `Taro.vibrateShort`（小程序），H5 回退 `navigator.vibrate`
-- **`src/utils/devDiagnostics.ts`**：`Taro.getEnv()` 用于启动诊断日志（仅 `window` 存在时）
+**Streaming / media (dependency only):**
+- **`hls.js` (npm)** — Declared in `package.json` (`1.6.15`). No direct imports located under `src/`; treat as optional future H5 HLS support or transitive tooling alignment. Install policy documented in `.npmrc` regarding package integrity.
 
-### 微信小游戏（独立子工程）
+## Platform SDKs & Native APIs
 
-- **`minigame-wechat/src/*`** 使用 **`wx`** 全局（类型见 `minigame-wechat/src/wx.d.ts`）
-- **存储**：`minigame-wechat/src/gameEconomy.ts` 与 Taro 端共用逻辑与 **同一 `STORAGE_KEY`**（见 `CONTEXT.md` / `gameEconomy.ts`），保证存档键一致
+**Taro unified APIs (WeChat / Douyin / H5 where supported):**
+- **`Taro.getStorageSync` / `Taro.setStorageSync`** — Persistent local game economy; implementation in `src/utils/gameEconomy.ts`.
+- **`Taro.showToast`** — User feedback (e.g. `src/pages/index/index.tsx`).
+- **`Taro.vibrateShort`** — Haptic feedback when available (`src/pages/index/index.tsx`).
+- **`Taro.getEnv`** — Runtime environment introspection in `src/utils/devDiagnostics.ts`.
 
-## 小程序 CI 与上传
+**WeChat mini game (`minigame-wechat`):**
+- **`wx` global** — Canvas, input, system info, storage, UI primitives; primary implementation `minigame-wechat/src/main.ts` (compiled to `minigame-wechat/js/main.js`).
+- **Examples of calls:** `wx.createCanvas`, `wx.getSystemInfoSync`, `wx.onTouchStart` / `onTouchEnd` / `onTouchMove`, `wx.onKeyDown`, `wx.onWindowResize`, `wx.showToast`, `wx.vibrateShort`, `wx.getStorageSync` / `wx.setStorageSync` (see `minigame-wechat/src/gameEconomy.ts`).
 
-- **插件**：`@tarojs/plugin-mini-ci`（在 `config/index.ts` 的 `plugins` 中配置）
-- **凭据来源**：环境变量（**不**写入仓库）
-  - 微信：`WECHAT_APPID`、`WECHAT_PRIVATE_KEY_PATH`（私钥文件路径，通常指向 `key/` 下文件）
-  - 抖音：`TT_EMAIL`、`TT_PASSWORD`
-  - 可选覆盖：`CI_VERSION`、`CI_DESC`
-- **本地 env 文件**：从 `.env.upload.example` 复制为 **`.env.upload`**，由 `dotenv-cli` 在 `upload:*` / `preview:*` 脚本中加载（见 `package.json` 的 `dotenv -e .env.upload`）
-- **版本元数据**：优先 `process.env.CI_VERSION` / `CI_DESC`，否则 `package.json` 的 `version` 与 `taroConfig`
+Type shims for the minigame host live alongside source, e.g. `minigame-wechat/src/wx.d.ts`.
 
-## 浏览器 / H5
+## Data Storage
 
-- **`src/index.html`**：H5 模板；内联脚本可设置 `window.__SUDOKU_BOOT__`，与 `devDiagnostics.ts` 合并打印（见 `README` / `CONTEXT`）
-- **`config/index.ts`**：`h5.publicPath: '/'`，`h5.devServer.static: false`（避免开发时根路径静态目录列表导致白屏类问题）
+**Databases:**
+- **None** — No SQL, document store, or remote DB client in the repo.
 
-## 无服务端依赖
+**Local / device storage:**
+- **Mini-program & minigame:** Key-value storage via `Taro` / `wx` sync storage APIs (`STORAGE_KEY` pattern in `src/utils/gameEconomy.ts` and `minigame-wechat/src/gameEconomy.ts`).
 
-- 当前仓库为 **纯客户端** 应用：无自建 REST/GraphQL、无项目内数据库服务；数据仅存本地（Taro Storage / `wx` storage）。
+**File storage:**
+- **Local filesystem (build only)** — `config/index.ts` uses Node `readFileSync` to load root `package.json` for CI metadata (not a user-facing integration).
 
-## 脚本与运维（本地）
+**Caching:**
+- **In-memory only** — Layout/render caches inside game logic (e.g. `minigame-wechat/src/main.ts`); no CDN or Redis.
 
-- **`scripts/release-mini.ps1`**：上传前检查 `.env.upload`
-- **`scripts/setup-git-github.ps1`**：Windows 下 Git/gh 安装提示（与 GitHub 工作流相关，非应用运行时集成）
+## Authentication & Identity
+
+**End-user auth:**
+- **None** — No OAuth, JWT, or platform login flows in `src/` or minigame sources.
+
+**Developer / CI credentials (upload tooling):**
+- Documented in **`.env.upload.example`** (copy to `.env.upload`, gitignored). Variables referenced from `config/index.ts` `miniCiOptions()`:
+  - **WeChat mini program CI:** `WECHAT_APPID`, `WECHAT_PRIVATE_KEY_PATH` (miniprogram-ci style private key file path).
+  - **Douyin (ByteDance) mini program CI:** `TT_EMAIL`, `TT_PASSWORD`.
+  - **Optional overrides:** `CI_VERSION`, `CI_DESC` (else fall back to `package.json` / `taroConfig`).
+- **Invocation:** `package.json` scripts `upload:weapp`, `upload:tt`, `upload:mini`, `preview:weapp`, `preview:tt` run `dotenv-cli` with `.env.upload` then `taro build ...`.
+
+Do **not** commit real `.env.upload` values; the example file lists placeholder shapes only.
+
+## Monitoring & Observability
+
+**Error tracking / analytics SDKs:**
+- **None detected** — No Sentry, Firebase Analytics, or similar imports in audited paths.
+
+**Logs:**
+- **Developer diagnostics** — `src/utils/devDiagnostics.ts` and `src/app.tsx` `useLaunch` hook for lightweight runtime logging; no remote log shipping.
+
+## CI/CD & Deployment
+
+**In-repo CI:**
+- **No `.github/workflows`** (or similar) found at audit time — integration with GitHub Actions not defined in this snapshot.
+
+**Deployment surface:**
+- **Platform upload** via Taro + `@tarojs/plugin-mini-ci` and local credentials (see above).
+- **WeChat minigame** — Open `minigame-wechat/` in WeChat DevTools; `project.config.json` defines game project metadata (app id field present for tooling; rotate/manage per platform policy).
+
+## Webhooks & Callbacks
+
+**Incoming:**
+- **None** — No server routes or cloud functions in this repository.
+
+**Outgoing:**
+- **None** — No client calls to custom backend URLs in audited `src/` code.
+
+## Summary
+
+| Category | Status |
+|----------|--------|
+| Third-party HTTP APIs | Not used in app code |
+| Cloud / SaaS backends | None |
+| Auth providers | None (users) |
+| Local platform storage | WeChat / Taro sync storage for game state |
+| CI / platform tooling | WeChat + Douyin upload via env-driven mini-ci |
+
+---
+
+*Integration audit: 2026-04-23*

@@ -1,37 +1,98 @@
-# 测试（TESTING）
+# Testing Patterns
 
-**映射日期：** 2026-04-22
+**Analysis Date:** 2026-04-23
 
-## 自动化测试
+## Test Framework
 
-- **当前仓库未发现** 以 `*.test.ts`、`*.spec.ts`、`__tests__` 等命名的测试文件或 Jest/Vitest 配置。
-- **引擎与工具函数**（如 `src/utils/sudokuEngine.ts`、`gameEconomy.ts`）目前依赖 **手动试玩** 与多端真机/模拟器验证。
+**Runner:**
+- **Not configured.** `package.json` has no `test` script, no Jest, Vitest, Mocha, or Playwright devDependencies.
+- No `*.test.*` or `*.spec.*` files under the repository (search covers `src/`, `minigame-wechat/`, and root).
 
-## 手动与端到端验证（文档与脚本暗示）
+**Assertion Library:** Not applicable.
 
-| 范围 | 方式 |
-|------|------|
-| H5 | `npm run dev:h5`，浏览器访问（常见 `localhost:10086`） |
-| 微信小程序 | `npm run dev:weapp` / `build:weapp`，微信开发者工具 |
-| 抖音小程序 | `npm run dev:tt` / `build:tt`，抖音开发者工具 |
-| 微信小游戏 | 开发者工具导入 `minigame-wechat/`；改 TS 后 `npm run build:minigame` |
-| 上传流水线 | `npm run upload:weapp`、`upload:tt`、`preview:*`（需 `.env.upload`） |
+**Run Commands:**
+```bash
+# No project test command — use typecheck/build as smoke checks instead:
+npx tsc --noEmit -p tsconfig.json
+npm run build:h5
+npm run build:weapp
+npm run build:tt
+npm run build:minigame   # compiles minigame-wechat/src → minigame-wechat/js/
+```
 
-## 静态分析
+## Test File Organization
 
-- **TypeScript**：`tsc` 通过 `tsconfig.json` 检查主工程；小游戏通过 `minigame-wechat/tsconfig.json`。
-- **ESLint**：`eslint-config-taro` 已列入依赖；具体 `npm run lint` 是否在 `package.json` 中定义需以仓库脚本为准（当前 `package.json` **无** `lint` 脚本字段）。
+**Location:** Not applicable (no test suite).
 
-## 覆盖率与 CI
+**Naming:** When adding tests, a common choice would be co-located `*.test.ts` next to `src/utils/*.ts` or under `__tests__/` — **not** established in this repo.
 
-- **未见** 覆盖率报告配置（如 Istanbul/c8）或 GitHub Actions / 其他 CI 工作流文件在本次映射的文件列表中。
-- **小程序 CI** 指 **构建后上传**（`@tarojs/plugin-mini-ci`），非单元测试流水线。
+**Structure:** N/A
 
-## 建议（非现状，仅供规划参考）
+## Test Structure
 
-- 可为 `sudokuEngine` 纯函数补充 **Vitest/Jest** 用例（生成唯一解、冲突检测、边界难度）。
-- 可为 `gameEconomy` 的 clamp/合并逻辑做 **mock `Taro.getStorageSync`** 的轻量测试。
+**Suite Organization:** N/A
 
-## 与本次映射的关系
+**Patterns:** N/A
 
-- 本文件描述 **截至 2026-04-22** 的测试现状；若后续加入 `npm test` 或 CI，请更新 `TESTING.md` 与 `STACK.md` 中的脚本表。
+## Mocking
+
+**Framework:** N/A
+
+**What to Mock (future guidance for Taro):** Taro runtime (`@tarojs/taro` storage, `showToast`, `vibrateShort`) and `window` in H5-only code paths in `src/utils/devDiagnostics.ts` and keyboard handlers in `src/pages/index/index.tsx`.
+
+## Fixtures and Factories
+
+**Test Data:** N/A. Production code builds grids via `generateSolution` / `digHoles` in `src/utils/sudokuEngine.ts` — a natural source for future unit test fixtures.
+
+**Location:** N/A
+
+## Coverage
+
+**Requirements:** None enforced; no `coverage` script or CI gate.
+
+**View Coverage:** N/A
+
+## Test Types
+
+**Unit Tests:** Not present. High-value first targets: `src/utils/sudokuEngine.ts` (conflict detection, `boardsEqual`, hole counts), `src/utils/gameEconomy.ts` (daily bonus, clamp, consume props).
+
+**Integration Tests:** Not present.
+
+**E2E Tests:** Not used. Multi-target behavior (H5 vs weapp vs tt) would require simulators or BrowserStack-style tooling — out of scope today.
+
+## Manual Verification (from `README.md` and `CONTEXT.md`)
+
+**H5 (primary dev loop per docs):**
+- `npm run dev:h5` — open the URL shown in the terminal (commonly `http://localhost:10086/` per `README.md` and `CONTEXT.md`).
+- Verify: difficulty switch, new game, number input, conflict highlight + auto-revert, win modal, settings (vibration), undo/erase economy and toasts, keyboard (H5) per `README.md` feature list.
+
+**WeChat mini program:**
+- `npm run dev:weapp` — import project in WeChat DevTools using the Taro output / project root as documented for the template.
+
+**Douyin (Toutiao) mini program:**
+- `npm run dev:tt` — import in the corresponding devtools.
+
+**WeChat mini game (separate subproject):**
+- After `npm run build:minigame`, open **`minigame-wechat/`** as the mini **game** project (not the Taro app root) — `README.md` and `CONTEXT.md` emphasize this path distinction.
+- Validate Canvas gameplay, `wx` storage economy alignment with `src/utils/gameEconomy.ts` / `STORAGE_KEY` contract in `CONTEXT.md`.
+
+**CI upload (smoke, not automated tests):**
+- `README.md` documents `upload:weapp` / `upload:tt` with `.env.upload` — use only when validating release pipelines, not as unit tests.
+
+## Common Patterns
+
+**Async Testing:** N/A
+
+**Error Testing:** N/A
+
+## Coverage Gaps (risk-oriented)
+
+- **`src/utils/sudokuEngine.ts`:** Core game correctness; regressions affect all platforms.
+- **`src/utils/gameEconomy.ts`:** Storage edge cases and date boundaries for daily bonus.
+- **`src/pages/index/index.tsx`:** Large stateful surface — timer cleanup, conflict timer, H5 `keydown` vs mini program paths; any future refactor should add tests or explicit manual checklist.
+
+- **`minigame-wechat/src/*.ts`:** Duplicated/parallel logic to Taro; risk of drift from `src/utils/sudokuEngine.ts` without automated diff or shared tests.
+
+---
+
+*Testing analysis: 2026-04-23*
