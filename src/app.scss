@@ -34,7 +34,8 @@ body {
   .btn,
   .cell,
   .settings-toggle,
-  .settings-toggle__thumb {
+  .settings-toggle__thumb,
+  .numpad__key {
     transition:
       opacity 80ms $ui-ease-standard,
       color 80ms $ui-ease-standard,

@@ -304,27 +304,27 @@
   }
 }
 
-/* Liquid Glass 子集：顶缘镜面高光（静态近似，非系统级 specular 动画） */
+/* Liquid Glass 顶缘高光：克制到"刚好能看见的暖光"，避免像金属条 */
 .content-wrap::after {
   content: '';
   position: absolute;
-  left: 8%;
-  right: 8%;
+  left: 14%;
+  right: 14%;
   top: 0;
-  height: 22%;
-  max-height: 80rpx;
-  border-radius: 36rpx 36rpx 0 0;
+  height: 14%;
+  max-height: 48rpx;
+  border-radius: 36rpx 36rpx 60rpx 60rpx / 36rpx 36rpx 24rpx 24rpx;
   pointer-events: none;
-  background: linear-gradient(180deg, $ui-specular-fade 0%, rgba(255, 255, 255, 0) 100%);
-  opacity: 0.5;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0.55;
   z-index: 0;
   transition: opacity 80ms $ui-ease-standard;
 }
 
-/* MAT-03：与主卡交互略增强 / 抑制（hover 由全局 pointer 精测） */
+/* MAT-03：hover 时仅轻微提升，避免产生"金属条"感 */
 @media (hover: hover) and (pointer: fine) {
   .content-wrap:hover::after {
-    opacity: 0.65;
+    opacity: 0.7;
   }
 }
 
@@ -659,6 +659,641 @@
   opacity: 0;
 }
 
+/* ============================================================
+ * NumPad Dock — iOS 26 悬浮数字键盘（Phase 4 · 小屏适配）
+ * · 固定在视口底部 safe-area；仅在选中格子时 spring 入场
+ * · 仅 1-9；擦除由顶部 actions 承担（避免重复）
+ * · Handle 小把手提示"可滑动"；按键为 Liquid Glass 椭圆胶囊
+ * · reduced-motion 下由 `src/app.scss` 基底降级
+ * ============================================================ */
+.numpad-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 0 16rpx calc(env(safe-area-inset-bottom, 0px) + 14rpx);
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.numpad-dock__panel {
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+  max-width: 690rpx;
+  padding: 14rpx 16rpx 18rpx;
+  border-radius: 32rpx;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 0.72) 0%,
+    rgba($ui-surface, 0.46) 100%
+  );
+  border: 1rpx solid rgba($ui-surface, 0.8);
+  box-shadow:
+    0 1rpx 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1rpx 0 rgba($ui-label-primary, 0.04) inset,
+    0 -4rpx 14rpx rgba($ui-label-primary, 0.05),
+    0 -14rpx 40rpx rgba($ui-label-primary, 0.08);
+  backdrop-filter: blur(28px) saturate(2.2);
+  -webkit-backdrop-filter: blur(28px) saturate(2.2);
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+/* 顶部 handle（小白条，iOS Dock / Sheet 的标配） */
+.numpad-dock__handle {
+  width: 72rpx;
+  height: 6rpx;
+  margin: 2rpx auto 14rpx;
+  border-radius: 3rpx;
+  background: rgba($ui-label-primary, 0.22);
+  pointer-events: none;
+}
+
+/* 顶缘镜面高光（非常克制） */
+.numpad-dock__panel::before {
+  content: '';
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 0;
+  height: 12%;
+  max-height: 28rpx;
+  border-radius: 32rpx 32rpx 60rpx 60rpx / 32rpx 32rpx 24rpx 24rpx;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.36) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.numpad-dock__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 8rpx;
+}
+
+/* 按键：iOS 26 胶囊，背景克制，按下时玻璃变亮 + 数字变蓝 */
+.numpad-key {
+  position: relative;
+  overflow: hidden;
+  min-height: 96rpx;
+  padding: 0;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 0.88) 0%,
+    rgba($ui-surface, 0.62) 100%
+  );
+  border: 1rpx solid rgba($ui-surface, 0.82);
+  box-shadow:
+    0 1rpx 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1rpx 0 rgba($ui-label-primary, 0.05) inset,
+    0 2rpx 6rpx rgba($ui-label-primary, 0.04);
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  transform: scale(1);
+  transition:
+    transform $dur-btn-release $ease-spring-default,
+    background $dur-fast $ease-spring-stiff,
+    box-shadow $dur-fast $ease-spring-stiff;
+  cursor: pointer;
+}
+
+/* 键顶镜面高光（不对称弧形） */
+.numpad-key::before {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 4%;
+  height: 46%;
+  border-radius: 16rpx 16rpx 40rpx 40rpx / 16rpx 16rpx 22rpx 22rpx;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.32) 40%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  opacity: 0.68;
+  pointer-events: none;
+  transition:
+    opacity $dur-fast $ease-spring-stiff,
+    transform $dur-fast $ease-spring-stiff;
+  z-index: 1;
+}
+
+/* 按下径向光斑（从中心扩散） */
+.numpad-key::after {
+  content: '';
+  position: absolute;
+  inset: -2rpx;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at 50% 55%,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0.18) 38%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.7);
+  transform-origin: center 60%;
+  transition:
+    opacity $dur-fast $ease-spring-stiff,
+    transform $dur-btn-release $ease-spring-default;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+.numpad-key__txt {
+  position: relative;
+  z-index: 2;
+  font-family: $ui-font-stack;
+  font-size: 38rpx;
+  font-weight: 590;
+  color: $ui-label-primary;
+  letter-spacing: 0.5rpx;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  line-height: 1;
+  text-shadow: 0 1rpx 0 rgba(255, 255, 255, 0.75);
+  transition:
+    transform $dur-fast $ease-spring-stiff,
+    color $dur-fast $ease-spring-stiff;
+}
+
+.numpad-key--hover {
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 0.96) 0%,
+    rgba($ui-surface, 0.74) 100%
+  );
+}
+.numpad-key--hover::before {
+  opacity: 0.88;
+}
+
+.numpad-key--pressed {
+  transform: scale(0.94) translateY(1rpx);
+  transition:
+    transform $dur-fast $ease-spring-snappy,
+    background $dur-fast $ease-spring-stiff,
+    box-shadow $dur-fast $ease-spring-stiff;
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 0.98) 0%,
+    rgba($ui-surface, 0.8) 100%
+  );
+  box-shadow:
+    0 0 0 1rpx rgba($ui-accent, 0.2) inset,
+    0 1rpx 2rpx rgba($ui-label-primary, 0.08) inset,
+    0 -1rpx 0 rgba($ui-label-primary, 0.05) inset,
+    0 2rpx 4rpx rgba($ui-label-primary, 0.06);
+}
+.numpad-key--pressed::before {
+  opacity: 0.4;
+  transform: scaleY(0.82);
+}
+.numpad-key--pressed::after {
+  opacity: 1;
+  transform: scale(1.05);
+}
+.numpad-key--pressed .numpad-key__txt {
+  transform: scale(0.96);
+  color: $ui-accent;
+}
+
+.numpad-key--flash::after {
+  animation: numpadKeyPulse $dur-btn-release $ease-spring-default 1;
+}
+
+.numpad-key:focus-visible {
+  outline: 2px solid $ui-accent;
+  outline-offset: 2px;
+  transition: outline-color 100ms $ease-spring-stiff;
+}
+
+/* Dock 入/出场：spring 从底部滑入，缩放 + 淡入更有质感 */
+.numpad-dock--enter .numpad-dock__panel {
+  animation: numpadDockIn $dur-modal-enter $ease-spring-default both;
+}
+
+.numpad-dock--leaving .numpad-dock__panel {
+  animation: numpadDockOut $dur-modal-exit $ease-spring-stiff both;
+}
+
+@keyframes numpadDockIn {
+  0% {
+    transform: translateY(120%) scale(0.96);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes numpadDockOut {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(120%) scale(0.98);
+    opacity: 0;
+  }
+}
+
+@keyframes numpadKeyPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+/* Dock 打开时为 ScrollView 底部留空，避免遮挡最后一格 */
+.page--numpad-open {
+  padding-bottom: 200rpx;
+}
+.page--numpad-open .content-wrap {
+  margin-bottom: 40rpx;
+}
+
+/* 低内存回退：去 blur，保留轮廓 */
+.page--low-mem .numpad-dock__panel,
+.page--low-mem .numpad-key {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.page--low-mem .numpad-dock__panel {
+  background: $ui-surface;
+}
+.page--low-mem .numpad-key {
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 1) 0%,
+    rgba($ui-surface, 0.92) 100%
+  );
+}
+
+/* 保留空占位以便旧类名不影响（可清理） */
+.numpad {
+  position: relative;
+  width: 100%;
+  margin-top: 22rpx;
+  padding: 18rpx 16rpx 14rpx;
+  border-radius: 32rpx;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+
+  /* 玻璃面板底色：上亮下暗的漫反射 */
+  background:
+    linear-gradient(
+      180deg,
+      rgba($ui-surface, 0.68) 0%,
+      rgba($ui-surface, 0.42) 100%
+    );
+  border: 1rpx solid rgba($ui-surface, 0.82);
+  box-shadow:
+    0 1rpx 0 rgba($ui-surface, 0.9) inset,
+    0 -1rpx 0 rgba($ui-label-primary, 0.04) inset,
+    0 10rpx 26rpx rgba($ui-label-primary, 0.06),
+    0 2rpx 6rpx rgba($ui-label-primary, 0.03);
+  backdrop-filter: blur(22px) saturate(2);
+  -webkit-backdrop-filter: blur(22px) saturate(2);
+}
+
+/* 顶缘镜面反光（Liquid Glass 标志性高光） */
+.numpad::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 0;
+  height: 38%;
+  border-radius: 32rpx 32rpx 80rpx 80rpx / 32rpx 32rpx 40rpx 40rpx;
+  background: linear-gradient(
+    180deg,
+    $ui-specular-fade 0%,
+    rgba(255, 255, 255, 0.18) 32%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ambient 呼吸：非常缓慢、非常淡，强化「液态」 */
+.numpad::after {
+  content: '';
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  top: -40%;
+  bottom: 40%;
+  background: radial-gradient(
+    ellipse at 30% 0%,
+    rgba($ui-accent, 0.08) 0%,
+    rgba($ui-accent, 0) 60%
+  );
+  pointer-events: none;
+  z-index: 0;
+  animation: numpadAmbient 9s ease-in-out infinite alternate;
+}
+
+.numpad__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+}
+
+.numpad__key {
+  position: relative;
+  overflow: hidden;
+  min-height: 112rpx;
+  padding: 14rpx 6rpx;
+  border-radius: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 单键玻璃：上亮下暗，底部微弱内阴影 */
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 0.92) 0%,
+    rgba($ui-surface, 0.7) 50%,
+    rgba($ui-surface, 0.62) 100%
+  );
+  border: 1rpx solid rgba($ui-surface, 0.9);
+  box-shadow:
+    0 1rpx 0 rgba(255, 255, 255, 0.95) inset,
+    0 -1rpx 0 rgba($ui-label-primary, 0.05) inset,
+    0 2rpx 0 rgba($ui-label-primary, 0.04),
+    0 8rpx 18rpx rgba($ui-label-primary, 0.05),
+    0 1rpx 3rpx rgba($ui-label-primary, 0.04);
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  transform: translateZ(0) scale(1);
+  transition:
+    transform $dur-btn-release $ease-spring-default,
+    background $dur-fast $ease-spring-stiff,
+    box-shadow $dur-fast $ease-spring-stiff,
+    opacity $dur-fast $ease-spring-stiff;
+  cursor: pointer;
+}
+
+/* 键顶镜面高光（左上→右下 的不对称弧形） */
+.numpad__key::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 2%;
+  height: 52%;
+  border-radius: 20rpx 20rpx 40rpx 40rpx / 20rpx 20rpx 24rpx 24rpx;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.38) 40%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  opacity: 0.7;
+  pointer-events: none;
+  transform-origin: top center;
+  transition:
+    opacity $dur-fast $ease-spring-stiff,
+    transform $dur-fast $ease-spring-stiff;
+  z-index: 1;
+}
+
+/* 按下时「径向光斑」+ 扫光共用层 */
+.numpad__key::after {
+  content: '';
+  position: absolute;
+  inset: -2rpx;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      circle at 50% 55%,
+      rgba(255, 255, 255, 0.7) 0%,
+      rgba(255, 255, 255, 0.2) 35%,
+      rgba(255, 255, 255, 0) 65%
+    );
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.7);
+  transform-origin: center 60%;
+  transition:
+    opacity $dur-fast $ease-spring-stiff,
+    transform $dur-btn-release $ease-spring-default;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+.numpad__key-txt {
+  position: relative;
+  z-index: 2;
+  font-family: $ui-font-stack;
+  font-size: 44rpx;
+  font-weight: 590;
+  color: $ui-label-primary;
+  letter-spacing: 0.5rpx;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  line-height: 1;
+  text-shadow: 0 1rpx 0 rgba(255, 255, 255, 0.8);
+  transition:
+    transform $dur-fast $ease-spring-stiff,
+    color $dur-fast $ease-spring-stiff;
+}
+
+/* 悬停：顶部高光更亮，表面更透 */
+.numpad__key--hover:not(.numpad__key--disabled) {
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 0.98) 0%,
+    rgba($ui-surface, 0.78) 100%
+  );
+}
+.numpad__key--hover:not(.numpad__key--disabled)::before {
+  opacity: 0.9;
+}
+
+/* 按下：下沉 0.96 + 内阴影变浓 + 顶部高光收缩 + 径向光斑出现 */
+.numpad__key--pressed {
+  transform: scale(0.96) translateY(1rpx);
+  transition:
+    transform $dur-fast $ease-spring-snappy,
+    background $dur-fast $ease-spring-stiff,
+    box-shadow $dur-fast $ease-spring-stiff;
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 0.78) 0%,
+    rgba($ui-surface, 0.58) 100%
+  );
+  box-shadow:
+    0 0 0 1rpx rgba($ui-accent, 0.18) inset,
+    0 1rpx 2rpx rgba($ui-label-primary, 0.1) inset,
+    0 -1rpx 0 rgba($ui-label-primary, 0.05) inset,
+    0 2rpx 4rpx rgba($ui-label-primary, 0.06);
+}
+.numpad__key--pressed::before {
+  opacity: 0.4;
+  transform: scaleY(0.82);
+}
+.numpad__key--pressed::after {
+  opacity: 1;
+  transform: scale(1.05);
+}
+.numpad__key--pressed .numpad__key-txt {
+  transform: scale(0.98);
+  color: $ui-accent;
+}
+
+/* flash：松手瞬间光斑扩散消散（token 变化触发重播） */
+.numpad__key--flash::after {
+  animation: numpadKeyPulse $dur-btn-release $ease-spring-default 1;
+}
+
+.numpad__key--disabled {
+  opacity: $btn-disabled-opacity;
+  cursor: not-allowed;
+  box-shadow: 0 1rpx 0 rgba(255, 255, 255, 0.5) inset;
+}
+
+.numpad__key--disabled::before {
+  opacity: 0.25;
+}
+
+/* 擦除键：横跨一整行，视觉层级弱于数字键（次要动作） */
+.numpad__key--erase {
+  grid-column: 1 / -1;
+  margin-top: 6rpx;
+  min-height: 92rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 0.6) 0%,
+    rgba($ui-surface, 0.42) 100%
+  );
+  border: 1rpx solid rgba($ui-surface, 0.72);
+  box-shadow:
+    0 1rpx 0 rgba(255, 255, 255, 0.75) inset,
+    0 -1rpx 0 rgba($ui-label-primary, 0.05) inset,
+    0 4rpx 10rpx rgba($ui-label-primary, 0.04);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+}
+
+.numpad__key--erase::before {
+  opacity: 0.45;
+  height: 48%;
+}
+
+.numpad__key--erase .numpad__key-txt {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: $ui-label-secondary;
+  text-shadow: 0 1rpx 0 rgba(255, 255, 255, 0.6);
+}
+
+.numpad__key--erase.numpad__key--pressed .numpad__key-txt {
+  color: $ui-destructive;
+}
+
+.numpad__key-badge {
+  position: relative;
+  z-index: 2;
+  margin-left: 14rpx;
+  min-width: 34rpx;
+  height: 32rpx;
+  padding: 0 10rpx;
+  border-radius: 16rpx;
+  background: rgba($ui-accent, 0.14);
+  color: $ui-accent;
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 32rpx;
+  text-align: center;
+  border: 1rpx solid rgba($ui-accent, 0.2);
+}
+
+@keyframes numpadKeyPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+@keyframes numpadAmbient {
+  0% {
+    transform: translate3d(-4%, -2%, 0);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate3d(6%, 4%, 0);
+    opacity: 1;
+  }
+}
+
+/* 焦点环（KBD-01） */
+.numpad__key:focus-visible {
+  outline: 2px solid $ui-accent;
+  outline-offset: 2px;
+  transition: outline-color 100ms $ease-spring-stiff;
+}
+
+/* 低内存 / 无 backdrop-filter 回退：保留边框与高光层，去掉 blur */
+.page--low-mem .numpad,
+.page--low-mem .numpad__key {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.page--low-mem .numpad {
+  background: $ui-surface;
+}
+.page--low-mem .numpad::after {
+  display: none;
+}
+.page--low-mem .numpad__key {
+  background: linear-gradient(
+    180deg,
+    rgba($ui-surface, 1) 0%,
+    rgba($ui-surface, 0.9) 100%
+  );
+}
+
 .actions {
   position: relative;
   display: flex;
@@ -673,22 +1308,7 @@
   padding-top: 12rpx;
 }
 
-/* 与主内容区分离：类「滚动区顶缘淡化」的轻分割，强调底部为功能层 */
-.actions::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 1rpx;
-  background: linear-gradient(
-    90deg,
-    rgba($ui-label-primary, 0) 0%,
-    rgba($ui-label-primary, 0.1) 50%,
-    rgba($ui-label-primary, 0) 100%
-  );
-  pointer-events: none;
-}
+/* 顶部 hairline 已移除（追求 iOS 26 克制玻璃美学） */
 
 .btn {
   flex: 1;

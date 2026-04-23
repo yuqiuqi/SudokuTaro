@@ -127,6 +127,81 @@ function vibrateLight(enabled: boolean): void {
   }
 }
 
+type NumPadProps = {
+  /** 'off' = 未挂载；'on' = 弹出；'leaving' = 正在滑出（动画中仍挂载） */
+  visibility: 'off' | 'on' | 'leaving'
+  numPress: number | null
+  flash: {key: number; token: number} | null
+  onPressStart: (n: number) => void
+  onPressEnd: () => void
+  onFill: (n: number) => void
+}
+
+/** iOS 26 悬浮数字键盘 dock：
+ * · 选中格子时从底部滑入，未选中/打开弹层时滑出隐藏
+ * · 仅 1-9，擦除按钮统一由顶部 actions 承担（不重复）
+ */
+const NumPad = memo(function NumPad({
+  visibility,
+  numPress,
+  flash,
+  onPressStart,
+  onPressEnd,
+  onFill,
+}: NumPadProps) {
+  const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+  const pressProps = (n: number) => ({
+    onTouchStart: () => onPressStart(n),
+    onTouchEnd: () => onPressEnd(),
+    onTouchCancel: () => onPressEnd(),
+    onMouseDown: (e: {button: number}) => {
+      if (e.button !== 0) return
+      onPressStart(n)
+    },
+    onMouseUp: () => onPressEnd(),
+    onMouseLeave: () => onPressEnd(),
+  })
+
+  if (visibility === 'off') return null
+
+  return (
+    <View
+      className={`numpad-dock ${
+        visibility === 'leaving' ? 'numpad-dock--leaving' : 'numpad-dock--enter'
+      }`}
+      catchMove
+    >
+      <View className="numpad-dock__panel">
+        <View className="numpad-dock__handle" />
+        <View className="numpad-dock__grid">
+          {keys.map(n => {
+            const pressed = numPress === n
+            const flashing = flash?.key === n
+            return (
+              <ViewAction
+                key={n}
+                className={`numpad-key ${pressed ? 'numpad-key--pressed' : ''} ${
+                  flashing ? 'numpad-key--flash' : ''
+                }`}
+                data-state={pressed ? 'pressed' : 'idle'}
+                data-flash-token={flashing ? flash?.token : undefined}
+                hoverClass="numpad-key--hover"
+                hoverStartTime={0}
+                hoverStayTime={0}
+                onClick={() => onFill(n)}
+                {...pressProps(n)}
+              >
+                <Text className="numpad-key__txt">{n}</Text>
+              </ViewAction>
+            )
+          })}
+        </View>
+      </View>
+    </View>
+  )
+})
+
 type SudokuGridProps = {
   board: number[][]
   initialBoard: number[][]
@@ -293,6 +368,14 @@ export default function IndexPage() {
   const fillPopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [fillPopIndex, setFillPopIndex] = useState<number | null>(null)
   const [actionPress, setActionPress] = useState<null | 'erase' | 'new' | 'undo'>(null)
+  /** 数字键盘按下态：0=擦除，1-9=数字；用于 iOS 26 spring 动画。 */
+  const [numPress, setNumPress] = useState<number | null>(null)
+  /** 最近一次按下的键闪动触发（used-number 指示）：key + token，token 变化触发 replay。 */
+  const [numPadFlash, setNumPadFlash] = useState<{key: number; token: number} | null>(null)
+  const numPadFlashT = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** 悬浮键盘 dock 三态；'leaving' 期间 DOM 仍挂载播放滑出动画。 */
+  const [numpadVisibility, setNumpadVisibility] = useState<'off' | 'on' | 'leaving'>('off')
+  const leaveNumpadT = useRef<ReturnType<typeof setTimeout> | null>(null)
   const leaveWonT = useRef<ReturnType<typeof setTimeout> | null>(null)
   const leaveSetT = useRef<ReturnType<typeof setTimeout> | null>(null)
   const leaveHelpT = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -365,6 +448,30 @@ export default function IndexPage() {
     const m = (navigator as {deviceMemory?: number}).deviceMemory
     setLowDeviceMemory(typeof m === 'number' && m > 0 && m < 4)
   }, [])
+
+  useEffect(() => {
+    const anyModalOpen = modalWon !== 'off' || modalSet !== 'off' || modalHelp !== 'off'
+    const wantOn = selected != null && !anyModalOpen
+    if (wantOn) {
+      if (leaveNumpadT.current) {
+        clearTimeout(leaveNumpadT.current)
+        leaveNumpadT.current = null
+      }
+      setNumpadVisibility('on')
+    } else {
+      setNumpadVisibility(v => {
+        if (v === 'off') return 'off'
+        if (leaveNumpadT.current) {
+          clearTimeout(leaveNumpadT.current)
+        }
+        leaveNumpadT.current = setTimeout(() => {
+          setNumpadVisibility('off')
+          leaveNumpadT.current = null
+        }, MODAL_LEAVE_MS)
+        return 'leaving'
+      })
+    }
+  }, [selected, modalWon, modalSet, modalHelp, MODAL_LEAVE_MS])
 
   const startTimer = useCallback(() => {
     stopTimer()
@@ -687,7 +794,9 @@ export default function IndexPage() {
 
   return (
     <ScrollView
-      className={`page${lowDeviceMemory ? ' page--low-mem' : ''}`}
+      className={`page${lowDeviceMemory ? ' page--low-mem' : ''}${
+        numpadVisibility !== 'off' ? ' page--numpad-open' : ''
+      }`}
       scrollY
       showScrollbar={false}
       onScroll={e => {
@@ -956,6 +1065,25 @@ export default function IndexPage() {
           </View>
         </View>
       ) : null}
+
+      <NumPad
+        visibility={numpadVisibility}
+        numPress={numPress}
+        flash={numPadFlash}
+        onPressStart={n => setNumPress(n)}
+        onPressEnd={() => setNumPress(null)}
+        onFill={n => {
+          fillNumber(n)
+          setNumPadFlash({key: n, token: Date.now()})
+          if (numPadFlashT.current) {
+            clearTimeout(numPadFlashT.current)
+          }
+          numPadFlashT.current = setTimeout(() => {
+            setNumPadFlash(null)
+            numPadFlashT.current = null
+          }, 400)
+        }}
+      />
     </ScrollView>
   )
 }
