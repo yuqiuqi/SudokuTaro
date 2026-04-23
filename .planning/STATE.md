@@ -12,9 +12,9 @@ See: `.planning/PROJECT.md`
 
 ## Session
 
-**Last action:** `/gsd-next` — 已路由到 `/gsd-verify-work 1`；已创建 `01-UAT.md`，首个检查点已呈现。
+**Last action：** `/gsd-plan-phase 1 --reviews` — 已增 **`01-04-PLAN.md`** 与 **`01-REPLAN-NOTE.md`**（吸收 `01-REVIEWS`；不机械重跑 01-01～03）。
 
-**Resume file:** `.planning/phases/01-apple-ui-motion/01-UAT.md`
+**Resume file:** `.planning/phases/01-apple-ui-motion/01-04-PLAN.md`（或继续 `01-UAT.md` 验收）
 
 ## Next Steps
 
