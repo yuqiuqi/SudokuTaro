@@ -8,25 +8,9 @@
   /* 顶部紧贴安全区，数独标题作为整块内容的视觉顶端 */
   padding: calc(8rpx + env(safe-area-inset-top)) 32rpx 48rpx;
   padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
-  background:
-    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 252, 248, 0.95) 0%, transparent 55%),
-    linear-gradient(
-      165deg,
-      $ui-bg 0%,
-      color.mix(#1c1c1e, $ui-bg, 5%) 42%,
-      color.mix(#1c1c1e, $ui-bg, 10%) 100%
-    );
+  @include page-atmosphere;
   color-scheme: light;
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    'SF Pro Text',
-    'Segoe UI',
-    Roboto,
-    'PingFang SC',
-    'Hiragino Sans GB',
-    'Microsoft YaHei',
-    sans-serif;
+  font-family: $ui-font-stack;
 }
 
 .page::before {
@@ -36,13 +20,7 @@
   pointer-events: none;
   z-index: 0;
   opacity: 0.45;
-  background-image: repeating-linear-gradient(
-    -11deg,
-    transparent,
-    transparent 3rpx,
-    rgba(28, 25, 23, 0.018) 3rpx,
-    rgba(28, 25, 23, 0.018) 4rpx
-  );
+  @include page-noise-gradient;
 }
 
 .page::after {
@@ -51,11 +29,7 @@
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(
-    ellipse 85% 65% at 50% 50%,
-    transparent 35%,
-    rgba(28, 25, 23, 0.04) 100%
-  );
+  @include page-vignette;
 }
 
 .hero {
@@ -73,8 +47,8 @@
 .hero__d {
   position: absolute;
   border-radius: 50%;
-  filter: blur(56rpx);
-  opacity: 0.42;
+  filter: blur($ui-hero-blur);
+  opacity: $ui-hero-blob-opacity;
 }
 
 /* hero 光斑 — 装饰色，非语义 token */
@@ -83,7 +57,7 @@
   height: 140rpx;
   left: -40rpx;
   top: -8rpx;
-  background: linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%);
+  background: linear-gradient(135deg, $ui-hero-a0 0%, $ui-hero-a1 100%);
   animation: heroDriftA 22s ease-in-out infinite;
 }
 
@@ -92,7 +66,7 @@
   height: 120rpx;
   left: 140rpx;
   top: -28rpx;
-  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+  background: linear-gradient(135deg, $ui-hero-b0 0%, $ui-hero-b1 100%);
   animation: heroDriftB 26s ease-in-out infinite;
 }
 
@@ -101,7 +75,7 @@
   height: 140rpx;
   right: 40rpx;
   top: -4rpx;
-  background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, $ui-hero-c0 0%, $ui-hero-c1 100%);
   animation: heroDriftC 20s ease-in-out infinite;
 }
 
@@ -110,7 +84,7 @@
   height: 120rpx;
   right: -24rpx;
   top: -12rpx;
-  background: linear-gradient(135deg, #f9a8d4 0%, #ec4899 100%);
+  background: linear-gradient(135deg, $ui-hero-d0 0%, $ui-hero-d1 100%);
   animation: heroDriftD 24s ease-in-out infinite;
 }
 
@@ -207,6 +181,7 @@
 .content-wrap {
   position: relative;
   z-index: 1;
+  overflow: hidden;
   width: 100%;
   max-width: 690rpx;
   margin-left: auto;
@@ -222,10 +197,39 @@
   );
   border: 1rpx solid rgba($ui-surface, 0.75);
   box-shadow:
-    0 8rpx 40rpx rgba($ui-label-primary, 0.07),
+    $ui-elevation-liquid,
     0 1rpx 0 rgba($ui-surface, 0.85) inset;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+}
+
+/* Liquid Glass 子集：顶缘镜面高光（静态近似，非系统级 specular 动画） */
+.content-wrap::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 22%;
+  max-height: 80rpx;
+  border-radius: 36rpx 36rpx 0 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, $ui-specular-fade 0%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0.5;
+}
+
+/* 无 backdrop 支持时：实色回退，保证主卡/弹层可读（01-04 / 01-UI-SPEC） */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .content-wrap {
+    background: $ui-surface;
+    border: 1rpx solid $ui-separator;
+    box-shadow: $ui-elevation-liquid;
+  }
+
+  .modal__card {
+    background: $ui-surface;
+    border: 1rpx solid $ui-hairline-on-bg;
+  }
 }
 
 /* 数独为第一行（整块内容视觉顶端）；SUDOKU 为副标在其下 */
@@ -279,9 +283,7 @@
   box-sizing: border-box;
   padding: 12rpx 18rpx;
   border-radius: 999rpx;
-  background: rgba($ui-surface, 0.72);
-  border: 2rpx solid rgba($ui-label-primary, 0.08);
-  box-shadow: 0 4rpx 16rpx rgba($ui-label-primary, 0.06);
+  @include glass-capsule;
 }
 
 .meta-row__pill-btn:active {
@@ -298,9 +300,7 @@
   box-sizing: border-box;
   padding: 12rpx 20rpx;
   border-radius: 999rpx;
-  background: rgba($ui-surface, 0.72);
-  border: 2rpx solid rgba($ui-label-primary, 0.08);
-  box-shadow: 0 4rpx 16rpx rgba($ui-label-primary, 0.06);
+  @include glass-capsule;
 }
 
 .meta-row__settings:active {
@@ -329,14 +329,12 @@
   min-height: 64rpx;
   padding: 0 12rpx;
   border-radius: 999rpx;
-  background: rgba($ui-surface, 0.72);
-  border: 2rpx solid rgba($ui-label-primary, 0.08);
+  @include glass-capsule;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   box-sizing: border-box;
-  box-shadow: 0 4rpx 20rpx rgba($ui-label-primary, 0.06);
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -351,7 +349,7 @@
 .pill--on {
   background: linear-gradient(
     145deg,
-    color.mix($ui-label-primary, #000000, 92%) 0%,
+    color.mix($ui-label-primary, black, 92%) 0%,
     $ui-label-primary 100%
   );
   border-color: $ui-label-primary;
@@ -459,19 +457,19 @@
 }
 
 .cell--dim {
-  background: rgba(45, 212, 191, 0.09);
+  background: $ui-semantic-dim-1;
 }
 
 .cell--dim.cell--block-alt {
-  background: rgba(45, 212, 191, 0.11);
+  background: $ui-semantic-dim-2;
 }
 
 .cell--same:not(.cell--bad) {
-  background: rgba(52, 211, 153, 0.22);
+  background: $ui-semantic-same-1;
 }
 
 .cell--same.cell--block-alt:not(.cell--bad) {
-  background: rgba(52, 211, 153, 0.24);
+  background: $ui-semantic-same-2;
 }
 
 .cell--bad {
@@ -479,7 +477,7 @@
 }
 
 .cell--bad.cell--block-alt {
-  background: rgba(255, 59, 48, 0.26);
+  background: $ui-semantic-bad-2;
 }
 
 .cell__txt {
@@ -494,9 +492,9 @@
   font-weight: 700;
 }
 
-/* 用户填入数字：保持数独语义色（非 Apple 语义 token） */
+/* 用户填入数字：与全站 theme / token 统一 */
 .cell__txt--user {
-  color: #0d9488;
+  color: $ui-user-input;
   font-weight: 600;
 }
 
@@ -530,6 +528,7 @@
 }
 
 .actions {
+  position: relative;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -539,6 +538,24 @@
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 16rpx;
+  padding-top: 12rpx;
+}
+
+/* 与主内容区分离：类「滚动区顶缘淡化」的轻分割，强调底部为功能层 */
+.actions::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1rpx;
+  background: linear-gradient(
+    90deg,
+    rgba($ui-label-primary, 0) 0%,
+    rgba($ui-label-primary, 0.1) 50%,
+    rgba($ui-label-primary, 0) 100%
+  );
+  pointer-events: none;
 }
 
 .btn {
@@ -573,19 +590,34 @@
 }
 
 .btn--glass {
-  background: rgba($ui-surface, 0.75);
-  border: 2rpx solid rgba($ui-label-primary, 0.1);
-  box-shadow: 0 4rpx 16rpx rgba($ui-label-primary, 0.06);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(165deg, $ui-glass-fill-strong 0%, $ui-glass-fill-weak 100%);
+  border: 2rpx solid $ui-glass-stroke;
+  box-shadow: 0 4rpx 20rpx rgba($ui-label-primary, 0.08);
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease,
     transform $ui-dur-tap $ui-ease-standard;
 }
 
+.btn--glass::after {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 0;
+  height: 40%;
+  border-radius: 16rpx 16rpx 0 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0.45;
+}
+
 .btn--solid {
   background: linear-gradient(
     145deg,
-    color.mix($ui-label-primary, #000000, 90%) 0%,
+    color.mix($ui-label-primary, black, 90%) 0%,
     $ui-label-primary 100%
   );
   border: 2rpx solid $ui-label-primary;
@@ -677,9 +709,11 @@
   box-sizing: border-box;
   padding: 48rpx 40rpx 40rpx;
   border-radius: 24rpx;
-  background: $ui-surface;
-  border: 1rpx solid $ui-separator;
-  box-shadow: 0 8rpx 32rpx rgba($ui-label-primary, 0.12);
+  background: linear-gradient(180deg, rgba($ui-surface, 0.98) 0%, rgba($ui-surface, 0.9) 100%);
+  border: 1rpx solid rgba($ui-surface, 0.65);
+  box-shadow: $ui-elevation-liquid;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   animation: modalSheetIn $ui-dur-sheet-enter $ui-ease-sheet forwards;
 }
 
@@ -690,12 +724,7 @@
   right: 0;
   top: 0;
   height: 5rpx;
-  background: linear-gradient(
-    90deg,
-    rgba(212, 165, 116, 0.95) 0%,
-    rgba(196, 181, 253, 0.9) 45%,
-    rgba(94, 234, 212, 0.85) 100%
-  );
+  background: linear-gradient(90deg, $ui-modal-spectrum-1 0%, $ui-modal-spectrum-2 50%, $ui-modal-spectrum-3 100%);
 }
 
 .modal__title {

@@ -43,12 +43,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EXP-01 | Phase 1 | Pending |
-| EXP-02 | Phase 1 | Pending |
-| EXP-03 | Phase 1 | Pending |
-| EXP-04 | Phase 1 | Pending |
-| EXP-05 | Phase 1 | Pending |
-| TEC-01 | Phase 1 | Pending |
+| EXP-01 | Phase 1 | Pending（代码 review 2026-04-23：主路径已接 apple token，**待 UAT**） |
+| EXP-02 | Phase 1 | Pending（待 UAT / 真机确认动效与 reduced-motion） |
+| EXP-03 | Phase 1 | Pending（待 UAT 抽样字号） |
+| EXP-04 | Phase 1 | Pending（待 UAT 弹层曲线） |
+| EXP-05 | Phase 1 | Pending（待 UAT 主路径无抖动） |
+| TEC-01 | Phase 1 | Pending（`_apple-ui-tokens` + `theme.ts` 已落地，**待 UAT 与文档签署**） |
 | PAR-01 | Phase 2 | Pending |
 
 **Coverage:**
@@ -57,6 +57,8 @@
 - Mapped to phases: 7
 - Unmapped: 0 ✓
 
+**Phase 1 对照备注（2026-04-23）：** 静态与 grep 通过 ≠ 视觉验收完成；最终以 `01-UAT.md` 三项与真机/工具链抽查为准。
+
 ---
 *Requirements defined: 2026-04-22*  
-*Last updated: 2026-04-22 after initial definition*
+*Last updated: 2026-04-23（execute-phase 1 / 01-04+01-05 对照）*

@@ -36,4 +36,17 @@
 
 ---
 
+## Token 真源（评审后）
+
+设计/实现手同步链（修改须同 PR 维护）：
+
+| 顺序 | 路径 | 说明 |
+|------|------|------|
+| 1 | `src/styles/_apple-ui-tokens.scss` | 色板、玻璃 mixin、动效时长/缓动 **Sass 真源** |
+| 2 | `src/pages/index/_ui-tokens.scss` | `@forward` 聚合给页面 SCSS |
+| 3 | `src/utils/theme.ts` | `appleUi` 供 TS/内联样式交叉引用 |
+| 4 | `minigame-wechat/src/appleUiTheme.ts` | 微信小游戏 Canvas 色值，与主站 **手同步**（无自动构建链） |
+
+---
+
 ## RESEARCH COMPLETE
