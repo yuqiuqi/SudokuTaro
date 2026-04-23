@@ -1,6 +1,6 @@
 @use './styles/apple-ui-tokens' as *;
 
-/* 全应用页根（小程序 / 多端）：与主游戏 .page 同一套主色、字体、抗锯齿 */
+/* 全应用页根（H5）：与主游戏 .page 同一套主色、字体、抗锯齿 */
 page {
   background-color: $ui-bg;
   color: $ui-label-primary;
