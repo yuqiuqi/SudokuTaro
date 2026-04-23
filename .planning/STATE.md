@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.0
-milestone_name: Liquid Glass iOS 26 全量动画与交互精打
-status: roadmap-created
-last_updated: "2026-04-23T15:30:00.000Z"
+milestone_name: milestone
+status: Ready to execute
+last_updated: "2026-04-23T07:50:38.290Z"
 progress:
-  total_phases: 1
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 2
+  completed_phases: 1
+  total_plans: 8
+  completed_plans: 5
+  percent: 63
 ---
 
 # Project State — SudokuTaro
@@ -22,11 +22,11 @@ See: `.planning/PROJECT.md`
 
 **Core value:** 玩家能流畅完成一局标准数独，且在 H5 上获得像 iOS 26 原生应用一样跟手、有质感的界面与动效。
 
-**Current focus:** Phase 4 — iOS 26 Liquid Glass 全量动画与交互精打 — **待规划**（`/gsd-plan-phase 4`）
+**Current focus:** Phase 4 — iOS 26 Liquid Glass 全量动画与交互精打 — **已规划 3 份 PLAN**，可执行 `/gsd-execute-phase 4 --auto`。
 
 ## Session
 
-**Last action：** Milestone v2.0 ROADMAP 创建完成 — Phase 4 定义，34 条 v2 需求全量覆盖。
+**Last action：** Phase 4 规划完成（含 `04-REVIEWS.md` 吸收 + `04-*-PLAN.md`）。
 
 **Resume file:** .planning/ROADMAP.md
 
@@ -35,9 +35,9 @@ See: `.planning/PROJECT.md`
 | | |
 |---|---|
 | **Milestone** | v2.0 — Liquid Glass iOS 26 全量动画与交互精打 |
-| **Phase** | Phase 4（待规划） |
-| **Status** | Roadmap created → 下一步 `/gsd-plan-phase 4` |
-| **Progress** | ░░░░░░░░░░ 0% |
+| **Phase** | Phase 4（3 个 Wave，3 个 PLAN 文件） |
+| **Status** | Ready to execute |
+| **Progress** | 待执行 04-01 → 04-02 → 04-03（Wave 3 内 `index.scss` 按 PLAN 内顺序） |
 
 ## v2.0 Phase 4 需求覆盖
 
@@ -49,12 +49,12 @@ See: `.planning/PROJECT.md`
 | Wave 3 | 弹层精打 | MOD-01~05 | Pending |
 | Wave 3 | 通关弹窗 | WIN-01~03 | Pending |
 | Wave 3 | Switch 精打 | SW-01~03 | Pending |
-| Wave 3 | 材质精打 | MAT-01~04 | Pending |
+| Wave 3 | 材质精打 | MAT-01~05 | Pending |
 | Wave 3 | Hero 精打 | HERO-01~02 | Pending |
 | Wave 3 | a11y 全覆盖 | A11Y-01~03 | Pending |
 | Wave 3 | 键盘焦点 | KBD-01~02 | Pending |
 
-**总计：34/34 需求已映射 ✓**
+**总计：35/35 需求已映射 ✓**（含评审后 **MAT-05**、CELL-02/BTN-02/SW/WIN 修订）
 
 ## Accumulated Context
 

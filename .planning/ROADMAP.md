@@ -11,7 +11,7 @@
 | 1 | Apple-style UI & motion | Taro 主界面建立 Apple 向视觉与动效契约并落地到 `src/pages/index/` | EXP-01 — EXP-05, TEC-01 | **yes** |
 | 2 | Minigame visual parity | `minigame-wechat` 对齐 Phase 1 token（色彩、圆角、动效语义） | PAR-01 | yes |
 | 3 | Hardening & a11y pass | 对比度、焦点态、真机动效降级策略回归 | （从 Phase 1 UAT 衍生，可增 REQ） | yes |
-| 4 | iOS 26 Liquid Glass 全量动画与交互精打 | 以 iOS 26 Liquid Glass 为真源，彻底打磨所有可交互组件的 spring 动画、材质质感与无障碍降级 | TOK-01~04, BTN-01~04, CELL-01~04, MOD-01~05, WIN-01~03, SW-01~03, MAT-01~04, HERO-01~02, A11Y-01~03, KBD-01~02 | **yes** |
+| 4 | iOS 26 Liquid Glass 全量动画与交互精打 | 以 iOS 26 Liquid Glass 为真源，彻底打磨所有可交互组件的 spring 动画、材质质感与无障碍降级 | TOK-01~04, BTN-01~04, CELL-01~04, MOD-01~05, WIN-01~03, SW-01~03, MAT-01~05, HERO-01~02, A11Y-01~03, KBD-01~02 | **yes** |
 
 ---
 
@@ -75,7 +75,7 @@
 
 **Depends on:** Phase 1（token 体系、组件结构），Phase 3（a11y 基础）
 
-**Requirements:** TOK-01, TOK-02, TOK-03, TOK-04, BTN-01, BTN-02, BTN-03, BTN-04, CELL-01, CELL-02, CELL-03, CELL-04, MOD-01, MOD-02, MOD-03, MOD-04, MOD-05, WIN-01, WIN-02, WIN-03, SW-01, SW-02, SW-03, MAT-01, MAT-02, MAT-03, MAT-04, HERO-01, HERO-02, A11Y-01, A11Y-02, A11Y-03, KBD-01, KBD-02
+**Requirements:** TOK-01, TOK-02, TOK-03, TOK-04, BTN-01, BTN-02, BTN-03, BTN-04, CELL-01, CELL-02, CELL-03, CELL-04, MOD-01, MOD-02, MOD-03, MOD-04, MOD-05, WIN-01, WIN-02, WIN-03, SW-01, SW-02, SW-03, MAT-01, MAT-02, MAT-03, MAT-04, MAT-05, HERO-01, HERO-02, A11Y-01, A11Y-02, A11Y-03, KBD-01, KBD-02
 
 **Success Criteria** (what must be TRUE):
   1. 所有可交互元素（按钮/格子/弹层/开关）按下/松手有可感知的 spring 回弹效果，且无硬跳变
@@ -91,9 +91,9 @@
 |------|------|------|--------|
 | Wave 1（基础，阻塞后续） | Motion token 架构 + theme.ts 同步 | TOK-01~04 | 串行 |
 | Wave 2（组件精打，可并行） | 按钮五态 + specular；格子五态 + 涟漪 + shake + 填数入场 | BTN-01~04, CELL-01~04 | 2 路并行 |
-| Wave 3（组合 + 收尾） | 弹层 spring；通关弹窗编排；Switch squash-stretch；材质升级；Hero scroll-driven；a11y 全覆盖；键盘焦点 | MOD-01~05, WIN-01~03, SW-01~03, MAT-01~04, HERO-01~02, A11Y-01~03, KBD-01~02 | 多路并行 |
+| Wave 3（组合 + 收尾） | 弹层 spring；通关弹窗编排；Switch squash（scaleX）+ 位移；材质升级含低端 `deviceMemory` 回退；Hero scroll-driven；a11y 全覆盖；键盘焦点；**`index.scss` 内多任务须按执行器顺序串行，避免大文件冲突** | MOD-01~05, WIN-01~03, SW-01~03, MAT-01~05, HERO-01~02, A11Y-01~03, KBD-01~02 | 任务串行（同 Wave 多计划块顺序执行） |
 
-**Plans:** TBD  
+**Plans:** `04-01-PLAN.md`（Wave 1）· `04-02-PLAN.md`（Wave 2）· `04-03-PLAN.md`（Wave 3，index.scss 串行序）  
 **UI hint**: yes
 
 ---
@@ -112,7 +112,7 @@
 | 1. Apple-style UI & motion | 5/5 | ✓ Executed | 2026-04-23 |
 | 2. Minigame visual parity | 0/0 | Not started | - |
 | 3. Hardening & a11y pass | 0/0 | Not started | - |
-| 4. iOS 26 Liquid Glass 全量动画与交互精打 | 0/3 | Not started | - |
+| 4. iOS 26 Liquid Glass 全量动画与交互精打 | 3/3 | Ready to execute | - |
 
 ---
 

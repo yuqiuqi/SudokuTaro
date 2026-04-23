@@ -40,7 +40,7 @@
 
 - [ ] **BTN-01**: 所有主操作按钮（`.btn--action`）按下时在 **120ms** 内达到 `scale(0.95) + opacity(0.88)`，松手后 **240ms spring(400,28)** 回弹至 `scale(1.03→1.0)`（有超调感）。
 
-- [ ] **BTN-02**: 按钮 `::after` specular 高光在按下时向心收缩（宽度 80%→40%，opacity 0.4→0.1，120ms），松手时弹回（240ms）。
+- [ ] **BTN-02**: 按钮 `::after` specular 高光在按下时向心收缩：使用 **`transform: scaleX(0.5)`** + `transform-origin: center` 表达收拢（**禁止**对 `width` 做补间，避免重排与布局抖动），opacity **0.4→0.1，120ms**；松手时弹回（**240ms**，`scaleX(1)` + opacity 恢复）。
 
 - [ ] **BTN-03**: 所有按钮实现五态 CSS（`data-state` 驱动）：idle / hover（桌面仅 `@media (hover: hover)`）/ pressed / disabled / focused（`focus-visible` 焦点环）。
 
@@ -50,7 +50,7 @@
 
 - [ ] **CELL-01**: 格子 tap 选中：背景色在 **140ms ease-out** 内从透明变为 `rgba(accent, 0.12)`，同时 `scale(0.96→1.0)` spring 回弹（有轻微超调）。
 
-- [ ] **CELL-02**: 高亮同数字格：以选中格为起点，向外涟漪扩散，每格 **delay += 8ms**，单格过渡 **180ms ease-out**。
+- [ ] **CELL-02**: 高亮同数字格：以选中格为起点，仅在**同一行、同一列、同一宫（3×3）**内向外涟漪扩散，每格 **delay += 8ms**（`style={{ '--cell-ripple-index': n }}` 等 CSS 变量，**n ∈ 0..~19**），单格过渡 **180ms ease-out**；**禁止**对全棋盘 81 格同时开启动画（跨 AI 评审性能共识）。
 
 - [ ] **CELL-03**: 冲突提示：格子做 X 方向 **shake 动画**（±4rpx × 3次，**220ms** `cubic-bezier(0.36,0.07,0.19,0.97)`），背景变 `rgba(destructive, 0.18)`。
 
@@ -72,15 +72,15 @@
 
 - [ ] **WIN-01**: 通关弹窗各元素分层顺序入场：蒙层（0ms）→ 卡片（40ms delay）→ 标题文字（120ms delay）→ 统计数字滚动（200ms delay）→ 按钮（300ms delay）。
 
-- [ ] **WIN-02**: 统计数字（用时、步数）做从 0 到实际值的滚动动画，**400ms requestAnimationFrame** easeOutQuart，增加成就感。
+- [ ] **WIN-02**: 统计数字（用时、步数）从 0 到实际值滚动，**400ms** `requestAnimationFrame` + easeOutQuart；**在 React `useEffect` 的 cleanup 中必须 `cancelAnimationFrame(rafId)`**，避免关弹层或路由切换后仍写 DOM / 泄露。
 
 - [ ] **WIN-03**: 通关卡片有顶部彩色 spectrum 条，颜色使用渐变 `$ui-modal-spectrum-1/2/3`（已有）。
 
 ### F. Switch 开关精打（Phase 4）
 
-- [ ] **SW-01**: Switch 开关 off→on：`thumb` 从左到右位移，运动中横向压扁（squash，宽度 ×0.8），到达目标后轻微回弹，**280ms spring**。
+- [ ] **SW-01**: Switch off→on：`thumb` 用 **`translateX` + `scaleX(0.85)`** 表达 squash（**禁止**对 `width` 做连续补间以与位移动画同步），到位后回弹到 **`scaleX(1)`**，**280ms** spring 类曲线。
 
-- [ ] **SW-02**: Switch on→off：`thumb` 反向，运动中拉伸（stretch，宽度 ×1.2），**240ms spring**。
+- [ ] **SW-02**: Switch on→off：反向，运动中 **`scaleX(1.15)`** 表达 stretch，**240ms** spring 类曲线；同样禁止 `width` 补间。
 
 - [ ] **SW-03**: Track 背景色（neutral→accent）随 thumb 位移同步过渡，**280ms ease**。
 
@@ -93,6 +93,8 @@
 - [ ] **MAT-03**: `.content-wrap::after` specular 高光从静态改为：hover 时略增强（opacity 0.5→0.65，**80ms**），按下时减弱（0.5→0.2，**120ms**），松手时弹回。
 
 - [ ] **MAT-04**: 新增 `.content-wrap::before` 底缘内阴影（`inset 0 -1px 0 rgba(white,0.5)`），增强卡片边缘层次感。
+
+- [ ] **MAT-05**: 低端/低内存回退：在 **`navigator.deviceMemory` 存在且小于 4** 时，主内容卡与模态卡**不使用** `backdrop-filter`，改用与 `@supports not` 路径一致的 **`$ui-surface` 实色底**；检测置于 `useEffect` 或首屏后，不阻塞首屏。可选后续：预留帧率降档钩子（本 Phase 不强制实现）。
 
 ### H. 英雄光斑（Hero）精打（Phase 4）
 
@@ -112,7 +114,7 @@
 
 - [ ] **KBD-01**: 所有可交互元素（按钮、格子、开关）实现 `focus-visible` 焦点环：`2px solid $ui-accent`，`offset 2px`，`border-radius` 同元素，过渡 **100ms**。
 
-- [ ] **KBD-02**: H5 键盘方向键（←→↑↓）可在棋盘格间移动焦点（已有键盘监听，补 focus 状态视觉）。
+- [ ] **KBD-02**: 方向键 **与现有 `selected` 格逻辑一致**（仅移动**玩法选中**）；为当前格提供与 Phase 1 结构兼容的**可见「键盘操作焦点」**（`data-keyboard-focus` 或容器 `:focus-within`），与 **Tab 焦点**关系：若格不可 `tab` 到，则**不必**与浏览器原生焦点环混用，避免双环；在代码注释中写清本约定。
 
 ---
 
@@ -143,14 +145,14 @@
 | MOD-01 ～ MOD-05 | Phase 4 | Pending |
 | WIN-01 ～ WIN-03 | Phase 4 | Pending |
 | SW-01 ～ SW-03 | Phase 4 | Pending |
-| MAT-01 ～ MAT-04 | Phase 4 | Pending |
+| MAT-01 ～ MAT-05 | Phase 4 | Pending |
 | HERO-01 ～ HERO-02 | Phase 4 | Pending |
 | A11Y-01 ～ A11Y-03 | Phase 4 | Pending |
 | KBD-01 ～ KBD-02 | Phase 4 | Pending |
 
 **Coverage:**
-- v2 requirements: 34 total (TOK×4 + BTN×4 + CELL×4 + MOD×5 + WIN×3 + SW×3 + MAT×4 + HERO×2 + A11Y×3 + KBD×2)
-- Mapped to phases: 34
+- v2 requirements: 35 total (TOK×4 + BTN×4 + CELL×4 + MOD×5 + WIN×3 + SW×3 + MAT×5 + HERO×2 + A11Y×3 + KBD×2)
+- Mapped to phases: 35
 - Unmapped: 0 ✓
 
 ---
