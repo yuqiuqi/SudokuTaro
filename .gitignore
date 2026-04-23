@@ -1,20 +1,78 @@
+# 依赖与构建
 node_modules/
 dist/
 .swc/
 .taro/
 .temp/
+.turbo/
+.cache/
 coverage/
+build/
+out/
+
+# 日志
 *.log
-.DS_Store
-Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 环境变量与密钥
 .env
 .env.*
 !.env.example
-!.env.upload.example
 .env.upload
 key/*
 !key/README.md
 !key/.gitkeep
 
-# 微信开发者工具本地私有配置（含本机 AppID 等）
+# 操作系统
+.DS_Store
+**/.DS_Store
+.AppleDB
+.AppleDesktop
+.apdisk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# 编辑器与 IDE（若需将 .vscode 提交到仓库，保留目录即可；仅忽略常见本机工作区文件）
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+
+# 包管理器
+.pnpm-store/
+package-lock.json.bak
+yarn.lock.bak
+*.tgz
+
+# 测试与覆盖率
+.nyc_output/
+junit.xml
+test-results/
+playwright-report/
+.playwright/
+*.tsbuildinfo
+
+# 其他工具 / 本机
+*.local
+.eslintcache
+.stylelintcache
+.sass-cache/
+*.pem
+*.p12
+*.key
+!key/.gitkeep
+
+# 项目曾用：微信工具本地（若仍存在）
 project.private.config.json
