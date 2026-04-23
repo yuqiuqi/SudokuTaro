@@ -1,0 +1,113 @@
+@use 'sass:color';
+/**
+ * SudokuTaro — 全量 UI 设计 token（Taro 主工程 + 与 theme.ts / 小游戏色值手同步）
+ * 不得在主样式中写裸 hex 表达语义色；仅此处与极少数 mix 可引用基础色。
+ */
+
+/* ========== 核心色（系统浅色 / Liquid 向）========== */
+$ui-bg: #f5f2eb;
+$ui-surface: #ffffff;
+$ui-separator: #e5e5ea;
+$ui-label-primary: #1c1c1e;
+$ui-label-secondary: #8e8e93;
+$ui-accent: #007aff;
+$ui-destructive: #ff3b30;
+$ui-conflict-tint: rgba(255, 59, 48, 0.22);
+
+/* 棋盘与玩法语义（全棋盘面统一用 token，禁止散落 teal hex） */
+$ui-board-ink: #1c1c1e;
+$ui-semantic-dim-1: rgba(0, 122, 255, 0.1);
+$ui-semantic-dim-2: rgba(0, 122, 255, 0.12);
+$ui-semantic-same-1: rgba(52, 199, 89, 0.22);
+$ui-semantic-same-2: rgba(52, 199, 89, 0.26);
+$ui-semantic-bad-2: rgba(255, 59, 48, 0.26);
+$ui-user-input: #0c7c83;
+
+/* ========== 材质 / 玻璃（全站控件层共用）========== */
+$ui-glass-fill-strong: rgba(255, 255, 255, 0.78);
+$ui-glass-fill-weak: rgba(255, 255, 255, 0.5);
+$ui-glass-stroke: rgba(28, 28, 30, 0.12);
+$ui-specular-fade: rgba(255, 255, 255, 0.45);
+$ui-elevation-liquid: 0 12rpx 48rpx rgba(28, 28, 30, 0.1);
+$ui-shadow-capsule: 0 4rpx 20rpx rgba($ui-label-primary, 0.08);
+$ui-surface-tint-72: rgba($ui-surface, 0.72);
+$ui-hairline-on-bg: rgba($ui-label-primary, 0.08);
+
+/* ========== 氛围：Hero 光斑（全页顶区统一、低饱和系统色域感）========== */
+$ui-hero-a0: #9ecfff;
+$ui-hero-a1: #3d8ad6;
+$ui-hero-b0: #ffecc7;
+$ui-hero-b1: #e0b878;
+$ui-hero-c0: #c9c4eb;
+$ui-hero-c1: #7b73b8;
+$ui-hero-d0: #9fe8e0;
+$ui-hero-d1: #4ab8a8;
+$ui-hero-blob-opacity: 0.4;
+$ui-hero-blur: 56rpx;
+
+/* 页面噪点/暗角（用主色控制，不硬编码 28,25,23） */
+$ui-ambient-ink-018: rgba($ui-label-primary, 0.018);
+$ui-ambient-ink-04: rgba($ui-label-primary, 0.04);
+$ui-vignette-mix: 5%;
+$ui-vignette-mix-2: 10%;
+
+/* ========== 模态与强调条（全弹窗同一条 system blue → indigo 向光谱）========== */
+$ui-modal-spectrum-1: rgba(0, 113, 227, 0.92);
+$ui-modal-spectrum-2: rgba(88, 86, 214, 0.88);
+$ui-modal-spectrum-3: rgba(90, 200, 250, 0.85);
+
+/* ========== Motion ========== */
+$ui-ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+$ui-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+$ui-dur-tap: 160ms;
+$ui-dur-focus: 200ms;
+$ui-dur-sheet-enter: 360ms;
+$ui-dur-sheet-exit: 280ms;
+
+/* ========== 类型 ========== */
+$ui-font-stack:
+  -apple-system,
+  BlinkMacSystemFont,
+  'SF Pro Text',
+  'Segoe UI',
+  Roboto,
+  'PingFang SC',
+  'Hiragino Sans GB',
+  'Microsoft YaHei',
+  sans-serif;
+
+/* ========== 工具：全站复用的玻璃胶囊（元数据/难度/未选中 pill/设置项外框）========== */
+@mixin glass-capsule {
+  background: $ui-surface-tint-72;
+  border: 2rpx solid $ui-hairline-on-bg;
+  box-shadow: $ui-shadow-capsule;
+}
+
+@mixin page-atmosphere {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 252, 248, 0.95) 0%, transparent 55%),
+    linear-gradient(
+      165deg,
+      $ui-bg 0%,
+      color.mix($ui-label-primary, $ui-bg, $ui-vignette-mix) 42%,
+      color.mix($ui-label-primary, $ui-bg, $ui-vignette-mix-2) 100%
+    );
+}
+
+@mixin page-noise-gradient {
+  background-image: repeating-linear-gradient(
+    -11deg,
+    transparent,
+    transparent 3rpx,
+    $ui-ambient-ink-018 3rpx,
+    $ui-ambient-ink-018 4rpx
+  );
+}
+
+@mixin page-vignette {
+  background: radial-gradient(
+    ellipse 85% 65% at 50% 50%,
+    transparent 35%,
+    $ui-ambient-ink-04 100%
+  );
+}

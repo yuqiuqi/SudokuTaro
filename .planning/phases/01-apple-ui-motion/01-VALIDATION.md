@@ -16,13 +16,13 @@ created: 2026-04-22
 | **Framework** | none（无 Jest/Vitest） |
 | **Config file** | `tsconfig.json` |
 | **Quick run command** | `npx tsc --noEmit`（仓库根目录） |
-| **Full suite command** | `npm run build:h5`；`npm run build:weapp` |
+| **Full suite command** | `npm run build:h5` |
 | **Estimated runtime** | 1–5 分钟（视机器） |
 
 ## Sampling Rate
 
 - **每 Plan 完成后：** `npx tsc --noEmit`
-- **Phase 收尾：** `npm run build:h5` + `npm run build:weapp`
+- **Phase 收尾：** `npm run build:h5`
 - **手动：** 每份 PLAN 的 checkpoint（若启用）
 
 ## Per-Task Verification Map
@@ -41,9 +41,9 @@ created: 2026-04-22
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| 按下态与弹层动效 | EXP-02, EXP-04 | 视觉与时序 | 微信开发者工具 + H5：点按钮/格；开关系统「减少动态效果」或浏览器 reduced-motion |
+| 按下态与弹层动效 | EXP-02, EXP-04 | 视觉与时序 | 桌面/移动 **浏览器** H5：点按钮/格；`prefers-reduced-motion: reduce` 或系统「减少动态效果」 |
 | 帧率主观 | EXP-05 | Performance | 交互时观察是否卡顿 |
-| 毛玻璃 / blur 工具链与实机 | EXP-02, TEC-01 | 小程序与 H5 能力差异 | **微信开发者工具 + 一台真机**：主路径下观察主卡（`.content-wrap`）与弹层（`.modal__card`）的 **backdrop / 毛玻璃 / blur** 是否异常卡死、失效或与 `@supports` 实色回退冲突（见 `01-REVIEWS` 共识） |
+| 毛玻璃 / blur 与实机 | EXP-02, TEC-01 | 各浏览器/机型实现差异 | **多浏览器或移动真机** Safari/Chrome：主卡（`.content-wrap`）与弹层（`.modal__card`）的 **backdrop** 与 `@supports` 实色回退是否仍可读、无白屏/错层（见 `01-REVIEWS`） |
 | 弱机 / 无 GPU 加速 | EXP-05 | 低端环境 | 关闭或模拟无 GPU 时，确认页面仍可读、无与回退样式冲突的布局错位 |
 
 ## Validation Sign-Off

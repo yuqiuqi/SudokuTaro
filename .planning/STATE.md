@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md`
 
 ## Session
 
-**Last action：** `/gsd-execute-phase 1` — **`01-04` + `01-05`** 已执行；见 **`01-04-SUMMARY.md`**、**`01-05-SUMMARY.md`**（H5 tap、无 backdrop 实色回退、VALIDATION/RESEARCH/REQUIREMENTS 增量；`tsc` / `build:h5` / `build:weapp` 通过）。
+**Last action：** 仓库已 **剥离微信/抖音小程序与 `minigame-wechat/`**，`package.json` 仅 `dev:h5` / `build:h5`；`npx tsc --noEmit` 与 `npm run build:h5` 通过。
 
 **Resume file:** .planning/phases/01-apple-ui-motion/01-UAT.md
 

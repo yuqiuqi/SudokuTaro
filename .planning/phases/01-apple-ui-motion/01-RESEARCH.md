@@ -29,7 +29,7 @@
 
 本阶段 **无单元测试框架**；验证组合为：
 
-1. **构建门禁**：`npm run build:h5`、`npm run build:weapp`（或至少 `npx tsc --noEmit` 若构建过慢）零错误。  
+1. **构建门禁**：`npm run build:h5`（或至少 `npx tsc --noEmit` 若构建过慢）零错误。  
 2. **静态契约**：`index.scss` 中 UI-SPEC 所列主色、accent、label 色须通过变量引用（grep 可证）。  
 3. **手动**：H5 与微信小程序各一条路径 — 点格、开设置/帮助/胜利弹层，确认动效与 reduced-motion（浏览器 DevTools）行为符合 UI-SPEC。  
 4. **性能主观**：开发者工具 Performance 抽样，棋盘交互无明显掉帧。
@@ -45,7 +45,6 @@
 | 1 | `src/styles/_apple-ui-tokens.scss` | 色板、玻璃 mixin、动效时长/缓动 **Sass 真源** |
 | 2 | `src/pages/index/_ui-tokens.scss` | `@forward` 聚合给页面 SCSS |
 | 3 | `src/utils/theme.ts` | `appleUi` 供 TS/内联样式交叉引用 |
-| 4 | `minigame-wechat/src/appleUiTheme.ts` | 微信小游戏 Canvas 色值，与主站 **手同步**（无自动构建链） |
 
 ---
 

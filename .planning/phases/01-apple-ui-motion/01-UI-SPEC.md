@@ -20,7 +20,7 @@ reviewed_at: 2026-04-23
 
 | Property | Value |
 |----------|-------|
-| **真源（全量）** | **`src/styles/_apple-ui-tokens.scss`**：全站色板、英雄光斑、棋盘语义、玻璃/阴影/动效 mixin；`src/app.scss` 为全局 `page`/`body` 基线；`src/utils/theme.ts` 与 **`minigame-wechat/src/appleUiTheme.ts`** 为 TS/Canvas 手同步。禁止在业务样式中散落与语义色无关的硬编码 hex。 |
+| **真源（全量）** | **`src/styles/_apple-ui-tokens.scss`**：全站色板、英雄光斑、棋盘语义、玻璃/阴影/动效 mixin；`src/app.scss` 为全局 `page`/`body` 基线；`src/utils/theme.ts` 为 TS 交叉引用。禁止在业务样式中散落与语义色无关的硬编码 hex。 |
 | Tool | **none**（手写 Sass + `theme.ts` 常量，与上表同 PR 维护） |
 | Preset | **apple-like-taro**（行为与层级对齐 Apple HIG 方向，非官方资源） |
 | Component library | **none**（保持页面内 `React.memo` 子组件） |

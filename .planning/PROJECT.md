@@ -2,11 +2,11 @@
 
 ## What This Is
 
-SudokuTaro 是基于 **Taro 4 + React + TypeScript** 的数独游戏，一套代码面向 **H5、微信小程序、抖音小程序**，并包含独立的 **微信小游戏**（`minigame-wechat/`，Canvas）。当前规划周期聚焦：在**不破坏核心玩法**的前提下，将主端 UI/动效对齐 **Apple 平台式交互与视觉语言**（清晰层级、弹性过渡、材质感表面、克制的高光与景深），以满足产品侧对「系统级精致感」的偏好。
+SudokuTaro 是基于 **Taro 4 + React + TypeScript** 的数独游戏，**仅构建 H5**（浏览器）。当前规划可继续聚焦：在**不破坏核心玩法**的前提下，将主界面 UI/动效对齐 **Apple 平台式交互与视觉语言**。
 
 ## Core Value
 
-玩家能 **流畅完成一局标准数独**（生成、填数、冲突反馈、撤销/擦除、通关统计），且在 **H5 与小程序** 上获得 **可信、顺手、像原生系统组件一样跟手** 的界面与动效。
+玩家能 **流畅完成一局标准数独**（生成、填数、冲突反馈、撤销/擦除、通关统计），在 **H5** 上获得 **可信、顺手** 的界面与动效。
 
 ## Requirements
 
@@ -15,11 +15,10 @@ SudokuTaro 是基于 **Taro 4 + React + TypeScript** 的数独游戏，一套代
 （来自现有实现与 `.planning/codebase/`，已交付能力）
 
 - ✓ 多端数独核心：难度（易/中/高）、终盘生成、挖空、冲突检测与高亮、约 1.5s 回退 — existing
-- ✓ 道具经济：撤销/擦除消耗、每日首次赠送、本地持久化（`src/utils/gameEconomy.ts`，与小游戏同 KEY）— existing
+- ✓ 道具经济：撤销/擦除消耗、每日首次赠送、本地持久化（`src/utils/gameEconomy.ts`）— existing
 - ✓ 设置：按下数字时震动开关 — existing
 - ✓ H5 输入：系统键盘 / 隐藏输入与物理键 — existing
 - ✓ 性能取向：棋盘 `React.memo`、冲突 `Set` 索引 — existing
-- ✓ 微信小游戏独立工程：Canvas 玩法与逻辑对齐 — existing
 
 ### Active
 
