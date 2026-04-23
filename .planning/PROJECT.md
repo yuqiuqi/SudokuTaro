@@ -1,8 +1,21 @@
 # SudokuTaro
 
+## Current Milestone: v2.0 Liquid Glass · iOS 26 全量动画与交互精打
+
+**Goal：** 以 Apple iOS 26 / Liquid Glass 为设计真源，对项目中**所有页面与组件**的动画、交互反馈、材质语义进行彻底打磨，达到"与系统原生组件感知一致"的手感。
+
+**Target features：**
+- iOS 26 Liquid Glass 全量设计原则落地（材质、层次、动态 specular、弹性动画）
+- 所有可交互组件（棋盘格、按钮、弹层、开关、道具行、冲突提示）五态完整（默认/hover/pressed/disabled/focused）
+- Spring / elastic 弹性过渡全链路（入场、按下、弹出、消失）
+- `prefers-reduced-motion` 全路径降级策略
+- H5 CSS 下 Liquid Glass 材质最大化可实现子集
+
+---
+
 ## What This Is
 
-SudokuTaro 是基于 **Taro 4 + React + TypeScript** 的数独游戏，**仅构建 H5**（浏览器）。当前规划可继续聚焦：在**不破坏核心玩法**的前提下，将主界面 UI/动效对齐 **Apple 平台式交互与视觉语言**。
+SudokuTaro 是基于 **Taro 4 + React + TypeScript** 的数独游戏，**仅构建 H5**（浏览器）。当前里程碑聚焦：以 **Apple iOS 26 Liquid Glass** 设计语言为真源，深度打磨所有组件的动画、交互与材质质感。
 
 ## Core Value
 
@@ -75,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-22 after initialization（GSD new-project + 用户 Apple 风格偏好 + Phase 1 UI-SPEC）*
+*Last updated: 2026-04-23 — Milestone v2.0 Liquid Glass · iOS 26 全量动画与交互精打 启动*

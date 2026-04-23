@@ -2,14 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: UAT
-last_updated: "2026-04-23T14:20:00.000Z"
+status: defining-requirements
+last_updated: "2026-04-23T15:00:00.000Z"
+milestone: v2.0
+milestone_name: Liquid Glass iOS 26 全量动画与交互精打
 progress:
-  total_phases: 1
+  total_phases: 0
   completed_phases: 0
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State — SudokuTaro
@@ -26,9 +28,9 @@ See: `.planning/PROJECT.md`
 
 ## Session
 
-**Last action：** 仓库已 **剥离微信/抖音小程序与 `minigame-wechat/`**，`package.json` 仅 `dev:h5` / `build:h5`；`npx tsc --noEmit` 与 `npm run build:h5` 通过。
+**Last action：** Milestone v2.0 启动 — iOS 26 Liquid Glass 全量动画与交互精打。正在执行研究阶段。
 
-**Resume file:** .planning/phases/01-apple-ui-motion/01-UAT.md
+**Resume file:** .planning/ROADMAP.md
 
 ## Next Steps
 
