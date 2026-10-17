@@ -16,7 +16,7 @@
 - **设置**：仅「按下数字时震动」开关（`gameEconomy.ts` 本地存档）
 - **规则**：填入与同行/同列/同宫冲突时会高亮并在约 1.5 秒后回退
 - **通关**：完成后弹窗展示用时与步数
-- **输入**：H5 下使用系统键盘（隐藏输入框唤起软键盘 + 物理键盘快捷键）；无屏幕数字键盘
+- **输入**：支持 H5 浮动九宫格数字键盘、触控选择和物理键盘快捷键；保留隐藏输入框以兼容移动端系统键盘。
 - **性能**：棋盘使用 `React.memo`，计时器更新时不重复渲染 81 格；冲突检测与引擎路径做了轻量优化
 
 **协作 / AI 上下文**：请先阅读 **[`CONTEXT.md`](./CONTEXT.md)**。
@@ -87,98 +87,22 @@ SudokuTaro/
 - **`config/index.ts`**：`h5.publicPath: '/'`；`h5.devServer.static: false` 避免开发时根路径被当成静态目录列表。
 - **页面配置**：`app.config.js`、`pages/index/index.config.js` 使用纯 JS，避免在 Node 读取配置时触发 `window`。
 
-## 首次上传到 GitHub（Git + GitHub CLI）
+## 项目状态与展示
 
-本仓库远程示例：**https://github.com/yuqiuqi/SudokuTaro**。若你已在本地 `git clone` 并配置好 `origin`，只需「日常推送代码」一节即可。
+- **部署产物：** 本仓库目前仅维护浏览器 H5 版本，不包含微信/抖音小程序或小游戏构建。
+- **本地试玩：** 使用 `npm run dev:h5`，然后打开构建工具输出的本地地址。
+- **生产验证：** `npm run build:h5`；建议在 PR 和默认分支上启用 GitHub Actions 检查。
+- **在线试玩：** 规划使用 GitHub Pages 托管。**是否已经上线请以仓库 Pages/Actions 状态为准**，避免把尚未发布的链接误写成可用演示。
 
-下面说明 **从零** 使用 **GitHub CLI (`gh`)** 登录与建库推送。若尚未安装，可执行仓库内脚本（需管理员 PowerShell）：
+### 建议的 GitHub Topics
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-cd c:\Users\yuqiu\SudokuTaro   # 按你的路径修改
-.\scripts\setup-git-github.ps1
-```
+`sudoku` · `taro` · `typescript` · `react` · `web-game`
 
-或用手动命令：`winget install Git.Git`、`winget install GitHub.cli`。安装后**新开一个终端**，确保 `git`、`gh` 在 PATH 中。
+Topics 属于 GitHub 仓库设置，不能只通过合并 README 生效，需要仓库所有者在仓库首页 **About → Topics** 设置。
 
-**配置提交者信息（建议一次性设置）：**
+### 截图与演示素材
 
-```powershell
-git config --global user.name "你的名字或昵称"
-git config --global user.email "你的邮箱@example.com"
-```
-
-### 1. 安装 Git 与 GitHub CLI（Windows 推荐）
-
-在 **以管理员身份运行** 的 PowerShell 中执行：
-
-```powershell
-winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements
-winget install --id GitHub.cli -e --accept-package-agreements --accept-source-agreements
-```
-
-安装后**关闭并重新打开**终端，执行：
-
-```powershell
-git --version
-gh --version
-```
-
-### 2. 登录 GitHub（必须在本机交互完成）
-
-```powershell
-gh auth login
-```
-
-按提示选择：GitHub.com → HTTPS → 浏览器登录（或 Token）。**请勿将 Token 发给他人或贴到公共聊天。**
-
-验证登录：
-
-```powershell
-gh auth status
-```
-
-### 3. 在项目目录初始化并创建远程仓库后推送
-
-在 `SudokuTaro` 根目录：
-
-```powershell
-cd c:\Users\yuqiu\SudokuTaro
-git init
-git add .
-git commit -m "chore: initial commit SudokuTaro"
-git branch -M main
-```
-
-**方式 A — 用 `gh` 一键创建仓库并推送**（推荐，需已 `gh auth login`）：
-
-```powershell
-gh repo create SudokuTaro --public --source=. --remote=origin --push
-```
-
-若仓库名已存在，可改名，例如：
-
-```powershell
-gh repo create my-sudoku-taro --public --source=. --remote=origin --push
-```
-
-**方式 B — 先在网页创建空仓库**，再：
-
-```powershell
-git remote add origin https://github.com/你的用户名/仓库名.git
-git push -u origin main
-```
-
-### 4. 仅使用 Git、不用 gh
-
-在 GitHub 网站新建空仓库后：
-
-```powershell
-git remote add origin https://github.com/你的用户名/仓库名.git
-git push -u origin main
-```
-
-首次推送时按提示用 **Git Credential Manager** 浏览器登录，或使用 **Personal Access Token**（在 GitHub → Settings → Developer settings 中创建）。
+上线后建议从真实 H5 页面采集桌面和手机截图，至少展示：游戏主界面、难度选择和通关弹窗。请勿使用与实际界面不符的示意图冒充成品截图。
 
 ## 常见问题
 
