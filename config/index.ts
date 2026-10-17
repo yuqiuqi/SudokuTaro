@@ -1,5 +1,8 @@
 import {defineConfig, type UserConfigExport} from '@tarojs/cli'
 
+// GitHub Pages 项目站点托管在 /SudokuTaro/，其他构建和本地开发仍使用 /。
+const isGitHubPagesBuild = process.env.GITHUB_PAGES === 'true'
+
 export default defineConfig({
   projectName: 'SudokuTaro',
   date: '2026-4-5',
@@ -19,7 +22,7 @@ export default defineConfig({
   },
   framework: 'react',
   h5: {
-    publicPath: '/',
+    publicPath: isGitHubPagesBuild ? '/SudokuTaro/' : '/',
     devServer: {
       static: false,
       client: {
