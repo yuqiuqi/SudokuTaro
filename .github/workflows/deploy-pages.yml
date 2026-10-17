@@ -41,18 +41,24 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 7
+      - name: Explain Pages setup requirement
+        if: github.event_name != 'pull_request' && github.event.repository.has_pages != true
+        run: |
+          echo '### GitHub Pages 尚未启用' >> "$GITHUB_STEP_SUMMARY"
+          echo '✅ H5 静态构建通过，但未发布网站。' >> "$GITHUB_STEP_SUMMARY"
+          echo '请先到 Settings → Pages → Build and deployment 将 Source 设为 GitHub Actions；完成后手动运行本工作流。' >> "$GITHUB_STEP_SUMMARY"
       - name: Configure GitHub Pages
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.event.repository.has_pages == true
         uses: actions/configure-pages@v5
       - name: Upload static site
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.event.repository.has_pages == true
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
     name: Publish website
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.event.repository.has_pages == true
     needs: build
     environment:
       name: github-pages
