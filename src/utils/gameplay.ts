@@ -198,6 +198,10 @@ export function hintText(h: Hint, stage: number, lang: Language): string {
       ? `在高亮区域中，${h.candidates[0]} 只能放在这个位置。请结合行、列和宫再次核对，再由你填写。`
       : `排除行、列、宫中已有的数字后，只剩候选数 ${h.candidates[0]}。理解后，由你来填写。`
 }
+/** Offer each distinct clue once; review hints need no artificial extra steps. */
+export function hintSteps(h: Hint, lang: Language): string[] {
+  return [...new Set([0, 1, 2].map((stage) => hintText(h, stage, lang)))]
+}
 // Storage is untrusted: restore only complete, internally consistent versioned games.
 export function isSavedGame(value: unknown): value is Game {
   if (!value || typeof value !== 'object') return false

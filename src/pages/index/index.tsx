@@ -6,7 +6,7 @@ import {
   createGame,
   DIGITS,
   findHint,
-  hintText,
+  hintSteps,
   isSavedGame,
   move,
   peers,
@@ -346,6 +346,7 @@ export default function IndexPage() {
     return () => document.removeEventListener('keydown', onKey)
   }, [modal, hint, fill, selected, choose])
   const filled = game.board.flat().filter(Boolean).length
+  const clues = hint ? hintSteps(hint.value, lang) : []
   const focus = hint?.value.index ?? selected
   const hintUnit =
     hint?.value.kind === 'hidden' && hint.value.unit !== undefined
@@ -516,7 +517,9 @@ export default function IndexPage() {
                       <GameIcon name="hint" />{' '}
                       {say('一点启发', 'A little inspiration')}
                     </span>
-                    <span className="hint-step">{hint.stage + 1} / 3</span>
+                    <span className="hint-step">
+                      {hint.stage + 1} / {clues.length}
+                    </span>
                     <button
                       type="button"
                       className="text-button"
@@ -528,10 +531,21 @@ export default function IndexPage() {
                     </button>
                   </div>
                   <h2 id="hint-heading">
-                    {say('先看高亮的这一格', 'Look at this cell')}
+                    {hint.value.kind === 'review'
+                      ? say('回看你的填写', 'Review your entry')
+                      : hint.stage === 0
+                        ? say('先看高亮的这一格', 'Look at this cell')
+                        : hint.stage === 1
+                          ? say(
+                              '从已有数字里排除',
+                              'Eliminate the known digits',
+                            )
+                          : say('核对这一步推理', 'Check the reasoning')}
                   </h2>
-                  <p>{hintText(hint.value, hint.stage, lang)}</p>
-                  <div className="dialog-actions">
+                  <p>{clues[hint.stage]}</p>
+                  <div
+                    className={`dialog-actions ${clues.length === 1 ? 'hint-single-action' : ''}`}
+                  >
                     <button
                       type="button"
                       className="secondary-button"
@@ -539,16 +553,28 @@ export default function IndexPage() {
                     >
                       {say('我来试试', 'Let me try')}
                     </button>
-                    <button
-                      type="button"
-                      className="primary-button"
-                      disabled={hint.stage === 2}
-                      onClick={() =>
-                        setHint((h) => (h ? {...h, stage: h.stage + 1} : h))
-                      }
-                    >
-                      {say('再给一点线索', 'Another clue')}
-                    </button>
+                    {clues.length > 1 && (
+                      <button
+                        type="button"
+                        className="primary-button"
+                        disabled={hint.stage >= clues.length - 1}
+                        onClick={() =>
+                          setHint((h) =>
+                            h
+                              ? {
+                                  ...h,
+                                  stage: Math.min(
+                                    h.stage + 1,
+                                    clues.length - 1,
+                                  ),
+                                }
+                              : h,
+                          )
+                        }
+                      >
+                        {say('再给一点线索', 'Another clue')}
+                      </button>
+                    )}
                   </div>
                 </section>
               </>

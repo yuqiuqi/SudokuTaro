@@ -145,3 +145,20 @@ test('hints name rows and columns in everyday language in both locales', () => {
     }
   }
 })
+
+test('hint steps offer one review message or three different teaching clues', () => {
+  for (const lang of ['zh', 'en']) {
+    for (const kind of ['review', 'single', 'hidden', 'explore']) {
+      const hint = {
+        index: 37,
+        kind,
+        candidates: kind === 'explore' ? [1, 4] : [4],
+        unit: 4,
+      }
+      const steps = g.hintSteps(hint, lang)
+      assert.equal(steps.length, kind === 'review' ? 1 : 3)
+      assert.equal(new Set(steps).size, steps.length)
+      assert.ok(steps.every((text) => text.length > 0))
+    }
+  }
+})
