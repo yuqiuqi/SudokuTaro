@@ -4,9 +4,15 @@
 （若你需要 **React Native** 或原生 App，需另起 RN/Expo 工程；本仓不是 RN 项目。）
 
 [![GitHub](https://img.shields.io/badge/GitHub-yuqiuqi%2FSudokuTaro-181717?logo=github)](https://github.com/yuqiuqi/SudokuTaro)
-![Taro](https://img.shields.io/badge/Taro-4.0.9-07c160)
+![Taro](https://img.shields.io/badge/Taro-4.3.0-07c160)
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178c6?logo=typescript&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-7.0.2-3178c6?logo=typescript&logoColor=white)
+
+## v1.1.0 依赖维护
+
+Taro 全套升级至 4.3.0，TypeScript 升级至 7.0.2，Playwright 升级至 1.64.1，并更新 Sass、PostCSS、Babel 7 补丁和类型定义；游戏设计与存档格式保持不变。构建环境要求 Node.js 22+。
+
+React 仍为 18.3.1；Taro 当前的兼容约束要求保留 React 18、Webpack 5.91.0、Babel 7、ESLint 8 和 react-refresh 0.14.x。每个直接依赖的升级、清理或保留原因见 [完整依赖记录](docs/DEPENDENCY_UPGRADE.md)，执行步骤见 [升级计划](docs/superpowers/plans/2026-10-19-dependency-upgrade.md)。
 
 ## 功能概览
 
@@ -78,14 +84,14 @@
 
 | 类别 | 选用 |
 |------|------|
-| 框架 | Taro 4.0.9、React 18 |
-| 语言 | TypeScript |
+| 框架 | Taro 4.3.0、React 18.3.1 |
+| 语言 | TypeScript 7.0.2 |
 | 样式 | Sass、CSS 变量、实际 CSS 像素（H5 关闭 pxtransform） |
 | 构建 | Webpack 5（`@tarojs/webpack5-runner`） |
 
 ## 环境要求
 
-- **Node.js** 18+（建议 LTS）
+- **Node.js** 22+（CI 使用 22；建议使用受支持的 LTS）
 - **npm** 或 **cnpm** / **pnpm** / **yarn**
 - 现代浏览器（H5）
 
