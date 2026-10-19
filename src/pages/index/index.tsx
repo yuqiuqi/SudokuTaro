@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import type {Difficulty} from '../../utils/sudokuEngine'
 import {
+  cellLocation,
   completedUnits,
   createGame,
   DIGITS,
@@ -15,6 +16,7 @@ import {
   type Hint,
   type Language,
 } from '../../utils/gameplay'
+import {GameIcon} from './GameIcon'
 import {useGameLayout} from './useGameLayout'
 import './index.scss'
 
@@ -128,7 +130,16 @@ export default function IndexPage() {
     hintRef = useRef(hint),
     winRecorded = useRef(game.won)
   const conflictTimer = useRef<ReturnType<typeof setTimeout>>()
-  const layout = useGameLayout(),
+  const hintClose = useRef<HTMLButtonElement>(null),
+    hintTrigger = useRef<HTMLButtonElement>(null)
+  const hintOpen = !!hint
+  const hadHint = useRef(false)
+  useEffect(() => {
+    if (hintOpen) hintClose.current?.focus({preventScroll: true})
+    else if (hadHint.current) hintTrigger.current?.focus({preventScroll: true})
+    hadHint.current = hintOpen
+  }, [hintOpen])
+  const layout = useGameLayout(!!hint, !!message),
     en = lang === 'en'
   const say = useCallback(
     (zh: string, english: string) => (en ? english : zh),
@@ -376,7 +387,7 @@ export default function IndexPage() {
                 c === 2 || c === 5 ? 'box-right' : '',
                 r === 2 || r === 5 ? 'box-bottom' : '',
               ].join(' ')}
-              aria-label={`R${r + 1}C${c + 1}: ${value || say('空格', 'empty')}${fixed ? say('，题目给定', ', given') : ''}${!value && game.notes[index].length ? `${say('，候选数', ', notes ')} ${game.notes[index].join(', ')}` : ''}`}
+              aria-label={`${cellLocation(index, lang)}: ${value || say('空格', 'empty')}${fixed ? say('，题目给定', ', given') : ''}${!value && game.notes[index].length ? `${say('，候选数', ', notes ')} ${game.notes[index].join(', ')}` : ''}`}
               aria-pressed={selected === index}
               onClick={() => choose(index)}
             >
@@ -405,12 +416,13 @@ export default function IndexPage() {
       hintUnit,
       choose,
       say,
+      lang,
     ],
   )
 
   return (
     <main
-      className={`sudoku-app layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''}`}
+      className={`sudoku-app layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''}`}
       style={layout.style}
     >
       <div className="game-shell" ref={layout.ref}>
@@ -457,15 +469,17 @@ export default function IndexPage() {
                 <span>{filled} / 81</span>
               </span>
             </div>
-            <div
-              className="sudoku-board"
-              role="group"
-              aria-label={say(
-                '九行九列，选择格子后使用下方数字按钮',
-                'Nine by nine Sudoku. Select a cell, then a number.',
-              )}
-            >
-              {renderedCells}
+            <div className="board-frame glass-panel">
+              <div
+                className="sudoku-board"
+                role="group"
+                aria-label={say(
+                  '九行九列，选择格子后使用下方数字按钮',
+                  'Nine by nine Sudoku. Select a cell, then a number.',
+                )}
+              >
+                {renderedCells}
+              </div>
             </div>
             <div className="selection-caption">
               {selected === null
@@ -473,7 +487,7 @@ export default function IndexPage() {
                     '选一个空格，开始你的推理',
                     'Choose an empty cell to begin',
                   )
-                : `R${Math.floor(selected / 9) + 1}C${(selected % 9) + 1} · ${selectedNotes.length ? say('候选数 ', 'Notes ') + selectedNotes.join('、') : noteMode ? say('笔记模式', 'Notes on') : say('点击数字填写', 'Tap a number to fill')}`}
+                : `${cellLocation(selected, lang)} · ${selectedNotes.length ? say('候选数 ', 'Notes ') + selectedNotes.join('、') : noteMode ? say('笔记模式', 'Notes on') : say('点击数字填写', 'Tap a number to fill')}`}
             </div>
           </section>
           <section
@@ -489,120 +503,150 @@ export default function IndexPage() {
                 )}
               </p>
             </div>
-            <div className="game-controls">
-              <div className="tools glass-panel">
-                <button
-                  type="button"
-                  disabled={!game.history.length || game.won}
-                  onClick={undo}
+            {hint ? (
+              <>
+                <section
+                  className="hint-card glass-panel"
+                  role="dialog"
+                  aria-modal="false"
+                  aria-labelledby="hint-heading"
                 >
-                  {say('撤销', 'Undo')}
-                </button>
-                <button
-                  type="button"
-                  disabled={game.won}
-                  onClick={() => fill(0, true)}
-                >
-                  {say('擦除', 'Erase')}
-                </button>
-                <button
-                  type="button"
-                  className={noteMode ? 'is-active' : ''}
-                  aria-pressed={noteMode}
-                  disabled={game.won}
-                  onClick={() => setNoteMode((n) => !n)}
-                >
-                  {say('笔记', 'Notes')}
-                </button>
-                <button type="button" onClick={showHint} disabled={game.won}>
-                  {say('提示', 'Hint')}
-                </button>
-              </div>
-              <div
-                className="number-panel glass-panel"
-                aria-label={say('填写数字 1 到 9', 'Enter digits 1 to 9')}
-              >
-                {DIGITS.map((n) => (
+                  <div className="hint-eyebrow">
+                    <span>
+                      <GameIcon name="hint" />{' '}
+                      {say('一点启发', 'A little inspiration')}
+                    </span>
+                    <span className="hint-step">{hint.stage + 1} / 3</span>
+                    <button
+                      type="button"
+                      className="text-button"
+                      ref={hintClose}
+                      aria-label={say('关闭提示', 'Close hint')}
+                      onClick={() => setHint(null)}
+                    >
+                      <GameIcon name="close" />
+                    </button>
+                  </div>
+                  <h2 id="hint-heading">
+                    {say('先看高亮的这一格', 'Look at this cell')}
+                  </h2>
+                  <p>{hintText(hint.value, hint.stage, lang)}</p>
+                  <div className="dialog-actions">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setHint(null)}
+                    >
+                      {say('我来试试', 'Let me try')}
+                    </button>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      disabled={hint.stage === 2}
+                      onClick={() =>
+                        setHint((h) => (h ? {...h, stage: h.stage + 1} : h))
+                      }
+                    >
+                      {say('再给一点线索', 'Another clue')}
+                    </button>
+                  </div>
+                </section>
+              </>
+            ) : (
+              <div className="game-controls">
+                <div className="tools glass-panel">
                   <button
                     type="button"
-                    key={n}
-                    className={`number-key ${noteMode && activeCandidates.has(n) ? 'is-noted' : ''}`}
-                    data-number={n}
-                    aria-label={
-                      noteMode
-                        ? say(`候选数 ${n}`, `Candidate ${n}`)
-                        : say(`填写 ${n}`, `Enter ${n}`)
-                    }
-                    aria-pressed={noteMode && activeCandidates.has(n)}
-                    disabled={game.won}
-                    onClick={() => fill(n)}
+                    disabled={!game.history.length || game.won}
+                    onClick={undo}
                   >
-                    {n}
+                    <GameIcon name="undo" />
+                    <span>{say('撤销', 'Undo')}</span>
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    disabled={game.won}
+                    onClick={() => fill(0, true)}
+                  >
+                    <GameIcon name="erase" />
+                    <span>{say('擦除', 'Erase')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={noteMode ? 'is-active' : ''}
+                    aria-pressed={noteMode}
+                    disabled={game.won}
+                    onClick={() => setNoteMode((n) => !n)}
+                  >
+                    <GameIcon name="notes" />
+                    <span>{say('笔记', 'Notes')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    ref={hintTrigger}
+                    onClick={showHint}
+                    disabled={game.won}
+                  >
+                    <GameIcon name="hint" />
+                    <span>{say('提示', 'Hint')}</span>
+                  </button>
+                </div>
+                <div
+                  className="number-panel glass-panel"
+                  aria-label={say('填写数字 1 到 9', 'Enter digits 1 to 9')}
+                >
+                  {DIGITS.map((n) => (
+                    <button
+                      type="button"
+                      key={n}
+                      className={`number-key ${noteMode && activeCandidates.has(n) ? 'is-noted' : ''}`}
+                      data-number={n}
+                      aria-label={
+                        noteMode
+                          ? say(`候选数 ${n}`, `Candidate ${n}`)
+                          : say(`填写 ${n}`, `Enter ${n}`)
+                      }
+                      aria-pressed={noteMode && activeCandidates.has(n)}
+                      disabled={game.won}
+                      onClick={() => fill(n)}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <p className="input-caption">
-              {say(
-                '选格 → 填数；需要时再查看线索',
-                'Select → enter. Find a clue when you need one.',
+            )}
+            <div className={`input-caption ${message ? 'has-feedback' : ''}`}>
+              <div
+                className={`feedback ${message ? 'feedback-visible' : ''} ${conflicts.length ? 'feedback-error' : ''}`}
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {message && (
+                  <>
+                    <GameIcon name={conflicts.length ? 'warning' : 'info'} />
+                    <span>{message}</span>
+                  </>
+                )}
+              </div>
+              {!message && (
+                <span>
+                  {hint
+                    ? say(
+                        '理解之后，答案由你亲手填写。',
+                        'Understand it, then make the move yourself.',
+                      )
+                    : say(
+                        '先观察，再落笔。',
+                        'Observe first. Make your next move.',
+                      )}
+                </span>
               )}
-            </p>
-          </section>
-        </div>
-      </div>
-      <div
-        className={`feedback ${message ? 'feedback-visible' : ''} ${conflicts.length ? 'feedback-error' : ''}`}
-        role="status"
-        aria-live="polite"
-      >
-        {message}
-      </div>
-      {hint && !modal && (
-        <div className="hint-layer">
-          <section
-            className="hint-card glass-panel"
-            role="dialog"
-            aria-modal="false"
-            aria-labelledby="hint-heading"
-          >
-            <div className="hint-eyebrow">
-              {say('线索', 'Clue')} {hint.stage + 1} / 3{' '}
-              <button
-                type="button"
-                className="text-button"
-                aria-label={say('关闭提示', 'Close hint')}
-                onClick={() => setHint(null)}
-              >
-                ×
-              </button>
-            </div>
-            <h2 id="hint-heading">
-              {say('先看看这个位置', 'Look at this cell')}
-            </h2>
-            <p>{hintText(hint.value, hint.stage, lang)}</p>
-            <div className="dialog-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setHint(null)}
-              >
-                {say('我来试试', 'Let me try')}
-              </button>
-              <button
-                type="button"
-                className="primary-button"
-                disabled={hint.stage === 2}
-                onClick={() =>
-                  setHint((h) => (h ? {...h, stage: h.stage + 1} : h))
-                }
-              >
-                {say('再给一点线索', 'Another clue')}
-              </button>
             </div>
           </section>
         </div>
-      )}
+      </div>
       {modal && (
         <div className="dialog-backdrop" onClick={() => setModal(null)}>
           <section
