@@ -69,6 +69,17 @@ const server = http.createServer((req, res) => {
   })
 })
 const errors = []
+async function loadTestFonts(p, url) {
+  if (process.env.TEST_FONT_DIR) {
+    await p.addStyleTag({
+      url: url.replace(/\/SudokuTaro\/$/, '/') + 'test-fonts/400.css',
+    })
+    await p.addStyleTag({
+      content: '.sudoku-app {font-family:"Noto Sans SC",Arial,sans-serif}',
+    })
+    await p.evaluate(() => document.fonts.ready)
+  }
+}
 async function geometry(p, label) {
   const result = await p.evaluate(() => {
     const w = innerWidth,
@@ -134,19 +145,117 @@ async function dialogFits(p, label) {
       right: r.right,
       bottom: r.bottom,
       w: innerWidth,
-      h: innerHeight,
+      h: Math.min(innerHeight, visualViewport?.height || innerHeight),
+      buttons: [...n.querySelectorAll('button')].map((b) => ({
+        text: b.textContent,
+        rect: b.getBoundingClientRect().toJSON(),
+      })),
       scroll: n.scrollHeight,
       client: n.clientHeight,
     }
   })
   assert.ok(
-    out.top >= 0 &&
+    out.buttons.every(({rect: r}) =>
+      r.width > 0 && r.height > 0 && r.top >= 0 && r.left >= 0 &&
+      r.bottom <= out.h + 0.5 && r.right <= out.w + 0.5,
+    ) &&
+      out.top >= 0 &&
       out.left >= 0 &&
       out.bottom <= out.h + 0.5 &&
       out.right <= out.w + 0.5 &&
       out.scroll <= out.client + 1,
     label + ' dialog overflow ' + JSON.stringify(out),
   )
+}
+async function viewportRegressions(p) {
+  const failures = []
+  const check = async (label, test) => {
+    try {
+      await test()
+    } catch (e) {
+      failures.push(label + ': ' + e.message)
+    }
+  }
+  for (const [width, height] of [[568, 240], [480, 240]]) {
+    await p.setViewportSize({width, height})
+    await p.waitForTimeout(80)
+    await check(`low landscape ${width}x${height}`, async () => {
+      await geometry(p, 'low landscape')
+      await p.locator('[data-cell="2"]').click()
+      await p.getByRole('button', {name: '笔记', exact: true}).click()
+      for (const n of ['7', '8', '9'])
+        await p.locator(`[data-number="${n}"]`).click()
+      assert.equal(
+        (await p.locator('[data-cell="2"] .cell-notes').innerText()).replace(/\s/g, ''),
+        '124789',
+      )
+      for (let i = 0; i < 3; i++)
+        await p.getByRole('button', {name: '撤销', exact: true}).click()
+      await p.getByRole('button', {name: '笔记', exact: true}).click()
+    })
+  }
+  await p.setViewportSize({width: 390, height: 720})
+  await p.waitForTimeout(80)
+  for (const [cell, key, want] of [
+    [8, 'ArrowRight', '8'],
+    [9, 'ArrowLeft', '9'],
+    [0, 'ArrowUp', '0'],
+    [80, 'ArrowDown', '80'],
+    [40, 'ArrowRight', '41'],
+    [40, 'ArrowUp', '31'],
+  ]) {
+    await p.locator(`[data-cell="${cell}"]`).click()
+    await p.keyboard.press(key)
+    await check(`keyboard ${cell} ${key}`, async () => {
+      assert.equal(
+        await p.locator('[aria-pressed="true"][data-cell]').getAttribute('data-cell'),
+        want,
+      )
+    })
+  }
+  for (const [width, height, visible] of [
+    [568, 240, 240],
+    [480, 240, 240],
+    [568, 320, 320],
+    [320, 480, 480],
+    [390, 720, 400],
+  ]) {
+    await p.setViewportSize({width, height})
+    await p.evaluate((height) => {
+      Object.defineProperty(visualViewport, 'height', {configurable: true, value: height})
+      visualViewport.dispatchEvent(new Event('resize'))
+    }, visible)
+    await p.waitForTimeout(80)
+    for (const en of [false, true]) {
+      for (const modal of ['rules', 'settings', 'new']) {
+        if (modal === 'new') {
+          await p.locator('.difficulty-button').click()
+        } else {
+          const name = modal === 'rules'
+            ? (en ? 'Rules' : '规则')
+            : (en ? 'Settings' : '设置')
+          await p.getByRole('button', {name, exact: true}).click()
+        }
+        await p.locator('.dialog').evaluate(async (n) => {
+          await Promise.all(n.getAnimations().map((a) => a.finished.catch(() => {})))
+        })
+        await check(
+          `${modal} ${width}x${height} visible${visible} ${en ? 'en' : 'zh'}`,
+          () => dialogFits(p, modal),
+        )
+        await p.getByRole('button', {name: en ? 'Close' : '关闭', exact: true}).click()
+      }
+      await p.getByRole('button', {name: en ? 'Settings' : '设置', exact: true}).click()
+      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await p.getByRole('button', {name: en ? '关闭' : 'Close', exact: true}).click()
+    }
+    await p.evaluate(() => {
+      delete visualViewport.height
+      visualViewport.dispatchEvent(new Event('resize'))
+    })
+  }
+  await p.setViewportSize({width: 390, height: 720})
+  assert.deepEqual(failures, [], 'viewport regressions')
 }
 ;(async () => {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -189,15 +298,8 @@ async function dialogFits(p, label) {
     )
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
-    if (process.env.TEST_FONT_DIR) {
-      await p.addStyleTag({
-        url: url.replace(/\/SudokuTaro\/$/, '/') + 'test-fonts/400.css',
-      })
-      await p.addStyleTag({
-        content: '.sudoku-app {font-family:"Noto Sans SC",Arial,sans-serif}',
-      })
-      await p.evaluate(() => document.fonts.ready)
-    }
+    await loadTestFonts(p, url)
+    await viewportRegressions(p)
     const reports = []
     for (const [width, height] of [
       [280, 480],
@@ -449,17 +551,39 @@ async function dialogFits(p, label) {
         board[0][2] = 0
         localStorage.setItem(
           KEY,
-          JSON.stringify({...game, board, initial: board, hints: 2}),
+          JSON.stringify({...game, board, initial: board, hints: 2, usedNotes: true}),
         )
       },
       {game, KEY},
     )
     await p.reload()
     await p.waitForSelector('[data-cell="80"]')
+    await loadTestFonts(p, url)
     await p.locator('[data-cell="2"]').click()
     await p.locator('[data-number="4"]').click()
     await p.waitForSelector('.dialog-won')
-    await dialogFits(p, 'win')
+    for (const [width, height, visible] of [
+      [568, 240, 240],
+      [480, 240, 240],
+      [568, 320, 320],
+      [320, 480, 480],
+      [390, 720, 400],
+    ]) {
+      await p.setViewportSize({width, height})
+      await p.evaluate((height) => {
+        Object.defineProperty(visualViewport, 'height', {configurable: true, value: height})
+        visualViewport.dispatchEvent(new Event('resize'))
+      }, visible)
+      await p.waitForTimeout(80)
+      await dialogFits(p, 'win')
+      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await dialogFits(p, 'win en')
+      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+    }
+    await p.evaluate(() => {
+      delete visualViewport.height
+      visualViewport.dispatchEvent(new Event('resize'))
+    })
     assert.equal(
       await p.evaluate(
         () => JSON.parse(localStorage.getItem('sudokutaro:records:v1')).wins,

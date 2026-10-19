@@ -525,6 +525,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  container-type: size;
   padding: max(12px, env(safe-area-inset-top)) 16px
     max(12px, env(safe-area-inset-bottom));
 }
@@ -846,20 +847,24 @@
     display: none;
   }
   .control-pane {
+    margin-top: 0;
     padding: 8px;
     gap: 8px;
   }
   .game-controls {
+    grid-template-columns: 48px minmax(0, 1fr);
     gap: 8px;
   }
   .tools {
-    height: 40px;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    height: 144px;
   }
   .number-panel {
     height: 144px;
   }
 }
-.layout-wide.height-limited {
+.height-limited {
   .dialog {
     width: min(100%, 560px);
     padding: 12px 18px 18px;
@@ -889,5 +894,68 @@
   }
   .settings-line {
     min-height: 36px;
+  }
+  .difficulty-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+// Container height follows visualViewport, including browser toolbar changes.
+@container (max-height: 330px) {
+  .sudoku-app {
+    .dialog {
+      padding: 8px 12px;
+    }
+    .dialog-top {
+      height: 24px;
+      margin: 0 0 4px;
+    }
+    .dialog-top .text-button {
+      min-height: 24px;
+      padding: 2px 6px;
+      line-height: 20px;
+    }
+    .dialog-top .close-button {
+      font-size: 20px;
+    }
+    .dialog .eyebrow {
+      display: none;
+    }
+    .dialog h1 {
+      font-size: 18px;
+    }
+    .dialog .dialog-copy,
+    .dialog .achievement-copy {
+      font-size: 12px;
+      line-height: 1.4;
+      margin: 6px 0 !important;
+    }
+    .dialog .settings-line {
+      min-height: 30px;
+    }
+    .dialog .primary-button,
+    .dialog .secondary-button {
+      min-height: 36px;
+      padding: 6px 8px;
+    }
+    .dialog .result-metrics {
+      padding: 6px 8px;
+    }
+    .dialog .result-metrics strong {
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    .dialog .result-metrics div {
+      flex-direction: row;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+    }
+    .dialog .result-metrics span {
+      line-height: 1.2;
+    }
+    .dialog .difficulty-options {
+      gap: 6px;
+      margin-bottom: 4px;
+    }
   }
 }

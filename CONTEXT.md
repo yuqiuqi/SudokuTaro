@@ -13,6 +13,7 @@
 - 候选数、完整撤销、分层逻辑提示、唯一解验证、中英文分页规则、自动保存、通关纪录。撤销/擦除免费；`gameEconomy.ts` 是保留的旧模块，主游戏不再消耗道具。
 - 布局根据实际可用 CSS 宽高选择，几何与交互测试见 `tests/browser.cjs`，测试矩阵和能力限制见 `docs/RESPONSIVE_DESIGN.md`。
 - 命令：`npm run typecheck`、`npm test`、`npm run build:h5`、`npx playwright install chromium && npm run test:browser`。
+- 用户要求每次代码修改完成后必做浏览器模拟测试，再交付或更新 PR；完整流程与已知回归场景见仓库根目录 `AGENTS.md`。仅文档修改检查差异即可。
 
 ## 1. 项目卡片
 

@@ -316,15 +316,19 @@ export default function IndexPage() {
         setNoteMode((n) => !n)
         return
       }
-      const directions: Record<string, number> = {
-        ArrowUp: -9,
-        ArrowDown: 9,
-        ArrowLeft: -1,
-        ArrowRight: 1,
+      const directions: Record<string, [number, number]> = {
+        ArrowUp: [-1, 0],
+        ArrowDown: [1, 0],
+        ArrowLeft: [0, -1],
+        ArrowRight: [0, 1],
       }
       if (e.key in directions) {
         e.preventDefault()
-        choose(Math.max(0, Math.min(80, (selected ?? 0) + directions[e.key])))
+        const index = selected ?? 0,
+          [dr, dc] = directions[e.key],
+          row = Math.max(0, Math.min(8, Math.floor(index / 9) + dr)),
+          col = Math.max(0, Math.min(8, (index % 9) + dc))
+        choose(row * 9 + col)
       }
     }
     document.addEventListener('keydown', onKey)
