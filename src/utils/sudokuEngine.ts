@@ -21,7 +21,12 @@ function shuffleInPlace<T>(a: T[]): T[] {
   return a
 }
 
-export function isValid(grid: number[][], row: number, col: number, num: number): boolean {
+export function isValid(
+  grid: number[][],
+  row: number,
+  col: number,
+  num: number,
+): boolean {
   for (let i = 0; i < 9; i++) {
     if (grid[row][i] === num || grid[i][col] === num) {
       return false
@@ -84,9 +89,15 @@ export function digHoles(
       break
     }
     if (board[row][col] !== 0) {
+      const previous = board[row][col]
       board[row][col] = 0
       initialBoard[row][col] = 0
-      dug++
+      if (countSolutions(board, 2) === 1) {
+        dug++
+      } else {
+        board[row][col] = previous
+        initialBoard[row][col] = previous
+      }
     }
   }
 }
@@ -176,4 +187,36 @@ export function countMissing(board: number[][], digit: number): number {
     }
   }
   return Math.max(0, 9 - n)
+}
+
+/** Count up to limit solutions without mutating the caller. MRV keeps uniqueness checks bounded. */
+export function countSolutions(board: number[][], limit = 2): number {
+  const grid = board.map((row) => [...row])
+  if (
+    grid.some((row, r) =>
+      row.some((n, c) => n !== 0 && hasConflict(grid, r, c, n)),
+    )
+  )
+    return 0
+  function search(): number {
+    let best: {row: number; col: number; candidates: number[]} | null = null
+    for (let r = 0; r < 9; r++)
+      for (let c = 0; c < 9; c++) {
+        if (grid[r][c]) continue
+        const candidates = DIGITS_POOL.filter((n) => isValid(grid, r, c, n))
+        if (!candidates.length) return 0
+        if (!best || candidates.length < best.candidates.length)
+          best = {row: r, col: c, candidates}
+      }
+    if (!best) return 1
+    let count = 0
+    for (const n of best.candidates) {
+      grid[best.row][best.col] = n
+      count += search()
+      grid[best.row][best.col] = 0
+      if (count >= limit) return limit
+    }
+    return count
+  }
+  return search()
 }
