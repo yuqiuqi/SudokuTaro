@@ -1,0 +1,21 @@
+// Approved Figma palette: file AhWwkAjjXti2imJAbhgrTY, responsive frames 9:173.
+@mixin glass-tokens {
+  --ink: #22283b;
+  --muted: #626d83;
+  --accent: #496ae3;
+  --wash: #edf1ff;
+  --line: #d6dae6;
+  --line-box: #bcc4d8;
+  --key-bg: #e9edfa;
+  --key-ink: #4b62b4;
+  --panel-border: #bbc9e4;
+  --bg-top: #f9f8fd;
+  --bg-mid: #eff2fa;
+  --bg-bottom: #c7d2ed;
+  --white: #fff;
+  --danger: #b7384c;
+  --danger-bg: #ffe4e9;
+  --success: #237965;
+  --glass: rgba(255, 255, 255, 0.84);
+  --panel-shadow: 0 4px 12px rgba(64, 93, 150, 0.12);
+}

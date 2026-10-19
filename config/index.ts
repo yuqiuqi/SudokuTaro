@@ -22,6 +22,7 @@ export default defineConfig({
   },
   framework: 'react',
   h5: {
+    postcss: {pxtransform: {enable: false}},
     publicPath: isGitHubPagesBuild ? '/SudokuTaro/' : '/',
     devServer: {
       static: false,

@@ -1,3 +1,3 @@
 module.exports = {
-  navigationBarTitleText: '数独',
+  navigationBarTitleText: 'SudokuTaro · 数独',
 }
