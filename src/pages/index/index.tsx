@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import type {CSSProperties} from 'react'
 import type {Difficulty} from '../../utils/sudokuEngine'
 import {
   cellLocation,
@@ -18,6 +19,7 @@ import {
 } from '../../utils/gameplay'
 import {GameIcon} from './GameIcon'
 import {useGameLayout} from './useGameLayout'
+import {VictoryResult, VictorySparkles} from './VictoryResult'
 import './index.scss'
 
 const STORAGE = 'sudokutaro:glass:v1',
@@ -126,10 +128,12 @@ export default function IndexPage() {
   const [message, setMessage] = useState('')
   const [records, setRecords] = useState<Records>(readRecords)
   const [newBest, setNewBest] = useState(false)
+  const [celebrating, setCelebrating] = useState(false)
   const gameRef = useRef(game),
     hintRef = useRef(hint),
     winRecorded = useRef(game.won)
   const conflictTimer = useRef<ReturnType<typeof setTimeout>>()
+  const resultsTrigger = useRef<HTMLButtonElement>(null)
   const hintClose = useRef<HTMLButtonElement>(null),
     hintTrigger = useRef<HTMLButtonElement>(null)
   const hintOpen = !!hint
@@ -199,13 +203,43 @@ export default function IndexPage() {
     }
     setRecords(next)
     setNewBest(best)
-    setModal('won')
+    setHint(null)
+    setMessage('')
+    if (vibration) navigator.vibrate?.([18, 45, 28])
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) setModal('won')
+    else setCelebrating(true)
     try {
       localStorage.setItem(RECORDS, JSON.stringify(next))
     } catch {
       /* Keep the in-session achievement. */
     }
-  }, [game.won, game.seconds, game.difficulty, records])
+  }, [game.won, game.seconds, game.difficulty, records, vibration])
+  useEffect(() => {
+    if (!celebrating) return
+    const finish = () => {
+      setCelebrating(false)
+      // A menu opened during celebration keeps its focus and content.
+      setModal((current) => (current === null ? 'won' : current))
+    }
+    const timer = setTimeout(finish, 1100)
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)')
+    const onPreference = () => {
+      if (reduced.matches) finish()
+    }
+    reduced.addEventListener?.('change', onPreference)
+    return () => {
+      clearTimeout(timer)
+      reduced.removeEventListener?.('change', onPreference)
+    }
+  }, [celebrating])
+  useEffect(() => {
+    if (game.won && !modal && !celebrating)
+      resultsTrigger.current?.focus({preventScroll: true})
+  }, [game.won, modal, celebrating])
+  const showVictory = () => {
+    setCelebrating(false)
+    setModal('won')
+  }
 
   const choose = useCallback((index: number) => {
     setSelected(index)
@@ -303,11 +337,13 @@ export default function IndexPage() {
     setConflicts([])
     setMessage('')
     setNewBest(false)
+    setCelebrating(false)
   }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return
       if (e.key === 'Escape') {
+        setCelebrating(false)
         setModal(null)
         setHint(null)
         return
@@ -376,6 +412,12 @@ export default function IndexPage() {
               type="button"
               key={index}
               data-cell={index}
+              style={
+                {
+                  '--celebration-order':
+                    Math.floor(r / 3) * 3 + Math.floor(c / 3),
+                } as CSSProperties
+              }
               data-fixed={fixed}
               className={[
                 'sudoku-cell',
@@ -423,7 +465,7 @@ export default function IndexPage() {
 
   return (
     <main
-      className={`sudoku-app layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''}`}
+      className={`sudoku-app layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''}`}
       style={layout.style}
     >
       <div className="game-shell" ref={layout.ref}>
@@ -481,14 +523,18 @@ export default function IndexPage() {
               >
                 {renderedCells}
               </div>
+              {celebrating && <VictorySparkles />}
             </div>
             <div className="selection-caption">
-              {selected === null
-                ? say(
-                    '选一个空格，开始你的推理',
-                    'Choose an empty cell to begin',
-                  )
-                : `${cellLocation(selected, lang)} · ${selectedNotes.length ? say('候选数 ', 'Notes ') + selectedNotes.join('、') : noteMode ? say('笔记模式', 'Notes on') : say('点击数字填写', 'Tap a number to fill')}`}
+              {game.won ? (
+                <span data-victory-status role="status" aria-live="polite">
+                  {say('漂亮，解开了！', 'Beautifully solved!')}
+                </span>
+              ) : selected === null ? (
+                say('选一个空格，开始你的推理', 'Choose an empty cell to begin')
+              ) : (
+                `${cellLocation(selected, lang)} · ${selectedNotes.length ? say('候选数 ', 'Notes ') + selectedNotes.join('、') : noteMode ? say('笔记模式', 'Notes on') : say('点击数字填写', 'Tap a number to fill')}`
+              )}
             </div>
           </section>
           <section
@@ -504,7 +550,30 @@ export default function IndexPage() {
                 )}
               </p>
             </div>
-            {hint ? (
+            {game.won ? (
+              <div className="completed-controls glass-panel">
+                <GameIcon name="check" />
+                <h2>{say('这一局，由你完成', 'Puzzle complete')}</h2>
+                <p>{say('留一刻，欣赏你的答案。', 'Enjoy your solution.')}</p>
+                <div className="victory-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    ref={resultsTrigger}
+                    onClick={showVictory}
+                  >
+                    {say('查看成绩', 'View results')}
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => newGame(game.difficulty)}
+                  >
+                    {say('再挑战一局', 'Play again')}
+                  </button>
+                </div>
+              </div>
+            ) : hint ? (
               <>
                 <section
                   className="hint-card glass-panel"
@@ -683,23 +752,25 @@ export default function IndexPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <DialogFocus onClose={() => setModal(null)} />
-            <div className="dialog-top">
-              <button
-                type="button"
-                className="text-button language-button"
-                onClick={changeLanguage}
-              >
-                中文 / EN
-              </button>
-              <button
-                type="button"
-                className="text-button close-button"
-                aria-label={say('关闭', 'Close')}
-                onClick={() => setModal(null)}
-              >
-                ×
-              </button>
-            </div>
+            {modal !== 'won' && (
+              <div className="dialog-top">
+                <button
+                  type="button"
+                  className="text-button language-button"
+                  onClick={changeLanguage}
+                >
+                  中文 / EN
+                </button>
+                <button
+                  type="button"
+                  className="text-button close-button"
+                  aria-label={say('关闭', 'Close')}
+                  onClick={() => setModal(null)}
+                >
+                  ×
+                </button>
+              </div>
+            )}
             {modal === 'rules' && (
               <>
                 <div className="eyebrow">
@@ -819,58 +890,19 @@ export default function IndexPage() {
               </>
             )}
             {modal === 'won' && (
-              <>
-                <div className="achievement-emblem" aria-hidden="true">
-                  9
-                </div>
-                <h1 id="dialog-title">
-                  {say('这一局，靠你解开', 'You worked it out')}
-                </h1>
-                <p className="dialog-copy">
-                  {say(
-                    '每一次排除，都让答案更近一步。',
-                    'Every possibility you eliminated brought you closer.',
-                  )}
-                </p>
-                <div className="result-metrics">
-                  <div>
-                    <strong>{time(game.seconds)}</strong>
-                    <span>{say('用时', 'Time')}</span>
-                  </div>
-                  <div>
-                    <strong>{game.hints}</strong>
-                    <span>{say('次提示', 'Hints')}</span>
-                  </div>
-                  <div>
-                    <strong>{game.moves}</strong>
-                    <span>{say('次落笔', 'Entries')}</span>
-                  </div>
-                </div>
-                <p className="achievement-copy">
-                  {newBest
-                    ? say('新的个人用时纪录 · ', 'A new personal best · ')
-                    : ''}
-                  {game.hints === 0
-                    ? say('独立完成', 'Solved independently')
-                    : say(
-                        '借助线索，亲手完成',
-                        'Guided by clues, completed by you',
-                      )}
-                  {game.usedNotes
-                    ? say(
-                        ' · 练习了候选数推理',
-                        ' · Candidate reasoning practiced',
-                      )
-                    : ''}
-                </p>
-                <button
-                  type="button"
-                  className="primary-button full-width"
-                  onClick={() => newGame(game.difficulty)}
-                >
-                  {say('再来一局', 'Play again')}
-                </button>
-              </>
+              <VictoryResult
+                en={en}
+                board={game.board}
+                elapsed={time(game.seconds)}
+                hints={game.hints}
+                moves={game.moves}
+                usedNotes={game.usedNotes}
+                newBest={newBest}
+                onLanguage={changeLanguage}
+                onClose={() => setModal(null)}
+                onViewBoard={() => setModal(null)}
+                onPlayAgain={() => newGame(game.difficulty)}
+              />
             )}
           </section>
         </div>
