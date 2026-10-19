@@ -22,7 +22,7 @@
 | 名称 | SudokuTaro |
 | 路径 | `c:\Users\yuqiu\SudokuTaro`（以本机为准） |
 | 描述 | 数独 — **Taro 仅 H5**（浏览器端 React，无微信/抖音小程序、无微信小游戏子工程） |
-| 栈 | Taro **4.0.9** + React 18 + TypeScript + Sass + Webpack 5 |
+| 栈 | Taro **4.3.0** + React 18.3.1 + TypeScript 7.0.2 + Sass + Webpack 5.91.0；Node 22+ |
 | 存档 / 经济 | **`src/utils/gameEconomy.ts`**（`Taro.getStorageSync`），**`STORAGE_KEY = 'yifang_sudoku_economy_v1'`**；含 **撤销/擦除道具**、每日赠送、**设置仅 `vibration`**；**已移除体力** |
 | 设计稿 | `designWidth: 750`；样式多用 `rpx` |
 | 仓库 | `README.md`、各平台 Git 工作流以本机为准 |
@@ -127,6 +127,9 @@ SudokuTaro/
 ---
 
 ## 8. 依赖与构建备忘
+
+- v1.1.0 升级详情与上游兼容阻塞见 `docs/DEPENDENCY_UPGRADE.md`。禁止强装 React 19 / Babel 8 / Webpack 最新版来绕过 Taro peers。
+- TypeScript 7 不再支持旧 transpileModule；纯逻辑测试通过 tsc CLI 编译临时模块。tsconfig 使用 ESNext/bundler 与相对 paths，Sass 声明位于 `types/styles.d.ts`。
 
 - 锁文件损坏可删 `package-lock.json` 后重装。
 - Webpack `EntrypointsOverSizeLimitWarning` 为体积提示，非失败。

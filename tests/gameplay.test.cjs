@@ -1,32 +1,27 @@
 const assert = require('node:assert/strict')
-const {test} = require('node:test')
+const {test, after} = require('node:test')
 // Compile only pure game modules, keeping this test independent of the H5 runtime.
-const ts = require('typescript'),
+// TypeScript 7 is a native compiler and no longer exposes transpileModule.
+const {execFileSync} = require('node:child_process'),
   fs = require('node:fs'),
-  Module = require('node:module'),
+  os = require('node:os'),
   path = require('node:path')
-const cache = new Map()
-function load(file) {
-  file = path.resolve(__dirname, '../src/utils', file + '.ts')
-  if (cache.has(file)) return cache.get(file).exports
-  const mod = new Module(file, module)
-  cache.set(file, mod)
-  mod.filename = file
-  mod.paths = module.paths
-  mod.require = (id) => (id.startsWith('./') ? load(id.slice(2)) : require(id))
-  mod._compile(
-    ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-      compilerOptions: {
-        module: ts.ModuleKind.CommonJS,
-        target: ts.ScriptTarget.ES2020,
-      },
-    }).outputText,
-    file,
-  )
-  return mod.exports
+const compiled = fs.mkdtempSync(path.join(os.tmpdir(), 'sudokutaro-tests-'))
+after(() => fs.rmSync(compiled, {recursive: true, force: true}))
+try {
+  execFileSync(process.execPath, [
+    path.join(path.dirname(require.resolve('typescript/package.json')), 'bin/tsc'),
+    '--ignoreConfig', '--module', 'node16', '--moduleResolution', 'node16',
+    '--target', 'ES2020', '--skipLibCheck', '--outDir', compiled,
+    path.resolve(__dirname, '../src/utils/sudokuEngine.ts'),
+    path.resolve(__dirname, '../src/utils/gameplay.ts'),
+  ], {stdio: 'pipe'})
+} catch (error) {
+  fs.rmSync(compiled, {recursive: true, force: true})
+  throw new Error(`Logic test compilation failed:\n${error.stdout || ''}\n${error.stderr || ''}`, {cause: error})
 }
-const e = load('sudokuEngine'),
-  g = load('gameplay')
+const e = require(path.join(compiled, 'sudokuEngine.js')),
+  g = require(path.join(compiled, 'gameplay.js'))
 const puzzle = [
   '530070000',
   '600195000',
