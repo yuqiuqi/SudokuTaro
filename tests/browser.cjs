@@ -172,6 +172,221 @@ async function dialogFits(p, label) {
     label + ' dialog overflow ' + JSON.stringify(out),
   )
 }
+async function victoryFeedbackRegressions(p, url) {
+  const seed = async () => {
+    await p.evaluate(
+      ({game, KEY}) => {
+        const board = game.solution.map((row) => [...row])
+        board[0][2] = 0
+        localStorage.setItem(
+          KEY,
+          JSON.stringify({
+            ...game,
+            board,
+            initial: board,
+            hints: 2,
+            usedNotes: true,
+          }),
+        )
+        localStorage.removeItem('sudokutaro:records:v1')
+        localStorage.setItem('sudokutaro:language', 'zh')
+      },
+      {game, KEY},
+    )
+    await p.reload()
+    await p.waitForSelector('[data-cell="80"]')
+    await loadTestFonts(p, url)
+  }
+  await seed()
+  await p.locator('[data-cell="2"]').click()
+  await p.locator('[data-number="4"]').click()
+  await p.waitForSelector('.is-celebrating', {timeout: 1500})
+  await p.keyboard.press('Escape')
+  await p.waitForTimeout(1200)
+  assert.equal(
+    await p.locator('.dialog-won').count(),
+    0,
+    'Escape skips celebration without a late results popup',
+  )
+  assert.equal(await p.locator('.is-celebrating').count(), 0)
+  await seed()
+  await p.locator('[data-cell="2"]').click()
+  await p.locator('[data-number="4"]').click()
+  await p.waitForSelector('.is-celebrating', {timeout: 1500})
+  assert.equal(
+    await p.locator('.dialog-won').count(),
+    0,
+    'the completed board celebrates before results cover it',
+  )
+  assert.ok(await p.locator('.victory-sparkles').isVisible())
+  assert.ok(
+    (await p.locator('[data-victory-status]').innerText()).includes('解开'),
+  )
+  if (process.env.SCREENSHOT_DIR) {
+    fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true})
+    await p.screenshot({
+      path: path.join(process.env.SCREENSHOT_DIR, 'victory-celebrating.png'),
+    })
+  }
+  await p.waitForSelector('.dialog-won', {timeout: 3000})
+  for (const [width, height, visible] of [
+    [280, 320, 320],
+    [280, 400, 400],
+    [280, 480, 480],
+    [320, 480, 480],
+    [390, 720, 720],
+    [390, 720, 400],
+    [480, 240, 240],
+    [568, 240, 240],
+    [568, 320, 320],
+    [844, 390, 390],
+  ]) {
+    await p.setViewportSize({width, height})
+    await p.evaluate((h) => {
+      Object.defineProperty(visualViewport, 'height', {
+        configurable: true,
+        value: h,
+      })
+      visualViewport.dispatchEvent(new Event('resize'))
+    }, visible)
+    await p.waitForTimeout(80)
+    for (const en of [false, true]) {
+      await dialogFits(
+        p,
+        `victory ${width}x${height}/${visible} ${en ? 'en' : 'zh'}`,
+      )
+      const out = await p.evaluate(() => {
+        const badge = document
+          .querySelector('.victory-emblem')
+          .getBoundingClientRect()
+        const preview = document
+          .querySelector('.victory-board-preview')
+          .getBoundingClientRect()
+        const content = document
+          .querySelector('.victory-content')
+          .getBoundingClientRect()
+        return {
+          badgeVisible: badge.width > 0 && badge.height > 0,
+          previewWidth: preview.width,
+          sideBySide: preview.width > 0 && preview.right <= content.left,
+          h: visualViewport.height,
+        }
+      })
+      assert.ok(out.badgeVisible, 'small screens retain the victory badge')
+      if (width >= 480 && visible <= 390)
+        assert.ok(
+          out.sideBySide,
+          'low landscape has a completed board beside the results',
+        )
+      if (
+        process.env.SCREENSHOT_DIR &&
+        !en &&
+        ['320x480', '390x720', '480x240'].includes(`${width}x${height}`) &&
+        height === visible
+      )
+        await p.screenshot({
+          path: path.join(
+            process.env.SCREENSHOT_DIR,
+            `victory-${width}x${height}.png`,
+          ),
+          animations: 'disabled',
+        })
+      await p
+        .getByRole('button', {
+          name: en ? 'Admire board' : '欣赏棋盘',
+          exact: true,
+        })
+        .click()
+      const completedFits = await p
+        .locator('.completed-controls')
+        .evaluate((n) => {
+          const r = n.getBoundingClientRect()
+          return (
+            n.scrollHeight <= n.clientHeight + 1 &&
+            [...n.querySelectorAll('button')].every((b) => {
+              const t = b.getBoundingClientRect()
+              return (
+                t.top >= r.top &&
+                t.bottom <= r.bottom + 0.5 &&
+                t.bottom <= visualViewport.height + 0.5
+              )
+            })
+          )
+        })
+      assert.ok(
+        completedFits,
+        `completed-board controls fit ${width}x${height}/${visible} ${en ? 'en' : 'zh'}`,
+      )
+      const resultsButton = p.getByRole('button', {
+        name: en ? 'View results' : '查看成绩',
+        exact: true,
+      })
+      assert.equal(
+        await resultsButton.evaluate((n) => n === document.activeElement),
+        true,
+        'admiring the board restores focus to results action',
+      )
+      await resultsButton.click()
+      await p.waitForSelector('.dialog-won')
+      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+    }
+    await p.evaluate(() => {
+      delete visualViewport.height
+      visualViewport.dispatchEvent(new Event('resize'))
+    })
+  }
+  await p.setViewportSize({width: 390, height: 720})
+  await p.getByRole('button', {name: '欣赏棋盘', exact: true}).click()
+  assert.equal(await p.locator('.dialog-won').count(), 0)
+  assert.equal(await p.locator('[data-cell]').count(), 81)
+  await p.getByRole('button', {name: '查看成绩', exact: true}).click()
+  await p.waitForSelector('.dialog-won')
+  await p.getByRole('button', {name: '关闭', exact: true}).click()
+  await p.reload()
+  await p.waitForSelector('[data-cell="80"]')
+  assert.equal(
+    await p.locator('.is-celebrating').count(),
+    0,
+    'refreshing a won game must not replay celebration',
+  )
+  assert.equal(await p.locator('.dialog-won').count(), 0)
+  await p.getByRole('button', {name: '查看成绩', exact: true}).click()
+  await p.waitForSelector('.dialog-won')
+  assert.equal(
+    await p.evaluate(
+      () => JSON.parse(localStorage.getItem('sudokutaro:records:v1')).wins,
+    ),
+    1,
+  )
+  await p
+    .locator('.dialog-won')
+    .getByRole('button', {name: '再挑战一局', exact: true})
+    .click()
+  assert.equal(await p.locator('.dialog-won').count(), 0)
+  assert.equal(await p.locator('.number-key').count(), 9)
+  await p.emulateMedia({reducedMotion: 'reduce'})
+  await seed()
+  await p.locator('[data-cell="2"]').click()
+  await p.locator('[data-number="4"]').click()
+  await p.waitForSelector('.dialog-won', {timeout: 1000})
+  assert.equal(
+    await p.locator('.is-celebrating').count(),
+    0,
+    'reduced motion skips the celebration delay',
+  )
+  assert.ok(await p.locator('.victory-emblem').isVisible())
+  await p.emulateMedia({reducedMotion: 'no-preference'})
+  await p.evaluate(
+    ({game, KEY}) => {
+      localStorage.setItem(KEY, JSON.stringify(game))
+      localStorage.removeItem('sudokutaro:records:v1')
+    },
+    {game, KEY},
+  )
+  await p.reload()
+  await p.waitForSelector('[data-cell="80"]')
+  await loadTestFonts(p, url)
+}
 async function cornerHighlightRegression(p) {
   for (const [width, height] of [
     [390, 720],
@@ -663,6 +878,7 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    await victoryFeedbackRegressions(p, url)
     await singleReviewHintRegression(p, url)
     await cornerHighlightRegression(p)
     await inlineHintRegressions(p)
@@ -1004,6 +1220,8 @@ async function viewportRegressions(p) {
             'resize + refresh persist',
             'paginated bilingual rules',
             'victory + once-only records',
+            'board celebration then results; admire + reopen + refresh + new game',
+            'small-screen victory badge + side-by-side landscape + reduced motion + Escape cleanup',
           ],
           runtimeErrors: errors,
         },
