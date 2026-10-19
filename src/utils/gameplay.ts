@@ -162,9 +162,16 @@ export function findHint(game: Game): Hint | null {
   )[0]
   return best ? {...best, kind: 'explore'} : null
 }
+export function cellLocation(index: number, lang: Language): string {
+  const row = Math.floor(index / 9) + 1,
+    column = (index % 9) + 1
+  return lang === 'en'
+    ? `row ${row}, column ${column}`
+    : `第${row}行，第${column}列`
+}
 export function hintText(h: Hint, stage: number, lang: Language): string {
   const en = lang === 'en',
-    pos = `R${Math.floor(h.index / 9) + 1}C${(h.index % 9) + 1}`
+    pos = cellLocation(h.index, lang)
   if (h.kind === 'review')
     return en
       ? `Review your entry at ${pos}. Compare it with the original clues before continuing.`

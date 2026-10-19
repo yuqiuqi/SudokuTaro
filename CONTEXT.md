@@ -8,7 +8,7 @@
 ## 当前实现（2026-10 Liquid Glass 改版）
 
 - 本节覆盖下方历史时间线中的旧界面、输入和道具描述。当前真源为 `src/pages/index/index.tsx`、`useGameLayout.ts`、`src/utils/gameplay.ts` 与 `src/styles/_glass-tokens.scss`。
-- 已确认的 Figma 文件：`AhWwkAjjXti2imJAbhgrTY`，响应式布局根节点 `9:173`。H5 使用实际 CSS px，关闭 `h5.postcss.pxtransform`，不要恢复 rpx 缩放。
+- 已确认的 Figma 文件：`AhWwkAjjXti2imJAbhgrTY`，V2 设计根节点 `20:545`（原响应式稿 `9:173` 保留）。H5 使用实际 CSS px，关闭 `h5.postcss.pxtransform`，不要恢复 rpx 缩放。
 - 原生按钮选择格子 + 页面内常驻 1～9。不要恢复隐藏 Input 或 ScrollView。Taro 会改写 CSS 的 button 标签选择器，原生按钮样式用 `[type="button"]`。
 - 候选数、完整撤销、分层逻辑提示、唯一解验证、中英文分页规则、自动保存、通关纪录。撤销/擦除免费；`gameEconomy.ts` 是保留的旧模块，主游戏不再消耗道具。
 - 布局根据实际可用 CSS 宽高选择，几何与交互测试见 `tests/browser.cjs`，测试矩阵和能力限制见 `docs/RESPONSIVE_DESIGN.md`。

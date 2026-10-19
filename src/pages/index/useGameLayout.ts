@@ -19,7 +19,7 @@ type Layout = {
   direction?: string
 }
 /** Measure usable CSS space rather than device pixels; resizing never recreates a game. */
-export function useGameLayout() {
+export function useGameLayout(hintVisible = false, feedbackVisible = false) {
   const ref = useRef<HTMLDivElement>(null)
   const [layout, setLayout] = useState<Layout>({
     mode: 'regular',
@@ -52,7 +52,10 @@ export function useGameLayout() {
       const horizontal = segments.length === 2 && !vertical
       const mode = horizontal
         ? 'fold-horizontal'
-        : vertical || w >= 600 || (w / h >= 1.3 && w >= 440)
+        : vertical ||
+            w >= 600 ||
+            (h < 440 && w >= 240) ||
+            (w / h >= 1.3 && w >= 440)
           ? 'wide'
           : h < 555
             ? 'short'
@@ -61,16 +64,29 @@ export function useGameLayout() {
               : 'regular'
       const hinge = vertical
         ? Math.max(0, segments[1].left - segments[0].right)
-        : 24
+        : h < 440
+          ? 16
+          : 24
+      // Very short screens keep a readable side panel instead of narrowing the whole stack.
+      const controlMinimum = h < 440 ? 150 : 210
       let board =
         mode === 'wide'
-          ? Math.min(414, h - 100, (w - hinge) * 0.62, w - hinge - 210)
+          ? Math.min(
+              414,
+              h - (h < 440 ? 120 : 112),
+              (w - hinge) * 0.62,
+              w - hinge - controlMinimum,
+            )
           : mode === 'short'
-            ? Math.min(234, w - 32, h - 224)
+            ? Math.min(
+                224,
+                w,
+                h - (hintVisible ? 270 : 232) - (feedbackVisible ? 28 : 0),
+              )
             : Math.min(
-                mode === 'regular' ? 342 : 306,
-                w - 24,
-                h - (mode === 'regular' ? 316 : 290),
+                mode === 'regular' ? 350 : 306,
+                w,
+                h - (hintVisible ? 354 : 328) - (feedbackVisible ? 28 : 0),
               )
       let columns: string | undefined,
         rows: string | undefined,
@@ -84,7 +100,7 @@ export function useGameLayout() {
           bottom = segments[1],
           pt = parseFloat(padding.paddingTop),
           pb = parseFloat(padding.paddingBottom)
-        board = Math.min(342, w - 32, top.height - pt - 104)
+        board = Math.min(350, w, top.height - pt - 104)
         rows = `${Math.max(0, top.bottom - pt - 56)}px ${Math.max(0, bottom.height - pb)}px`
         direction = `${Math.max(0, bottom.top - top.bottom)}px`
       }
@@ -125,7 +141,7 @@ export function useGameLayout() {
       horizontal.removeEventListener?.('change', updateHeight)
       vertical.removeEventListener?.('change', updateHeight)
     }
-  }, [])
+  }, [hintVisible, feedbackVisible])
   return {
     ref,
     mode: layout.mode,

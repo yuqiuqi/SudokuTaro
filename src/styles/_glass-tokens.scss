@@ -1,4 +1,4 @@
-// Approved Figma palette: file AhWwkAjjXti2imJAbhgrTY, responsive frames 9:173.
+// Approved Figma palette: file AhWwkAjjXti2imJAbhgrTY, V2 frames 20:545.
 @mixin glass-tokens {
   --ink: #22283b;
   --muted: #626d83;
@@ -8,14 +8,12 @@
   --line-box: #bcc4d8;
   --key-bg: #e9edfa;
   --key-ink: #4b62b4;
-  --panel-border: #bbc9e4;
-  --bg-top: #f9f8fd;
-  --bg-mid: #eff2fa;
-  --bg-bottom: #c7d2ed;
+  --panel-border: rgba(161, 179, 204, 0.6);
+  --background: #e9eff6;
   --white: #fff;
   --danger: #b7384c;
   --danger-bg: #ffe4e9;
   --success: #237965;
-  --glass: rgba(255, 255, 255, 0.84);
-  --panel-shadow: 0 4px 12px rgba(64, 93, 150, 0.12);
+  --glass: rgba(255, 255, 255, 0.76);
+  --panel-shadow: 0 8px 20px rgba(56, 79, 120, 0.09), inset 0 1px 1px rgba(255, 255, 255, 0.85);
 }

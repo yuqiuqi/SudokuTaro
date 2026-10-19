@@ -131,3 +131,17 @@ test('storage rejects malformed games and accepts valid progress', () => {
   ])
     assert.equal(g.isSavedGame(v), false)
 })
+
+test('hints name rows and columns in everyday language in both locales', () => {
+  for (const kind of ['single', 'review']) {
+    const hint = {index: 37, kind, candidates: [4]}
+    for (const [lang, location] of [
+      ['zh', '第5行，第2列'],
+      ['en', 'row 5, column 2'],
+    ]) {
+      const text = g.hintText(hint, 0, lang)
+      assert.ok(text.includes(location), text)
+      assert.doesNotMatch(text, /R\dC\d/)
+    }
+  }
+})

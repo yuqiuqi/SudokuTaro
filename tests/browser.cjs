@@ -155,9 +155,14 @@ async function dialogFits(p, label) {
     }
   })
   assert.ok(
-    out.buttons.every(({rect: r}) =>
-      r.width > 0 && r.height > 0 && r.top >= 0 && r.left >= 0 &&
-      r.bottom <= out.h + 0.5 && r.right <= out.w + 0.5,
+    out.buttons.every(
+      ({rect: r}) =>
+        r.width > 0 &&
+        r.height > 0 &&
+        r.top >= 0 &&
+        r.left >= 0 &&
+        r.bottom <= out.h + 0.5 &&
+        r.right <= out.w + 0.5,
     ) &&
       out.top >= 0 &&
       out.left >= 0 &&
@@ -166,6 +171,208 @@ async function dialogFits(p, label) {
       out.scroll <= out.client + 1,
     label + ' dialog overflow ' + JSON.stringify(out),
   )
+}
+async function inlineHintRegressions(p) {
+  assert.equal(
+    await p.locator('.tools button svg').count(),
+    4,
+    'each tool has an icon',
+  )
+  for (const [width, height, visible] of [
+    [320, 400, 400],
+    [280, 400, 400],
+    [360, 400, 400],
+    [320, 320, 320],
+    [320, 568, 400],
+    [280, 480, 480],
+    [320, 480, 480],
+    [390, 720, 720],
+    [568, 240, 240],
+    [480, 240, 240],
+    [720, 540, 540],
+    [390, 720, 400],
+  ]) {
+    await p.setViewportSize({width, height})
+    await p.evaluate((h) => {
+      Object.defineProperty(visualViewport, 'height', {
+        configurable: true,
+        value: h,
+      })
+      visualViewport.dispatchEvent(new Event('resize'))
+    }, visible)
+    await p.waitForTimeout(80)
+    const metaFits = await p
+      .locator('.game-meta')
+      .evaluate((n) => n.scrollWidth <= n.clientWidth + 1)
+    assert.ok(metaFits, `metadata fits ${width}x${height}/${visible}`)
+    for (const en of [false, true]) {
+      await p
+        .getByRole('button', {name: en ? 'Hint' : '提示', exact: true})
+        .click()
+      assert.equal(
+        await p
+          .getByRole('button', {
+            name: en ? 'Close hint' : '关闭提示',
+            exact: true,
+          })
+          .evaluate((n) => document.activeElement === n),
+        true,
+        'hint opens with accessible focus',
+      )
+      for (let stage = 0; stage < 3; stage++) {
+        await p.locator('.hint-card').evaluate(async (n) => {
+          await Promise.all(
+            n.getAnimations().map((a) => a.finished.catch(() => {})),
+          )
+        })
+        const out = await p.evaluate(() => {
+          const b = document
+            .querySelector('.board-frame')
+            .getBoundingClientRect()
+          const card = document.querySelector('.hint-card'),
+            r = card.getBoundingClientRect()
+          return {
+            overlap:
+              r.left < b.right &&
+              r.right > b.left &&
+              r.top < b.bottom &&
+              r.bottom > b.top,
+            fits:
+              r.top >= 0 &&
+              r.bottom <= visualViewport.height + 0.5 &&
+              r.left >= 0 &&
+              r.right <= innerWidth,
+            contentFits: card.scrollHeight <= card.clientHeight + 1,
+            buttons: [...card.querySelectorAll('button')].every((n) => {
+              const t = n.getBoundingClientRect()
+              return (
+                t.width > 0 &&
+                t.height > 0 &&
+                t.bottom <= visualViewport.height + 0.5
+              )
+            }),
+            jargon: /R\dC\d/.test(card.textContent),
+            r: r.toJSON(),
+            board: b.toJSON(),
+          }
+        })
+        assert.ok(
+          !out.overlap &&
+            out.fits &&
+            out.contentFits &&
+            out.buttons &&
+            !out.jargon,
+          `inline hint ${width}x${height}/${visible} ${en ? 'en' : 'zh'} stage${stage}: ${JSON.stringify(out)}`,
+        )
+        if (stage < 2)
+          await p
+            .getByRole('button', {
+              name: en ? 'Another clue' : '再给一点线索',
+              exact: true,
+            })
+            .click()
+      }
+      await p
+        .getByRole('button', {
+          name: en ? 'Close hint' : '关闭提示',
+          exact: true,
+        })
+        .click()
+      assert.equal(await p.locator('.number-key').count(), 9)
+      assert.equal(
+        await p
+          .getByRole('button', {name: en ? 'Hint' : '提示', exact: true})
+          .evaluate((n) => document.activeElement === n),
+        true,
+        'closing hint restores tool focus',
+      )
+      await p
+        .getByRole('button', {name: en ? 'Hint' : '提示', exact: true})
+        .click()
+      await p
+        .getByRole('button', {
+          name: en ? 'Let me try' : '我来试试',
+          exact: true,
+        })
+        .click()
+      await geometry(p, 'after closing inline hint')
+      assert.equal(
+        await p
+          .locator('.game-meta')
+          .evaluate((n) => n.scrollWidth <= n.clientWidth + 1),
+        true,
+        'localized metadata fits',
+      )
+      await p.locator('[data-cell="2"]').click()
+      await p.locator('[data-number="5"]').click()
+      const feedbackFits = await p.locator('.feedback').evaluate((n) => {
+        const r = n.getBoundingClientRect(),
+          b = document.querySelector('.board-frame').getBoundingClientRect()
+        const h = visualViewport.height
+        return (
+          !(
+            r.left < b.right &&
+            r.right > b.left &&
+            r.top < b.bottom &&
+            r.bottom > b.top
+          ) &&
+          r.bottom <= h + 0.5 &&
+          r.left >= 0 &&
+          r.right <= innerWidth &&
+          [...document.querySelectorAll('.number-key,.tools button')].every(
+            (n) => n.getBoundingClientRect().bottom <= h + 0.5,
+          )
+        )
+      })
+      assert.ok(
+        feedbackFits,
+        `feedback fits ${width}x${height}/${visible} ${en ? 'en' : 'zh'}`,
+      )
+      await p.locator('[data-cell="2"]').click()
+
+      await p
+        .getByRole('button', {name: en ? 'Settings' : '设置', exact: true})
+        .click()
+      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await p
+        .getByRole('button', {name: en ? '关闭' : 'Close', exact: true})
+        .click()
+    }
+    await p.evaluate(() => {
+      delete visualViewport.height
+      visualViewport.dispatchEvent(new Event('resize'))
+    })
+  }
+  await p.setViewportSize({width: 390, height: 720})
+  await p.waitForTimeout(80)
+  await p.locator('[data-cell="2"]').click()
+  await p.locator('[data-number="5"]').click()
+  const feedback = await p.locator('.feedback').evaluate((n) => {
+    const r = n.getBoundingClientRect(),
+      b = document.querySelector('.board-frame').getBoundingClientRect()
+    return {
+      below: r.top >= b.bottom,
+      icon: !!n.querySelector('svg'),
+      text: n.textContent,
+    }
+  })
+  assert.ok(
+    feedback.below && feedback.icon && feedback.text,
+    JSON.stringify(feedback),
+  )
+  const alignment = await p.evaluate(() => {
+    const b = document.querySelector('.board-frame').getBoundingClientRect()
+    return [
+      ...document.querySelectorAll(
+        '.topbar,.game-meta,.selection-caption,.control-pane',
+      ),
+    ].every((n) => {
+      const r = n.getBoundingClientRect()
+      return Math.abs(r.left - b.left) <= 1 && Math.abs(r.right - b.right) <= 1
+    })
+  })
+  assert.ok(alignment, 'portrait content aligns with both board edges')
+  await p.locator('[data-cell="2"]').click()
 }
 async function viewportRegressions(p) {
   const failures = []
@@ -176,7 +383,10 @@ async function viewportRegressions(p) {
       failures.push(label + ': ' + e.message)
     }
   }
-  for (const [width, height] of [[568, 240], [480, 240]]) {
+  for (const [width, height] of [
+    [568, 240],
+    [480, 240],
+  ]) {
     await p.setViewportSize({width, height})
     await p.waitForTimeout(80)
     await check(`low landscape ${width}x${height}`, async () => {
@@ -186,7 +396,10 @@ async function viewportRegressions(p) {
       for (const n of ['7', '8', '9'])
         await p.locator(`[data-number="${n}"]`).click()
       assert.equal(
-        (await p.locator('[data-cell="2"] .cell-notes').innerText()).replace(/\s/g, ''),
+        (await p.locator('[data-cell="2"] .cell-notes').innerText()).replace(
+          /\s/g,
+          '',
+        ),
         '124789',
       )
       for (let i = 0; i < 3; i++)
@@ -208,7 +421,9 @@ async function viewportRegressions(p) {
     await p.keyboard.press(key)
     await check(`keyboard ${cell} ${key}`, async () => {
       assert.equal(
-        await p.locator('[aria-pressed="true"][data-cell]').getAttribute('data-cell'),
+        await p
+          .locator('[aria-pressed="true"][data-cell]')
+          .getAttribute('data-cell'),
         want,
       )
     })
@@ -222,7 +437,10 @@ async function viewportRegressions(p) {
   ]) {
     await p.setViewportSize({width, height})
     await p.evaluate((height) => {
-      Object.defineProperty(visualViewport, 'height', {configurable: true, value: height})
+      Object.defineProperty(visualViewport, 'height', {
+        configurable: true,
+        value: height,
+      })
       visualViewport.dispatchEvent(new Event('resize'))
     }, visible)
     await p.waitForTimeout(80)
@@ -231,23 +449,36 @@ async function viewportRegressions(p) {
         if (modal === 'new') {
           await p.locator('.difficulty-button').click()
         } else {
-          const name = modal === 'rules'
-            ? (en ? 'Rules' : '规则')
-            : (en ? 'Settings' : '设置')
+          const name =
+            modal === 'rules'
+              ? en
+                ? 'Rules'
+                : '规则'
+              : en
+                ? 'Settings'
+                : '设置'
           await p.getByRole('button', {name, exact: true}).click()
         }
         await p.locator('.dialog').evaluate(async (n) => {
-          await Promise.all(n.getAnimations().map((a) => a.finished.catch(() => {})))
+          await Promise.all(
+            n.getAnimations().map((a) => a.finished.catch(() => {})),
+          )
         })
         await check(
           `${modal} ${width}x${height} visible${visible} ${en ? 'en' : 'zh'}`,
           () => dialogFits(p, modal),
         )
-        await p.getByRole('button', {name: en ? 'Close' : '关闭', exact: true}).click()
+        await p
+          .getByRole('button', {name: en ? 'Close' : '关闭', exact: true})
+          .click()
       }
-      await p.getByRole('button', {name: en ? 'Settings' : '设置', exact: true}).click()
+      await p
+        .getByRole('button', {name: en ? 'Settings' : '设置', exact: true})
+        .click()
       await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
-      await p.getByRole('button', {name: en ? '关闭' : 'Close', exact: true}).click()
+      await p
+        .getByRole('button', {name: en ? '关闭' : 'Close', exact: true})
+        .click()
     }
     await p.evaluate(() => {
       delete visualViewport.height
@@ -299,6 +530,7 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    await inlineHintRegressions(p)
     await viewportRegressions(p)
     const reports = []
     for (const [width, height] of [
@@ -551,7 +783,13 @@ async function viewportRegressions(p) {
         board[0][2] = 0
         localStorage.setItem(
           KEY,
-          JSON.stringify({...game, board, initial: board, hints: 2, usedNotes: true}),
+          JSON.stringify({
+            ...game,
+            board,
+            initial: board,
+            hints: 2,
+            usedNotes: true,
+          }),
         )
       },
       {game, KEY},
@@ -571,7 +809,10 @@ async function viewportRegressions(p) {
     ]) {
       await p.setViewportSize({width, height})
       await p.evaluate((height) => {
-        Object.defineProperty(visualViewport, 'height', {configurable: true, value: height})
+        Object.defineProperty(visualViewport, 'height', {
+          configurable: true,
+          value: height,
+        })
         visualViewport.dispatchEvent(new Event('resize'))
       }, visible)
       await p.waitForTimeout(80)
@@ -621,6 +862,8 @@ async function viewportRegressions(p) {
             'notes + undo',
             'conflict rejection',
             'guided hints do not fill',
+            'bilingual inline hints never cover board; both close actions restore controls',
+            'tool icons + aligned portrait edges + inline feedback',
             'resize + refresh persist',
             'paginated bilingual rules',
             'victory + once-only records',

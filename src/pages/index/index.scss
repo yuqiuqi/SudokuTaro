@@ -3,26 +3,37 @@
 
 .sudoku-app {
   @include glass-tokens;
-  color: var(--ink);
-  font-family: $ui-font-stack;
-  font-size: 14px;
   position: fixed;
   inset: 0;
   width: 100%;
-  height: 100vh;
-  height: 100dvh;
   height: var(--viewport-height, 100dvh);
-  padding: max(12px, env(safe-area-inset-top))
-    max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
-    max(12px, env(safe-area-inset-left));
-  background: linear-gradient(
-    180deg,
-    var(--bg-top) 0%,
-    var(--bg-mid) 55%,
-    var(--bg-bottom) 100%
-  );
+  padding: max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  color: var(--ink);
+  font: 14px $ui-font-stack;
+  background: var(--background);
+  isolation: isolate;
   overflow: hidden;
   overscroll-behavior: none;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse 370px 360px at 76% 35%,
+        rgba(173, 196, 224, 0.68),
+        transparent 80%
+      ),
+      radial-gradient(
+        ellipse 380px 370px at 10% 64%,
+        rgba(191, 217, 212, 0.6),
+        transparent 80%
+      );
+  }
   [type='button'] {
     border: 0;
     cursor: pointer;
@@ -30,6 +41,7 @@
     background: transparent;
     padding: 0;
     touch-action: manipulation;
+    font-family: inherit;
   }
   [type='button']:focus-visible {
     outline: 2px solid var(--accent);
@@ -46,95 +58,123 @@
   }
 }
 .game-shell {
-  width: 100%;
-  max-width: 390px;
+  width: var(--board-size);
   height: 100%;
   min-height: 0;
   margin: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 .topbar {
-  flex: 0 0 44px;
+  flex: 0 0 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 .brand {
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 750;
   letter-spacing: -0.6px;
 }
 .topbar nav {
   display: flex;
   align-items: center;
+  gap: 6px;
 }
 .sudoku-app .text-button {
-  min-height: 36px;
-  min-width: 40px;
+  min-height: 32px;
+  min-width: 32px;
   padding: 6px 8px;
   color: var(--muted);
-  font-size: 12px;
-  border-radius: 18px;
+  font-size: 11px;
+  border-radius: 14px;
 }
-.topbar .text-button:hover {
+.topbar .text-button {
   background: var(--glass);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
 }
 .play-layout {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   min-height: 0;
 }
 .board-pane {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 100%;
+  gap: 10px;
+  width: var(--board-size);
   min-width: 0;
 }
 .game-meta {
-  width: calc(100% - 12px);
-  height: 24px;
+  width: 100%;
+  height: 32px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 .sudoku-app .difficulty-button {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   min-height: 24px;
   text-align: left;
   white-space: nowrap;
 }
 .difficulty-button span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 .metrics {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.sudoku-board {
+.glass-panel {
+  background: var(--glass);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
+}
+@supports (
+  (backdrop-filter: blur(16px)) or (-webkit-backdrop-filter: blur(16px))
+) {
+  .glass-panel,
+  .topbar .text-button {
+    background: rgba(255, 255, 255, 0.56);
+    backdrop-filter: blur(22px) saturate(125%);
+    -webkit-backdrop-filter: blur(22px) saturate(125%);
+  }
+}
+.board-frame {
   width: var(--board-size);
   height: var(--board-size);
   flex-shrink: 0;
+  padding: 8px;
+  border-radius: 24px;
+  box-shadow:
+    0 14px 28px -6px rgba(51, 74, 110, 0.13),
+    0 2px 6px rgba(51, 74, 110, 0.05),
+    inset 0 1px 1px rgba(255, 255, 255, 0.95);
+}
+.sudoku-board {
+  width: 100%;
+  height: 100%;
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));
   grid-template-rows: repeat(9, minmax(0, 1fr));
-  background: var(--white);
-  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(50, 65, 110, 0.035);
 }
 .sudoku-app .sudoku-cell {
   min-width: 0;
@@ -145,7 +185,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 0;
-  background: var(--white);
+  background: rgba(255, 255, 255, 0.82);
   border-right: 0.5px solid var(--line);
   border-bottom: 0.5px solid var(--line);
   transition:
@@ -158,21 +198,22 @@
     border-bottom: 0;
   }
   &.box-right {
-    border-right: 1.5px solid var(--line-box);
+    border-right: 1px solid var(--line-box);
   }
   &.box-bottom {
-    border-bottom: 1.5px solid var(--line-box);
+    border-bottom: 1px solid var(--line-box);
   }
   &.is-related,
   &.is-hint-unit {
-    background: var(--wash);
+    background: rgba(237, 241, 255, 0.8);
   }
   &.is-same {
     background: var(--key-bg);
   }
   &.is-selected {
     background: var(--wash);
-    box-shadow: inset 0 0 0 2px var(--accent);
+    box-shadow: inset 0 0 0 1.6px var(--accent);
+    border-radius: 3px;
     z-index: 1;
   }
   &.is-conflict {
@@ -182,7 +223,7 @@
   }
 }
 .cell-digit {
-  font-size: calc(var(--board-size) / 15);
+  font-size: calc(var(--board-size) / 16);
   line-height: 1;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -195,10 +236,10 @@
 }
 .cell-notes {
   position: absolute;
-  inset: 3px;
+  inset: 2px;
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  font-size: max(7px, calc(var(--board-size) / 39));
+  font-size: max(6px, calc(var(--board-size) / 43));
   color: var(--key-ink);
   line-height: 1;
 }
@@ -208,17 +249,18 @@
   justify-content: center;
 }
 .selection-caption {
-  height: 18px;
-  width: var(--board-size);
+  height: 16px;
+  width: 100%;
   color: var(--muted);
   font-size: 11px;
-  line-height: 18px;
+  line-height: 16px;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .control-pane {
-  width: 100%;
+  width: var(--board-size);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -226,37 +268,37 @@
 }
 .game-controls {
   display: grid;
-  gap: 16px;
-}
-.glass-panel {
-  background: var(--glass);
-  border: 1px solid var(--panel-border);
-  box-shadow: var(--panel-shadow);
-}
-@supports (backdrop-filter: blur(16px)) {
-  .glass-panel {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(20px) saturate(135%);
-    -webkit-backdrop-filter: blur(20px) saturate(135%);
-  }
+  gap: 14px;
 }
 .tools {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  padding: 3px;
-  border-radius: 16px;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 18px;
   height: 48px;
-  border-color: var(--line);
+}
+.game-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  vertical-align: middle;
 }
 .sudoku-app .tools [type='button'] {
-  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
   min-width: 0;
+  background: rgba(255, 255, 255, 0.6);
 }
 .sudoku-app .tools .is-active {
   color: var(--accent);
   background: var(--wash);
+  box-shadow: inset 0 0 0 1px rgba(73, 106, 227, 0.15);
 }
 .sudoku-app .tools [type='button']:not(:disabled):active {
   background: var(--key-bg);
@@ -264,12 +306,11 @@
 .number-panel {
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(44px, 1fr));
-  gap: 4px;
-  height: 108px;
-  padding: 5px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.96);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  height: 106px;
+  padding: 8px;
+  border-radius: 22px;
 }
 .sudoku-app .number-key {
   grid-column: span 2;
@@ -278,12 +319,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--key-bg);
+  background: rgba(255, 255, 255, 0.66);
   color: var(--key-ink);
-  border: 0.5px solid var(--line);
-  border-radius: 10px;
-  font-size: 22px;
-  font-weight: 650;
+  border: 0.6px solid rgba(161, 179, 204, 0.35);
+  border-radius: 12px;
+  font-size: 23px;
+  font-weight: 500;
   transition:
     background-color 100ms ease,
     transform 100ms ease;
@@ -302,93 +343,229 @@
   background: var(--accent);
 }
 .input-caption {
-  height: 18px;
+  min-height: 14px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   text-align: center;
-  line-height: 18px;
+  line-height: 14px;
+}
+.feedback {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  color: var(--success);
+  font-size: 11px;
+  line-height: 14px;
+}
+.feedback:empty {
+  display: none;
+}
+.feedback .game-icon {
+  width: 14px;
+  height: 14px;
+  flex-basis: 14px;
+}
+.feedback-error {
+  color: var(--danger);
 }
 .side-intro {
   display: none;
 }
-.layout-compact {
-  .selection-caption {
-    display: none;
-  }
-  .game-controls {
-    gap: 12px;
-  }
-  .tools {
-    height: 44px;
-  }
-  .control-pane {
-    gap: 12px;
-  }
+.hint-card {
+  width: 100%;
+  border-radius: 24px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: appear 180ms ease-out;
+}
+.hint-eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.hint-eyebrow > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.hint-step {
+  margin-left: auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.sudoku-app .hint-eyebrow .text-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  min-height: 24px;
+  min-width: 24px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.hint-card h2 {
+  font-size: 16px;
+  font-weight: 550;
+  line-height: 1.4;
+}
+.hint-card p {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.sudoku-app .hint-card .primary-button,
+.sudoku-app .hint-card .secondary-button {
+  min-height: 36px;
+  padding: 7px 8px;
+  border-radius: 13px;
+  font-size: 12px;
 }
 .layout-short {
+  padding: max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
   .game-shell {
-    max-width: 360px;
-    gap: 4px;
+    gap: 6px;
   }
   .topbar {
-    flex-basis: 36px;
+    flex-basis: 28px;
   }
   .brand {
-    font-size: 18px;
+    font-size: 15px;
+  }
+  .topbar nav {
+    gap: 4px;
+  }
+  .topbar .text-button {
+    min-height: 28px;
+    padding: 4px 6px;
+    font-size: 9px;
   }
   .play-layout {
-    gap: 8px;
+    gap: 6px;
   }
   .board-pane {
     gap: 4px;
   }
   .game-meta {
-    height: 20px;
+    height: 22px;
+    margin-bottom: 0;
+    gap: 4px;
   }
   .difficulty-button {
-    font-size: 12px;
+    font-size: 10px;
   }
   .metrics {
-    font-size: 11px;
-    gap: 8px;
+    font-size: 9px;
+    gap: 5px;
   }
-  .selection-caption,
-  .input-caption {
-    display: none;
+  .board-frame {
+    padding: 6px;
+    border-radius: 20px;
+  }
+  .sudoku-board {
+    border-radius: 14px;
+  }
+  .selection-caption {
+    height: 14px;
+    line-height: 14px;
+    font-size: 9px;
+  }
+  .control-pane {
+    gap: 6px;
   }
   .game-controls {
-    grid-template-columns: 68px 1fr;
-    gap: 10px;
-    height: 152px;
+    gap: 8px;
   }
   .tools {
-    height: 152px;
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(4, 1fr);
+    height: 36px;
+    padding: 3px;
+    gap: 2px;
+    border-radius: 14px;
+  }
+  .tools [type='button'] {
+    gap: 3px;
+    font-size: 10px;
+    border-radius: 9px;
+  }
+  .tools .game-icon {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
   }
   .number-panel {
-    height: 152px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    height: 80px;
+    padding: 6px;
+    gap: 4px;
+    border-radius: 18px;
   }
-  .number-key,
-  .number-key:nth-child(6) {
-    grid-column: auto;
+  .number-key {
+    font-size: 18px;
+    border-radius: 9px;
+  }
+  .input-caption {
+    font-size: 9px;
+    line-height: 12px;
+    min-height: 12px;
+  }
+  .hint-card {
+    padding: 10px;
+    gap: 6px;
+    border-radius: 18px;
+  }
+  .hint-card h2 {
+    display: none;
+  }
+  .hint-card p {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .hint-card .dialog-actions {
+    gap: 6px;
+  }
+  .hint-card .primary-button,
+  .hint-card .secondary-button {
+    font-size: 10px;
+    padding: 6px 3px;
+    min-height: 32px;
+  }
+}
+.layout-compact {
+  .game-shell {
+    gap: 10px;
+  }
+  .play-layout {
+    gap: 10px;
+  }
+  .control-pane {
+    gap: 10px;
   }
 }
 .layout-wide {
   .game-shell {
-    max-width: 1000px;
+    width: min(100%, 1000px);
+    gap: 8px;
+  }
+  .topbar {
+    width: min(100%, calc(var(--board-size) + var(--hinge-gap) + 300px));
+    margin: 0 auto;
   }
   .play-layout {
     display: grid;
-    grid-template-columns: var(--board-size) minmax(210px, 300px);
+    grid-template-columns: var(
+      --play-columns,
+      var(--board-size) minmax(210px, 300px)
+    );
     gap: var(--hinge-gap);
     justify-content: center;
     align-items: start;
-  }
-  .game-meta {
-    width: 100%;
   }
   .game-meta .difficulty-button {
     font-size: 12px;
@@ -397,15 +574,13 @@
     font-size: 11px;
     gap: 8px;
   }
-  .board-pane {
-    gap: 8px;
-  }
   .control-pane {
+    width: 100%;
     padding: 16px 12px;
-    margin-top: 32px;
-    border-radius: 22px;
-    background: var(--glass);
-    gap: 18px;
+    margin-top: 46px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.25);
+    gap: 14px;
   }
   .side-intro {
     display: block;
@@ -419,9 +594,6 @@
     color: var(--muted);
     line-height: 1.55;
   }
-  .game-controls {
-    gap: 16px;
-  }
   .number-panel {
     height: 164px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -432,89 +604,115 @@
     grid-column: auto;
   }
 }
-@media (max-height: 520px) {
-  .layout-wide .side-intro,
-  .layout-wide .input-caption {
+.layout-wide.height-limited {
+  .game-meta {
+    flex-direction: column;
+    justify-content: center;
+    height: 40px;
+    gap: 0;
+  }
+  .game-meta .difficulty-button {
+    font-size: 9px;
+  }
+  .metrics {
+    font-size: 9px;
+    gap: 5px;
+  }
+  .selection-caption {
+    font-size: 9px;
+  }
+
+  .play-layout {
+    grid-template-columns: var(
+      --play-columns,
+      var(--board-size) minmax(150px, 300px)
+    );
+  }
+  padding: max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  .side-intro,
+  .input-caption:not(.has-feedback) {
     display: none;
   }
-  .layout-wide .control-pane {
-    padding: 8px;
+  .control-pane {
+    margin-top: 0;
+    padding: 0;
+    gap: 6px;
+    background: transparent;
+  }
+  .game-controls {
+    grid-template-columns: 60px minmax(0, 1fr);
     gap: 8px;
   }
-  .layout-wide .game-controls {
-    gap: 8px;
+  .tools {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    height: 144px;
+    padding: 3px;
   }
-  .layout-wide .tools {
-    height: 40px;
+  .tools [type='button'] {
+    gap: 3px;
+    font-size: 10px;
   }
-  .layout-wide .number-panel {
+  .tools .game-icon {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
+  }
+  .number-panel {
     height: 144px;
   }
+  .hint-card {
+    padding: 8px 10px;
+    gap: 5px;
+    border-radius: 18px;
+  }
+  .hint-card h2 {
+    font-size: 14px;
+  }
+  .hint-card p {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .hint-card .primary-button,
+  .hint-card .secondary-button {
+    min-height: 30px;
+    font-size: 11px;
+    padding: 5px;
+  }
+  .hint-eyebrow {
+    min-height: 24px;
+  }
 }
-.feedback {
-  position: fixed;
-  z-index: 50;
-  left: 50%;
-  top: max(58px, env(safe-area-inset-top));
-  max-width: calc(100% - 32px);
-  transform: translate(-50%, -8px);
-  opacity: 0;
-  pointer-events: none;
-  padding: 12px 18px;
-  border: 1px solid var(--panel-border);
-  border-radius: 18px;
-  background: var(--white);
-  color: var(--success);
-  box-shadow: var(--panel-shadow);
-  font-size: 13px;
-  transition:
-    opacity 150ms ease,
-    transform 150ms ease;
+.layout-fold-horizontal {
+  .game-shell {
+    width: 100%;
+  }
+  .topbar {
+    width: var(--board-size);
+    margin: 0 auto;
+  }
+  .play-layout {
+    display: grid;
+    grid-template-rows: var(--fold-rows);
+    gap: var(--fold-row-gap, 0);
+    justify-items: center;
+  }
+  .board-pane {
+    justify-content: center;
+    height: 100%;
+  }
+  .selection-caption,
+  .input-caption:not(.has-feedback) {
+    display: none;
+  }
+  .control-pane {
+    align-self: center;
+    width: min(100%, 350px);
+  }
 }
-.feedback-visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-.hint-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  pointer-events: none;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  padding: 12px;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-}
-.hint-card {
-  width: min(100%, 370px);
-  border-radius: 26px;
-  padding: 18px 20px;
-  pointer-events: auto;
-  animation: appear 180ms ease-out;
-}
-.hint-eyebrow {
-  color: var(--accent);
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.hint-card h2 {
-  font-size: 21px;
-  letter-spacing: -0.5px;
-  margin-bottom: 10px;
-}
-.hint-card p {
-  font-size: 14px;
-  line-height: 1.7;
-  margin-bottom: 18px;
-  color: var(--muted);
-}
-.layout-wide .hint-layer {
-  justify-content: flex-end;
-  align-items: center;
-}
+
 .dialog-backdrop {
   position: absolute;
   inset: 0;
@@ -727,15 +925,6 @@
   .achievement-copy {
     margin: 12px 0 !important;
   }
-  .hint-card {
-    padding: 12px 16px;
-    border-radius: 22px;
-  }
-  .hint-card p {
-    font-size: 13px;
-    line-height: 1.5;
-    margin-bottom: 12px;
-  }
 }
 @media (max-height: 370px) and (min-width: 460px) {
   .dialog-rules {
@@ -772,98 +961,7 @@
     transform: translateY(0);
   }
 }
-// Use known viewport segment geometry only when the browser exposes it.
-.layout-wide .play-layout {
-  grid-template-columns: var(
-    --play-columns,
-    var(--board-size) minmax(210px, 300px)
-  );
-}
-.layout-fold-horizontal {
-  .game-shell {
-    max-width: 100%;
-  }
-  .play-layout {
-    display: grid;
-    grid-template-rows: var(--fold-rows);
-    gap: var(--fold-row-gap, 0);
-    justify-items: center;
-  }
-  .board-pane {
-    justify-content: center;
-    height: 100%;
-  }
-  .selection-caption,
-  .input-caption {
-    display: none;
-  }
-  .control-pane {
-    align-self: center;
-    width: min(100%, 390px);
-  }
-  .game-controls {
-    gap: 12px;
-  }
-}
-@media (max-height: 370px) and (min-width: 460px) {
-  .dialog {
-    width: min(100%, 560px);
-  }
-  .eyebrow {
-    margin-bottom: 8px;
-  }
-}
-.layout-wide {
-  .game-shell {
-    gap: 8px;
-  }
-  .topbar {
-    flex-basis: 32px;
-  }
-  .topbar .text-button {
-    min-height: 32px;
-  }
-}
-@media (max-height: 370px) and (min-width: 460px) {
-  .dialog-top {
-    height: 28px;
-    margin: -4px -6px 0;
-  }
-  .dialog-top .text-button {
-    min-height: 28px;
-    padding: 4px 6px;
-  }
-  .dialog-settings .settings-line {
-    min-height: 36px;
-  }
-}
-.feedback-error {
-  color: var(--danger);
-}
-// Browser chrome may shrink visualViewport without changing CSS media-query height.
-.layout-wide.height-limited {
-  .side-intro,
-  .input-caption {
-    display: none;
-  }
-  .control-pane {
-    margin-top: 0;
-    padding: 8px;
-    gap: 8px;
-  }
-  .game-controls {
-    grid-template-columns: 48px minmax(0, 1fr);
-    gap: 8px;
-  }
-  .tools {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(4, minmax(0, 1fr));
-    height: 144px;
-  }
-  .number-panel {
-    height: 144px;
-  }
-}
+
 .height-limited {
   .dialog {
     width: min(100%, 560px);
