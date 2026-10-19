@@ -172,6 +172,132 @@ async function dialogFits(p, label) {
     label + ' dialog overflow ' + JSON.stringify(out),
   )
 }
+async function cornerHighlightRegression(p) {
+  for (const [width, height] of [
+    [390, 720],
+    [320, 480],
+    [480, 240],
+  ]) {
+    await p.setViewportSize({width, height})
+    await p.waitForTimeout(80)
+    for (const [cell, corner] of [
+      [0, 'TopLeft'],
+      [8, 'TopRight'],
+      [72, 'BottomLeft'],
+      [80, 'BottomRight'],
+    ]) {
+      await p.locator(`[data-cell="${cell}"]`).click()
+      await p
+        .locator(`[data-cell="${cell}"].is-selected`)
+        .waitFor({state: 'visible'})
+      // Let the existing 120ms highlight transition finish before visual capture.
+      await p.waitForTimeout(150)
+      if (process.env.SCREENSHOT_DIR) {
+        fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true})
+        await p.screenshot({
+          path: path.join(
+            process.env.SCREENSHOT_DIR,
+            `corner-${width}-${cell}.png`,
+          ),
+        })
+      }
+      const out = await p
+        .locator(`[data-cell="${cell}"]`)
+        .evaluate((n, corner) => {
+          const board = getComputedStyle(n.parentElement),
+            style = getComputedStyle(n)
+          return {
+            clipRadius: parseFloat(board[`border${corner}Radius`]) - 1,
+            ringRadius: parseFloat(style[`border${corner}Radius`]),
+            width: n.getBoundingClientRect().width,
+            shadow: style.boxShadow,
+          }
+        }, corner)
+      assert.ok(
+        out.ringRadius >= out.clipRadius &&
+          out.ringRadius + 3 <= out.width + 0.5 &&
+          out.shadow !== 'none',
+        `corner ${cell} ${width}x${height} ring must follow rounded clip without normalization: ${JSON.stringify(out)}`,
+      )
+    }
+  }
+  await p.setViewportSize({width: 390, height: 720})
+}
+async function singleReviewHintRegression(p, url) {
+  await p.evaluate(
+    ({game, KEY}) => {
+      const board = game.board.map((row) => [...row])
+      board[0][2] = 1 // A legal but incorrect entry triggers the review hint branch.
+      localStorage.setItem(
+        KEY,
+        JSON.stringify({
+          ...game,
+          board,
+          notes: game.notes.map((ns, i) => (i === 2 ? [] : ns)),
+        }),
+      )
+    },
+    {game, KEY},
+  )
+  await p.reload()
+  await p.waitForSelector('[data-cell="80"]')
+  await loadTestFonts(p, url)
+  for (const en of [false, true]) {
+    await p
+      .getByRole('button', {name: en ? 'Hint' : '提示', exact: true})
+      .click()
+    assert.equal(
+      (await p.locator('.hint-step').innerText()).replace(/\s/g, ''),
+      '1/1',
+    )
+    assert.equal(
+      await p
+        .getByRole('button', {
+          name: en ? 'Another clue' : '再给一点线索',
+          exact: true,
+        })
+        .count(),
+      0,
+    )
+    assert.ok(
+      (await p.locator('.hint-card p').innerText()).includes(
+        en ? 'Review' : '回看',
+      ),
+    )
+    if (process.env.SCREENSHOT_DIR) {
+      fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true})
+      await p.screenshot({
+        path: path.join(
+          process.env.SCREENSHOT_DIR,
+          `review-hint-${en ? 'en' : 'zh'}.png`,
+        ),
+        animations: 'disabled',
+      })
+    }
+    await p
+      .getByRole('button', {name: en ? 'Let me try' : '我来试试', exact: true})
+      .click()
+    assert.equal(
+      await p.locator('[data-cell="2"] .cell-digit').innerText(),
+      '1',
+      'review never replaces the player entry',
+    )
+    await p
+      .getByRole('button', {name: en ? 'Settings' : '设置', exact: true})
+      .click()
+    await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+    await p
+      .getByRole('button', {name: en ? '关闭' : 'Close', exact: true})
+      .click()
+  }
+  await p.evaluate(
+    ({game, KEY}) => localStorage.setItem(KEY, JSON.stringify(game)),
+    {game, KEY},
+  )
+  await p.reload()
+  await p.waitForSelector('[data-cell="80"]')
+  await loadTestFonts(p, url)
+}
 async function inlineHintRegressions(p) {
   assert.equal(
     await p.locator('.tools button svg').count(),
@@ -219,6 +345,7 @@ async function inlineHintRegressions(p) {
         true,
         'hint opens with accessible focus',
       )
+      const clueTexts = []
       for (let stage = 0; stage < 3; stage++) {
         await p.locator('.hint-card').evaluate(async (n) => {
           await Promise.all(
@@ -264,6 +391,7 @@ async function inlineHintRegressions(p) {
             !out.jargon,
           `inline hint ${width}x${height}/${visible} ${en ? 'en' : 'zh'} stage${stage}: ${JSON.stringify(out)}`,
         )
+        clueTexts.push(await p.locator('.hint-card p').innerText())
         if (stage < 2)
           await p
             .getByRole('button', {
@@ -272,6 +400,11 @@ async function inlineHintRegressions(p) {
             })
             .click()
       }
+      assert.equal(
+        new Set(clueTexts).size,
+        3,
+        'each teaching stage adds different information',
+      )
       await p
         .getByRole('button', {
           name: en ? 'Close hint' : '关闭提示',
@@ -530,6 +663,8 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    await singleReviewHintRegression(p, url)
+    await cornerHighlightRegression(p)
     await inlineHintRegressions(p)
     await viewportRegressions(p)
     const reports = []
@@ -862,6 +997,8 @@ async function viewportRegressions(p) {
             'notes + undo',
             'conflict rejection',
             'guided hints do not fill',
+            'review hint appears once; teaching steps contain different clues',
+            'four corner selection rings follow board curvature at three sizes',
             'bilingual inline hints never cover board; both close actions restore controls',
             'tool icons + aligned portrait edges + inline feedback',
             'resize + refresh persist',
