@@ -172,6 +172,97 @@ async function dialogFits(p, label) {
     label + ' dialog overflow ' + JSON.stringify(out),
   )
 }
+// These checks fail if cells merely change color, propagate by box, or results
+// use a wall-clock timeout while the last diagonal is still moving.
+async function rainbowWaveRegressions(p, capture = false, holdLast = true) {
+  const timing = await p.evaluate(() => {
+    const cells = [...document.querySelectorAll('.sudoku-cell')]
+    window.waveEffects = document.querySelector('.sudoku-board').getAnimations({subtree: true})
+    window.waveEffects.forEach((a) => a.pause())
+    window.waveAnimations = cells.map((cell) =>
+      cell.getAnimations().find((a) => a.effect.target === cell && !a.effect.pseudoElement),
+    )
+    return window.waveAnimations.map((a) => {
+      a.pause()
+      const {delay, duration} = a.effect.getTiming()
+      return {delay, duration}
+    })
+  })
+  assert.equal(timing.length, 81)
+  assert.ok(timing[1].delay > timing[0].delay, 'wave advances to the next diagonal')
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      assert.ok(Math.abs(timing[r * 9 + c].delay - timing[1].delay * (r + c)) < 0.01, 'row + column share one diagonal')
+  const duration = timing[0].duration,
+    total = timing[80].delay + duration
+  assert.ok(total >= 2300 && total <= 2500, 'the whole wave lasts about 2.4 seconds')
+  const frame = async (at, name) => {
+    const out = await p.evaluate((at) => {
+      window.waveEffects.forEach((a) => {a.currentTime = at})
+      const cells = [...document.querySelectorAll('.sudoku-cell')]
+      return cells.map((cell) => {
+        const style = getComputedStyle(cell),
+          m = new DOMMatrixReadOnly(style.transform),
+          light = getComputedStyle(cell, '::after'),
+          r = cell.getBoundingClientRect(),
+          digit = cell.querySelector('.cell-digit')
+        return {
+          z: m.m43, tilt: Math.abs(m.m13) + Math.abs(m.m23),
+          shadow: style.boxShadow,
+          rainbow: light.backgroundImage, opacity: Number(light.opacity),
+          hue: Number(style.getPropertyValue('--wave-hue')),
+          readable: getComputedStyle(digit).opacity === '1' && digit.textContent.length === 1,
+          fits: r.left >= 0 && r.top >= 0 && r.right <= innerWidth + 0.5 && r.bottom <= Math.min(innerHeight, visualViewport.height) + 0.5,
+        }
+      })
+    }, at)
+    assert.ok(out.every((cell) => cell.fits && cell.readable), `${name}: all lifted cells and digits fit the usable viewport`)
+    assert.equal(await p.locator('.dialog-won').count(), 0, `${name}: results do not cover the wave`)
+    if (capture && process.env.SCREENSHOT_DIR) {
+      fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true})
+      await p.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `rainbow-${capture === true ? '' : capture + '-'}${name}.png`)})
+    }
+    return out
+  }
+  const peak = duration * 0.28,
+    early = await frame(peak, 'early')
+  assert.ok(early[0].z > 2 && early[0].tilt > 0.02, 'first cell actually lifts in Z and tilts')
+  assert.equal(early[80].z, 0, 'last diagonal stays at rest before the wave reaches it')
+  assert.ok(early[0].shadow !== 'none', 'lift casts a depth shadow')
+  assert.ok(early[0].rainbow.includes('gradient') && early[0].opacity > 0.2, 'rainbow highlights are visible on the lifted cell')
+  const center = await frame(timing[40].delay + peak, 'center')
+  assert.ok(center[40].z > 2 && center[40].tilt > 0.02, 'center diagonal lifts after the first diagonal')
+  const crest = center.filter((cell) => cell.z > 2)
+  assert.ok(crest.some((cell) => cell.hue < 70 || cell.hue > 330) && crest.some((cell) => cell.hue > 180 && cell.hue < 300), 'the crest shows warm and cool rainbow colors together')
+  assert.ok(Math.abs(center[0].z) < 0.1, 'first diagonal has settled while center rises')
+  const late = await frame(timing[80].delay + duration * 0.6, 'late')
+  assert.ok(late[80].z > 0 && late[80].z < early[0].z, 'last diagonal descends smoothly from its peak')
+  const settled = await frame(total - 1, 'afterglow')
+  assert.ok(Math.abs(settled[80].z) < 0.1 && settled[80].opacity < 0.05, 'last diagonal is flat with only faint afterglow before results')
+  await p.evaluate(() => {
+    // Finish all but the final cell; only the final animation may reveal results.
+    window.waveAnimations.slice(0, -1).forEach((a) => a.finish())
+  })
+  if (holdLast) await p.waitForTimeout(total + 100)
+  assert.equal(await p.locator('.dialog-won').count(), 0, 'even a delayed final animation must settle before results')
+  await p.evaluate(() => {
+    window.waveLastEnd = null
+    document.addEventListener('animationend', (e) => {
+      if (e.target.matches('.sudoku-cell[data-cell="80"]')) {
+        window.waveLastEnd = {
+          dialogVisible: !!document.querySelector('.dialog-won'),
+          z: new DOMMatrixReadOnly(getComputedStyle(e.target).transform).m43,
+        }
+      }
+    }, {capture: true})
+    const last = window.waveAnimations.at(-1)
+    last.play()
+  })
+  await p.waitForSelector('.dialog-won', {timeout: 1000})
+  assert.deepEqual(await p.evaluate(() => window.waveLastEnd), {dialogVisible: false, z: 0}, 'last cell settles before the results are mounted')
+  assert.equal(await p.locator('.is-celebrating').count(), 0)
+  assert.ok(await p.locator('.sudoku-cell').evaluateAll((cells) => cells.every((c) => getComputedStyle(c).transform === 'none')), 'cleanup restores flat native hit targets')
+}
 async function victoryFeedbackRegressions(p, url) {
   const seed = async () => {
     await p.evaluate(
@@ -202,7 +293,7 @@ async function victoryFeedbackRegressions(p, url) {
   await p.locator('[data-number="4"]').click()
   await p.waitForSelector('.is-celebrating', {timeout: 1500})
   await p.keyboard.press('Escape')
-  await p.waitForTimeout(1200)
+  await p.waitForTimeout(2600)
   assert.equal(
     await p.locator('.dialog-won').count(),
     0,
@@ -228,7 +319,7 @@ async function victoryFeedbackRegressions(p, url) {
       path: path.join(process.env.SCREENSHOT_DIR, 'victory-celebrating.png'),
     })
   }
-  await p.waitForSelector('.dialog-won', {timeout: 3000})
+  await rainbowWaveRegressions(p, true)
   for (const [width, height, visible] of [
     [280, 320, 320],
     [280, 400, 400],
@@ -364,6 +455,66 @@ async function victoryFeedbackRegressions(p, url) {
     .click()
   assert.equal(await p.locator('.dialog-won').count(), 0)
   assert.equal(await p.locator('.number-key').count(), 9)
+  // Sample the actual 3D wave in compact portrait, 240px landscape, and a
+  // compressed visualViewport; keep all existing dialog/input regressions below.
+  for (const [width, height, visible] of [
+    [280, 320, 320], [480, 240, 240], [568, 240, 240], [390, 720, 400],
+  ]) {
+    await p.setViewportSize({width, height})
+    await seed()
+    await p.evaluate((h) => {
+      Object.defineProperty(visualViewport, 'height', {configurable: true, value: h})
+      visualViewport.dispatchEvent(new Event('resize'))
+    }, visible)
+    await p.waitForTimeout(80)
+    await p.locator('[data-cell="2"]').click()
+    await p.locator('[data-number="4"]').click()
+    await p.waitForSelector('.is-celebrating')
+    await rainbowWaveRegressions(p, width === 480 ? '480x240' : false, false)
+    await p.getByRole('button', {name: '欣赏棋盘', exact: true}).click()
+    await p.locator('[data-cell="80"]').click()
+    assert.equal(await p.locator('[data-cell="80"]').getAttribute('aria-pressed'), 'true', 'settled cells retain native hit targets')
+    await geometry(p, `settled wave ${width}x${height}/${visible}`)
+    await p.evaluate(() => {
+      delete visualViewport.height
+      visualViewport.dispatchEvent(new Event('resize'))
+    })
+  }
+  await p.setViewportSize({width: 390, height: 720})
+  const win = async () => {
+    await seed()
+    await p.locator('[data-cell="2"]').click()
+    await p.locator('[data-number="4"]').click()
+    await p.waitForSelector('.is-celebrating')
+  }
+  await win()
+  await p.getByRole('button', {name: '设置', exact: true}).click()
+  await p.waitForSelector('.is-celebrating', {state: 'detached', timeout: 1000})
+  assert.ok(await p.getByRole('switch', {name: '轻触振动', exact: true}).isVisible(), 'settings keeps its content during wave cancellation')
+  await p.getByRole('button', {name: '关闭', exact: true}).click()
+  await p.waitForTimeout(2600)
+  assert.equal(await p.locator('.dialog-won').count(), 0, 'closing a menu early cannot reveal stale results')
+  await win()
+  await p.getByRole('button', {name: '再挑战一局', exact: true}).click()
+  await p.waitForTimeout(2600)
+  assert.equal(await p.locator('.dialog-won').count(), 0, 'a new game cannot receive stale results')
+  assert.equal(await p.locator('.is-celebrating').count(), 0)
+  assert.equal(await p.locator('.number-key').count(), 9)
+  assert.ok(await p.locator('.sudoku-cell').evaluateAll((cells) => cells.every((c) => getComputedStyle(c).transform === 'none')), 'new game removes animated transforms')
+  await win()
+  await p.reload()
+  await p.waitForSelector('[data-cell="80"]')
+  await p.waitForTimeout(2600)
+  assert.equal(await p.locator('.is-celebrating').count(), 0, 'refresh during a wave does not replay it')
+  assert.equal(await p.locator('.dialog-won').count(), 0, 'refresh during a wave does not show stale results')
+  assert.equal(await p.evaluate(() => JSON.parse(localStorage.getItem('sudokutaro:records:v1')).wins), 1, 'refresh during a wave records exactly one win')
+  await win()
+  await p.emulateMedia({reducedMotion: 'reduce'})
+  await p.waitForSelector('.dialog-won', {timeout: 1000})
+  assert.equal(await p.locator('.is-celebrating').count(), 0, 'changing reduced motion during the wave ends it immediately')
+  await p.emulateMedia({reducedMotion: 'no-preference'})
+  await p.waitForTimeout(2600)
+  assert.equal(await p.locator('.dialog-won').count(), 1, 'preference changes cannot reopen or duplicate results')
   await p.emulateMedia({reducedMotion: 'reduce'})
   await seed()
   await p.locator('[data-cell="2"]').click()

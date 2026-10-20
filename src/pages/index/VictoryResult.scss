@@ -419,26 +419,47 @@
   font-weight: 600;
 }
 .sudoku-app.is-celebrating {
+  // A shared envelope overlaps ten diagonals into one ridge: 960 + 16 × 90 = 2400ms.
+  --wave-duration: 960ms;
+  --wave-stagger: 90ms;
+  --wave-lift: clamp(4px, calc(var(--board-size) * 0.05), 18px);
+  --wave-rise: clamp(1px, calc(var(--board-size) * 0.012), 4px);
+  .sudoku-board {
+    overflow: visible;
+    perspective: max(300px, calc(var(--board-size) * 2));
+    transform-style: preserve-3d;
+  }
   .sudoku-cell {
-    animation: victory-box 0.65s ease-out both;
-    animation-delay: calc(var(--celebration-order) * 45ms);
-  }
-  .sudoku-cell.is-selected .cell-digit {
-    animation: victory-last-digit 0.4s cubic-bezier(0.2, 0.7, 0.35, 1.2) both;
-  }
-  .board-frame::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    background: linear-gradient(
-      115deg,
-      transparent 20%,
-      rgba(255, 255, 255, 0.55) 48%,
-      transparent 75%
-    );
-    animation: victory-glow 1s ease-out both;
+    animation: victory-wave var(--wave-duration) cubic-bezier(0.3, 0, 0.25, 1) both;
+    animation-delay: calc(var(--celebration-order) * var(--wave-stagger));
+    transition: none;
+    transform-style: preserve-3d;
+    // With the board unclipped, each native corner retains its original outline.
+    &:first-child {border-top-left-radius: var(--grid-radius);}
+    &:nth-child(9) {border-top-right-radius: var(--grid-radius);}
+    &:nth-child(73) {border-bottom-left-radius: var(--grid-radius);}
+    &:last-child {border-bottom-right-radius: var(--grid-radius);}
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(
+        125deg,
+        hsl(var(--wave-hue) 95% 68% / 0.9),
+        hsl(calc(var(--wave-hue) + 55) 95% 77% / 0.65) 46%,
+        hsl(calc(var(--wave-hue) + 110) 90% 66% / 0.85)
+      );
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.95);
+      opacity: 0;
+      animation: victory-rainbow var(--wave-duration) ease-in-out both;
+      animation-delay: calc(var(--celebration-order) * var(--wave-stagger));
+    }
+    .cell-digit {
+      position: relative;
+      z-index: 1;
+    }
   }
 }
 .victory-sparkles {
@@ -471,38 +492,26 @@
 .sudoku-app.height-limited .victory-sparkles i:nth-child(n + 9) {
   display: none;
 }
-@keyframes victory-last-digit {
-  0% {
-    transform: scale(0.8);
+@keyframes victory-wave {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotateX(0) rotateY(0);
+    box-shadow: 0 0 0 transparent;
   }
-  55% {
-    transform: scale(1.2);
+  28% {
+    transform: translate3d(0, calc(-1 * var(--wave-rise)), var(--wave-lift)) rotateX(-10deg) rotateY(8deg);
+    box-shadow:
+      0 7px 10px -3px rgba(42, 57, 94, 0.32),
+      0 0 7px hsl(var(--wave-hue) 85% 66% / 0.48);
   }
-  100% {
-    transform: scale(1);
-  }
-}
-@keyframes victory-box {
-  0%,
-  100% {
-    background-color: rgba(255, 255, 255, 0.82);
-  }
-  45% {
-    background-color: #d9ede6;
+  72% {
+    transform: translate3d(0, 0, 0) rotateX(0) rotateY(0);
+    box-shadow: 0 1px 3px hsl(var(--wave-hue) 80% 70% / 0.15);
   }
 }
-@keyframes victory-glow {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  30% {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-    transform: scale(1.05);
-  }
+@keyframes victory-rainbow {
+  0%, 100% {opacity: 0;}
+  28% {opacity: 0.8;}
+  72% {opacity: 0.14;}
 }
 @keyframes victory-spark {
   0% {
@@ -543,5 +552,12 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sudoku-app.is-celebrating .sudoku-cell,
+  .sudoku-app.is-celebrating .sudoku-cell::after {
+    animation: none;
   }
 }
