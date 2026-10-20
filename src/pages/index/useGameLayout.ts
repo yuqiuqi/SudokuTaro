@@ -12,6 +12,7 @@ type Segment = {
 type Layout = {
   mode: string
   heightLimited?: boolean
+  thumbGrid?: boolean
   board: number
   hinge: number
   columns?: string
@@ -19,7 +20,7 @@ type Layout = {
   direction?: string
 }
 /** Measure usable CSS space rather than device pixels; resizing never recreates a game. */
-export function useGameLayout(hintVisible = false, feedbackVisible = false) {
+export function useGameLayout(hintVisible = false) {
   const ref = useRef<HTMLDivElement>(null)
   const [layout, setLayout] = useState<Layout>({
     mode: 'regular',
@@ -62,6 +63,8 @@ export function useGameLayout(hintVisible = false, feedbackVisible = false) {
             : h < 665
               ? 'compact'
               : 'regular'
+      // Three rows earn their extra height only on tall portrait screens.
+      const thumbGrid = mode === 'regular' && h >= 740
       const hinge = vertical
         ? Math.max(0, segments[1].left - segments[0].right)
         : h < 440
@@ -69,6 +72,7 @@ export function useGameLayout(hintVisible = false, feedbackVisible = false) {
           : 24
       // Very short screens keep a readable side panel instead of narrowing the whole stack.
       const controlMinimum = h < 440 ? 150 : 210
+      // Stable chrome + caption budgets mirror the corresponding Sass modes.
       let board =
         mode === 'wide'
           ? Math.min(
@@ -81,12 +85,19 @@ export function useGameLayout(hintVisible = false, feedbackVisible = false) {
             ? Math.min(
                 224,
                 w,
-                h - (hintVisible ? 270 : 232) - (feedbackVisible ? 28 : 0),
+                h - (hintVisible ? 286 : 248),
               )
             : Math.min(
-                mode === 'regular' ? 350 : 306,
+                mode === 'regular' ? 414 : 350,
                 w,
-                h - (hintVisible ? 354 : 328) - (feedbackVisible ? 28 : 0),
+                h -
+                  (hintVisible
+                    ? 354
+                    : thumbGrid
+                      ? 358
+                      : mode === 'compact'
+                        ? 312
+                        : 306),
               )
       let columns: string | undefined,
         rows: string | undefined,
@@ -107,6 +118,7 @@ export function useGameLayout(hintVisible = false, feedbackVisible = false) {
       setLayout({
         mode,
         heightLimited: h < 496,
+        thumbGrid,
         board: Math.max(90, Math.floor(board)),
         hinge,
         columns,
@@ -141,11 +153,12 @@ export function useGameLayout(hintVisible = false, feedbackVisible = false) {
       horizontal.removeEventListener?.('change', updateHeight)
       vertical.removeEventListener?.('change', updateHeight)
     }
-  }, [hintVisible, feedbackVisible])
+  }, [hintVisible])
   return {
     ref,
     mode: layout.mode,
     heightLimited: layout.heightLimited,
+    thumbGrid: layout.thumbGrid,
     style: {
       '--board-size': `${layout.board}px`,
       '--hinge-gap': `${layout.hinge}px`,

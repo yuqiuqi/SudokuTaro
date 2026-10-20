@@ -997,17 +997,157 @@ async function inlineHintRegressions(p) {
   )
   const alignment = await p.evaluate(() => {
     const b = document.querySelector('.board-frame').getBoundingClientRect()
-    return [
-      ...document.querySelectorAll(
-        '.topbar,.game-meta,.selection-caption,.control-pane',
-      ),
-    ].every((n) => {
-      const r = n.getBoundingClientRect()
-      return Math.abs(r.left - b.left) <= 1 && Math.abs(r.right - b.right) <= 1
-    })
+    // User now requires the whole game area at 6px, while the board may be
+    // constrained by height. Preserve real edge/centering checks for both.
+    return Math.abs(b.left + b.right - innerWidth) <= 1 && b.left >= 6 &&
+      [...document.querySelectorAll('.topbar,.game-meta,.selection-caption,.control-pane,.tools')].every((n) => {
+        const r = n.getBoundingClientRect()
+        return Math.abs(r.left - 6) <= 1 && Math.abs(r.right - (innerWidth - 6)) <= 1
+      })
   })
-  assert.ok(alignment, 'portrait content aligns with both board edges')
+  assert.ok(alignment, 'portrait outer content uses 6px gutters and the constrained board stays centered')
   await p.locator('[data-cell="2"]').click()
+}
+// A feedback state must only change text/highlights, never playable geometry.
+async function stableFeedbackKeypadRegressions(p) {
+  const failures = [], geometryRecords = []
+  const check = (ok, message) => { if (!ok) failures.push(message) }
+  const snapshot = () => p.evaluate(() => Object.fromEntries(
+    ['.game-shell', '.topbar', '.game-meta', '.board-frame', '.control-pane',
+      '.tools', '.number-panel', '.input-caption', ...Array.from({length: 9}, (_, i) => `[data-number="${i + 1}"]`)]
+      .map((selector) => [selector, document.querySelector(selector).getBoundingClientRect().toJSON()]),
+  ))
+  const compare = (before, after, label) => {
+    for (const selector of Object.keys(before)) {
+      for (const key of ['x', 'y', 'width', 'height'])
+        check(Math.abs(before[selector][key] - after[selector][key]) < 0.6,
+          `${label} ${selector}.${key}: ${before[selector][key]} → ${after[selector][key]}`)
+    }
+  }
+  const capture = async (name) => {
+    if (!process.env.SCREENSHOT_DIR) return
+    fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true})
+    await p.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `thumb-${name}.png`)})
+  }
+  for (const [width, height, rows, minKeyHeight] of [
+    [390, 720, 2, 44], [390, 844, 3, 44], [430, 932, 3, 44],
+    [320, 480, 2, 28], [844, 390, 3, 36], [280, 320, 3, 20],
+  ]) {
+    await p.setViewportSize({width, height})
+    await p.waitForTimeout(80)
+    await p.locator('[data-cell="2"]').click()
+    for (const en of [false, true]) {
+      const before = await snapshot()
+      if (!en) await capture(`${width}x${height}-before`)
+      await p.locator('[data-number="5"]').click()
+      await p.waitForTimeout(100)
+      const during = await snapshot()
+      compare(before, during, `${width}x${height}/${en ? 'en' : 'zh'} conflict`)
+      const feedback = await p.locator('.feedback').evaluate((n) => {
+        const r = n.getBoundingClientRect(), slot = n.parentElement.getBoundingClientRect()
+        return {text: n.textContent, fits: r.height > 0 && r.top >= slot.top - .5 && r.bottom <= slot.bottom + .5 &&
+          n.scrollWidth <= n.clientWidth + 1 && r.bottom <= visualViewport.height + .5 &&
+          [...document.querySelectorAll('.number-key,.tools button,.board-frame')].every((control) => {
+            const c = control.getBoundingClientRect()
+            return !(c.left < r.right && c.right > r.left && c.top < r.bottom && c.bottom > r.top)
+          })}
+      })
+      check(feedback.text.length > 0 && feedback.fits, `${width}x${height} full feedback text fits its reserved slot`)
+      if (!en) await capture(`${width}x${height}-error`)
+      // Observe real automatic expiry at least once; all other cases also exercise manual clearing.
+      if (width === 390 && height === 720 && !en)
+        await p.waitForFunction(() => !document.querySelector('.feedback').textContent, undefined, {timeout: 4000})
+      else await p.locator('[data-cell="2"]').click()
+      await p.waitForTimeout(80)
+      const after = await snapshot()
+      compare(before, after, `${width}x${height}/${en ? 'en' : 'zh'} dismissed`)
+      geometryRecords.push({width, height, language: en ? 'en' : 'zh', automaticExpiry: width === 390 && height === 720 && !en, before, during, after})
+      if (!en) await capture(`${width}x${height}-after`)
+      await geometry(p, `stable feedback ${width}x${height}`)
+      await p.getByRole('button', {name: en ? 'Settings' : '设置', exact: true}).click()
+      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await p.getByRole('button', {name: en ? '关闭' : 'Close', exact: true}).click()
+    }
+    const keys = await p.locator('.number-key').evaluateAll((nodes) => nodes.map((n) => ({
+      number: Number(n.dataset.number), ...n.getBoundingClientRect().toJSON(),
+    })))
+    check(new Set(keys.map((r) => Math.round(r.y))).size === rows, `${width}x${height} uses ${rows} keypad rows`)
+    check(keys.every((r) => r.height >= minKeyHeight - .5), `${width}x${height} digit height ≥ ${minKeyHeight}px`)
+    for (let i = 1; i < keys.length; i++)
+      check(keys[i].y > keys[i - 1].y + .5 || keys[i].x > keys[i - 1].x + .5, `${width}x${height} row-major digits`)
+    if (height > width && height >= 440) {
+      const edges = await p.locator('.topbar,.game-meta,.tools').evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()))
+      check(edges.every((r) => Math.abs(r.left - 6) <= .6 && Math.abs(width - r.right - 6) <= .6),
+        `${width}x${height} meaningful game content has 6px outer gutters`)
+      if (rows === 3) {
+        check(keys[2].right - keys[0].left <= 300, 'wide portrait thumb cluster limits horizontal travel')
+        check(height - keys[8].bottom <= 70, `${width}x${height} tall portrait digits stay near the bottom thumb area`)
+      }
+    }
+    if (width >= 440) {
+      const edges = await p.locator('.topbar,.board-frame,.number-panel').evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()))
+      check(Math.abs(edges[0].left - 6) <= .6 && Math.abs(width - edges[0].right - 6) <= .6 &&
+        Math.abs(edges[1].left - 6) <= .6 && Math.abs(width - edges[2].right - 6) <= .6,
+        `${width}x${height} landscape game columns and header retain meaningful 6px outer gutters`)
+      const centers = await p.locator('.board-pane,.control-pane').evaluateAll((nodes) => nodes.map((n) => {
+        const r = n.getBoundingClientRect(); return r.top + r.height / 2
+      }))
+      check(Math.abs(centers[0] - centers[1]) <= 1, `${width}x${height} landscape controls center within the board/play row`)
+    }
+    // Real clicks on all nine keys after every resize must toggle notes and remain undoable.
+    await p.getByRole('button', {name: '笔记', exact: true}).click()
+    for (let n = 1; n <= 9; n++) {
+      const key = p.locator(`[data-number="${n}"]`)
+      const pressed = await key.getAttribute('aria-pressed')
+      await key.click()
+      assert.notEqual(await key.getAttribute('aria-pressed'), pressed, `${width}x${height} note ${n} real hit target`)
+      await p.getByRole('button', {name: '撤销', exact: true}).click()
+      assert.equal(await key.getAttribute('aria-pressed'), pressed, `undo note ${n}`)
+    }
+    await p.getByRole('button', {name: '笔记', exact: true}).click()
+  }
+  // Reserve the same real feedback capacity in both fold arrangements and when
+  // the browser toolbar compresses visualViewport without resizing the layout viewport.
+  for (const mode of ['compressed', 'fold-vertical', 'fold-horizontal']) {
+    await p.setViewportSize(mode === 'compressed' ? {width: 390, height: 720} :
+      {width: 720, height: mode === 'fold-vertical' ? 540 : 740})
+    await p.evaluate((mode) => {
+      if (mode === 'compressed') Object.defineProperty(visualViewport, 'height', {configurable: true, value: 400})
+      else {
+        const values = mode === 'fold-vertical' ? [[0, 0, 340, 540], [380, 0, 340, 540]] : [[0, 0, 720, 350], [0, 390, 720, 350]]
+        Object.defineProperty(window, 'viewport', {configurable: true, value: {segments: values.map(([left, top, width, height]) => ({left, top, width, height, right: left + width, bottom: top + height}))}})
+      }
+      visualViewport.dispatchEvent(new Event('resize'))
+    }, mode)
+    await p.waitForTimeout(80)
+    for (const en of [false, true]) {
+      await p.locator('[data-cell="2"]').click()
+      const before = await snapshot()
+      await p.locator('[data-number="5"]').click()
+      await p.waitForTimeout(80)
+      compare(before, await snapshot(), `${mode}/${en ? 'en' : 'zh'} conflict`)
+      const fits = await p.locator('.feedback').evaluate((n) => {
+        const r = n.getBoundingClientRect(), slot = n.parentElement.getBoundingClientRect()
+        return n.textContent.length > 0 && r.bottom <= slot.bottom + .5 && r.bottom <= visualViewport.height + .5 && n.scrollWidth <= n.clientWidth + 1
+      })
+      check(fits, `${mode} feedback text fits reserved slot`)
+      await p.locator('[data-cell="2"]').click()
+      await p.waitForTimeout(80)
+      compare(before, await snapshot(), `${mode}/${en ? 'en' : 'zh'} cleared`)
+      await p.getByRole('button', {name: en ? 'Settings' : '设置', exact: true}).click()
+      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await p.getByRole('button', {name: en ? '关闭' : 'Close', exact: true}).click()
+    }
+    await p.evaluate(() => {
+      delete window.viewport
+      delete visualViewport.height
+      visualViewport.dispatchEvent(new Event('resize'))
+    })
+  }
+  await p.setViewportSize({width: 390, height: 720})
+  if (process.env.SCREENSHOT_DIR)
+    fs.writeFileSync(path.join(process.env.SCREENSHOT_DIR, 'thumb-geometry.json'), JSON.stringify(geometryRecords, null, 2))
+  assert.deepEqual(failures, [], 'stable feedback / outer gutters / adaptive thumb keypad')
 }
 async function viewportRegressions(p) {
   const failures = []
@@ -1165,6 +1305,8 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    await stableFeedbackKeypadRegressions(p)
+    if (process.env.LAYOUT_ONLY) { console.log('stable feedback / thumb keypad checks passed'); return }
     await victoryFeedbackRegressions(p, url)
     await singleReviewHintRegression(p, url)
     await cornerHighlightRegression(p)
@@ -1503,7 +1645,8 @@ async function viewportRegressions(p) {
             'review hint appears once; teaching steps contain different clues',
             'four corner selection rings follow board curvature at three sizes',
             'bilingual inline hints never cover board; both close actions restore controls',
-            'tool icons + aligned portrait edges + inline feedback',
+            'tool icons + 6px outer gutters + centered board + stable bilingual feedback',
+            'adaptive thumb keypad rows, target bounds, bottom reach and all 9 note/undo clicks',
             'resize + refresh persist',
             'paginated bilingual rules',
             'victory + once-only records',
