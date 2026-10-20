@@ -171,6 +171,7 @@
     var(--grid-corner-limit, 16px),
     max(0px, calc((var(--board-size) - 18px) / 9 - 3px))
   );
+  position: relative;
   width: 100%;
   height: 100%;
   display: grid;
@@ -199,7 +200,7 @@
   &:nth-child(9n) {
     border-right: 0;
   }
-  &:nth-last-child(-n + 9) {
+  &:nth-child(n + 73) {
     border-bottom: 0;
   }
   &.box-right {
@@ -229,7 +230,7 @@
     &:nth-child(73) {
       border-bottom-left-radius: inherit;
     }
-    &:last-child {
+    &:nth-child(81) {
       border-bottom-right-radius: inherit;
     }
   }

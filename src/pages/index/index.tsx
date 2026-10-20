@@ -19,7 +19,7 @@ import {
 } from '../../utils/gameplay'
 import {GameIcon} from './GameIcon'
 import {useGameLayout} from './useGameLayout'
-import {VictoryResult, VictorySparkles} from './VictoryResult'
+import {VictoryResult, VictorySeams, VictorySparkles} from './VictoryResult'
 import './index.scss'
 
 const STORAGE = 'sudokutaro:glass:v1',
@@ -128,7 +128,8 @@ export default function IndexPage() {
   const [message, setMessage] = useState('')
   const [records, setRecords] = useState<Records>(readRecords)
   const [newBest, setNewBest] = useState(false)
-  const [celebrating, setCelebrating] = useState(false)
+  const [celebration, setCelebration] = useState<'wave' | 'seams' | null>(null)
+  const celebrating = celebration !== null
   const gameRef = useRef(game),
     hintRef = useRef(hint),
     winRecorded = useRef(game.won)
@@ -207,7 +208,7 @@ export default function IndexPage() {
     setMessage('')
     if (vibration) navigator.vibrate?.([18, 45, 28])
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) setModal('won')
-    else setCelebrating(true)
+    else setCelebration('wave')
     try {
       localStorage.setItem(RECORDS, JSON.stringify(next))
     } catch {
@@ -215,14 +216,14 @@ export default function IndexPage() {
     }
   }, [game.won, game.seconds, game.difficulty, records, vibration])
   const finishCelebration = useCallback(() => {
-    setCelebrating(false)
+    setCelebration(null)
     setModal((current) => (current === null ? 'won' : current))
   }, [])
   useEffect(() => {
     if (!celebrating) return
-    // Opening any menu cancels the wave, even if it closes before the wave ends.
+    // Opening any menu cancels either stage, even if it closes before it ends.
     if (modal) {
-      setCelebrating(false)
+      setCelebration(null)
       return
     }
     const reduced = matchMedia('(prefers-reduced-motion: reduce)')
@@ -238,7 +239,7 @@ export default function IndexPage() {
       resultsTrigger.current?.focus({preventScroll: true})
   }, [game.won, modal, celebrating])
   const showVictory = () => {
-    setCelebrating(false)
+    setCelebration(null)
     setModal('won')
   }
 
@@ -338,13 +339,13 @@ export default function IndexPage() {
     setConflicts([])
     setMessage('')
     setNewBest(false)
-    setCelebrating(false)
+    setCelebration(null)
   }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return
       if (e.key === 'Escape') {
-        setCelebrating(false)
+        setCelebration(null)
         setModal(null)
         setHint(null)
         return
@@ -466,7 +467,7 @@ export default function IndexPage() {
 
   return (
     <main
-      className={`sudoku-app layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''}`}
+      className={`sudoku-app layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''} ${celebration === 'wave' ? 'is-victory-wave' : ''} ${celebration === 'seams' ? 'is-victory-seams' : ''}`}
       style={layout.style}
     >
       <div className="game-shell" ref={layout.ref}>
@@ -525,16 +526,19 @@ export default function IndexPage() {
                   // CSS owns the 960ms envelope + 16 × 90ms diagonal stagger.
                   // Wait for actual completion, including in throttled tabs.
                   if (
-                    celebrating &&
+                    celebration === 'wave' &&
                     event.animationName === 'victory-wave' &&
                     (event.target as HTMLElement).dataset.cell === '80'
                   )
-                    finishCelebration()
+                    setCelebration('seams')
                 }}
               >
                 {renderedCells}
+                {celebration === 'seams' && (
+                  <VictorySeams onEnd={finishCelebration} />
+                )}
               </div>
-              {celebrating && <VictorySparkles />}
+              {celebration === 'wave' && <VictorySparkles />}
             </div>
             <div className="selection-caption">
               {game.won ? (

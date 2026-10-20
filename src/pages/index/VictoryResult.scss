@@ -418,7 +418,7 @@
   color: var(--success);
   font-weight: 600;
 }
-.sudoku-app.is-celebrating {
+.sudoku-app.is-victory-wave {
   // A shared envelope overlaps ten diagonals into one ridge: 960 + 16 × 90 = 2400ms.
   --wave-duration: 960ms;
   --wave-stagger: 90ms;
@@ -438,7 +438,7 @@
     &:first-child {border-top-left-radius: var(--grid-radius);}
     &:nth-child(9) {border-top-right-radius: var(--grid-radius);}
     &:nth-child(73) {border-bottom-left-radius: var(--grid-radius);}
-    &:last-child {border-bottom-right-radius: var(--grid-radius);}
+    &:nth-child(81) {border-bottom-right-radius: var(--grid-radius);}
     &::after {
       content: '';
       position: absolute;
@@ -491,6 +491,41 @@
 .sudoku-app.layout-short .victory-sparkles i:nth-child(n + 9),
 .sudoku-app.height-limited .victory-sparkles i:nth-child(n + 9) {
   display: none;
+}
+// One shared opacity envelope, only unfilled seams emit. The soft outer stroke
+// is deliberately narrow even on the smallest board; cell centers stay untouched.
+.sudoku-app .victory-seams {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+  fill: none;
+  opacity: 0;
+  animation: victory-seam-light 650ms linear both;
+  line, rect {fill: none;}
+  rect {rx: var(--grid-radius);}
+  .seam-bloom {
+    stroke: #a5ed36;
+    stroke-width: clamp(2px, calc(var(--board-size) * 0.014), 4.5px);
+    stroke-opacity: 0.32;
+    filter: blur(min(0.8px, calc(var(--board-size) * 0.003)));
+  }
+  .seam-emission {
+    stroke: #b5f34b;
+    stroke-width: 1.8px;
+    stroke-opacity: 0.9;
+  }
+  .seam-core {
+    stroke: #f4ffd5;
+    stroke-width: 0.7px;
+  }
+}
+@keyframes victory-seam-light {
+  0%, 100% {opacity: 0;}
+  20% {opacity: 1; animation-timing-function: cubic-bezier(0.2, 0, 0.35, 1);}
 }
 @keyframes victory-wave {
   0%, 100% {
@@ -556,6 +591,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .sudoku-app .victory-seams,
   .sudoku-app.is-celebrating .sudoku-cell,
   .sudoku-app.is-celebrating .sudoku-cell::after {
     animation: none;

@@ -157,3 +157,32 @@ export function VictorySparkles() {
     </div>
   )
 }
+
+// Percent coordinates track the live CSS grid without measuring or moving cells.
+// No viewBox: stroke widths and corner radius stay in physical CSS pixels.
+export function VictorySeams({onEnd}: {onEnd: () => void}) {
+  const lines = Array.from({length: 8}, (_, i) => i + 1)
+  return (
+    <svg
+      className="victory-seams"
+      aria-hidden="true"
+      focusable="false"
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget && event.animationName === 'victory-seam-light')
+          onEnd()
+      }}
+    >
+      {['bloom', 'emission', 'core'].map((layer) => (
+        <g className={`seam-${layer}`} key={layer}>
+          <rect width="100%" height="100%" />
+          {lines.map((i) => (
+            <g key={i}>
+              <line data-seam={i} data-axis="x" x1={`${i * 100 / 9}%`} x2={`${i * 100 / 9}%`} y1="0" y2="100%" />
+              <line data-seam={i} data-axis="y" y1={`${i * 100 / 9}%`} y2={`${i * 100 / 9}%`} x1="0" x2="100%" />
+            </g>
+          ))}
+        </g>
+      ))}
+    </svg>
+  )
+}
