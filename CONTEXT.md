@@ -91,30 +91,15 @@ SudokuTaro/
 
 ---
 
-## 5. Cursor / 用户规则（路径 + 摘要）
+## 5. 协作约定
 
-完整条文请 **Read 原文**；此处仅摘要，避免与 `.mdc` 不同步。
-
-| 名称 | 路径（本机） | 摘要 |
-|------|----------------|------|
-| PUA 万能激励引擎 | `C:\Users\yuqiu\.cursor\rules\pua.mdc` | 先穷尽自查、先工具后提问、主动验证与交付；失败用方法论复盘 |
-| 提问前先读 PUA | `C:\Users\yuqiu\.cursor\rules\read-pua-before-questions.mdc` | 用户问答场景下先读 `pua.mdc` 再答 |
-| Awesome DESIGN.md | `C:\Users\yuqiu\.cursor\rules\awesome-design-md.mdc` | 指定「像某站」时从 `C:\Users\yuqiu\awesome-design-md\design-md\<品牌>\DESIGN.md` 复制并对照 |
-
-**用户偏好（仓库级）**：中文简体；能跑命令则自己跑；改动克制、匹配现有风格；无明确要求不写大段无关文档。
+仓库级协作规则统一维护在 [`AGENTS.md`](./AGENTS.md)，包括用户偏好、规划入口、视觉与动效约定，以及代码修改后的验证要求。
 
 ---
 
-## 6. Agent Skills（本机路径）
+## 6. Agent Skills
 
-与任务相关时 **Read 对应 `SKILL.md` 再执行**：
-
-| Skill | 路径 | 何时用 |
-|-------|------|--------|
-| babysit | `...\skills-cursor\babysit\SKILL.md` | PR 合并、CI、评论循环 |
-| create-rule | `...\skills-cursor\create-rule\SKILL.md` | 新建/修改 `.cursor/rules` 或规则 |
-| create-skill | `...\skills-cursor\create-skill\SKILL.md` | 新建/修改 Skill |
-| update-cursor-settings | `...\skills-cursor\update-cursor-settings\SKILL.md` | 改 `settings.json` 等 |
+根据当前会话实际提供的技能及其说明使用相关 `SKILL.md`；不依赖某台机器上的技能安装路径。
 
 ---
 
@@ -140,7 +125,7 @@ SudokuTaro/
 
 - H5 真机/多浏览器再验输入与布局。
 - 唯一解计数已接入挖洞逻辑，并有自动化测试。
-- 设计改版按 `awesome-design-md` 中品牌 `DESIGN.md`。
+- 设计改版以已确认的 Figma 设计和仓库内相关设计文档为依据。
 
 ---
 
@@ -154,11 +139,11 @@ SudokuTaro/
 ## 11. 新会话建议 Prompt 模板（可复制）
 
 ```
-先 Read 仓库内 CONTEXT.md 全文。
+先阅读仓库内 AGENTS.md 和 CONTEXT.md。
 项目：SudokuTaro（Taro 4 + React + TS，**仅 H5**）。
-若改 UI 品牌风：再读 pua.mdc（若适用）与 awesome-design-md 规则。
+若改 UI：再阅读 docs/RESPONSIVE_DESIGN.md 与相关设计文档。
 需求：<在此写任务>
-约束：只改必要文件；需要时 `npm run build:h5` 验证。
+约束：只改必要文件；每轮代码修改后按 AGENTS.md 完成类型检查、逻辑测试、构建与浏览器测试。
 ```
 
 ---
@@ -167,7 +152,7 @@ SudokuTaro/
 
 1. **把仍有效的结论**写入本文件对应小节（表格或列表），避免只留在对话里。  
 2. **长代码**不要贴进 CONTEXT；写文件名 + 行为一句描述即可。  
-3. **规则与 Skills** 仍以磁盘上的 `.mdc` / `SKILL.md` 为准；本文只维护路径与摘要。  
+3. **协作规则**以仓库 `AGENTS.md` 为准；技能使用当前会话提供的 `SKILL.md`，本文只维护项目上下文与索引。
 4. 新会话 **首条消息** 可要求：`先 Read CONTEXT.md`，再执行任务。
 
 ---
