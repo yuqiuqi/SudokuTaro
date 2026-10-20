@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **后续范围（2026-10-20）：** 波浪落定后追加约 650ms 单次青柠缝隙光，再揭晓成绩；原波浪时序保持不变。实现与验证见 [缝隙光计划](2026-10-20-lime-victory-seams.md)。
+
 **Goal:** Replace the existing victory glow with a vivid diagonal rainbow wave that lifts and settles the completed Sudoku cells before revealing results, then deliver the reviewed release.
 
 **Architecture:** Use the existing victory lifecycle and CSS 3D transforms on the 81 native cell buttons. Stagger a shared wave envelope by row + column so neighboring diagonals rise, shimmer through rainbow colors and settle in sequence; reveal results only after the last cell settles. Keep progress, records, menus, Escape and reduced-motion behavior intact; add no runtime dependency.
@@ -49,16 +51,16 @@
 - [x] Describe the actual wave, timing, fallback and tested scope in README; replace the obsolete 1.1-second description and keep historical claims distinguishable.
 - [x] Update context and responsive verification guidance with current behavior and add release notes including the earlier Cursor cleanup.
 - [x] Bump version consistently in package.json and package-lock.json without updating dependencies. Validate matching root versions, `git diff --check`, and unchanged dependency graph.
-- [ ] Commit and obtain task-scoped review. Include verified screenshots in repository docs only if they are useful, small and do not overwrite pre-existing user files.
+- [x] Commit and obtain task-scoped review. Include verified screenshots in repository docs only if they are useful, small and do not overwrite pre-existing user files.
 
 ## Task 3: Review, integrate, deploy and release
 
 **Files:** release record and PR/release body artifacts; no unreviewed product changes.
 
-- [ ] Run production validation for both root and `GITHUB_PAGES=true` builds, pairing each build with its matching browser path (`PAGES_BUILD=true` for Pages). Save exit codes and current-run results.
-- [ ] Create the PR against main with concrete behavior, test evidence, compatibility limits and release plan. Dispatch a fresh whole-branch professional code reviewer, fix important findings, rerun affected checks and re-review fixes.
-- [ ] Verify remote CI and required checks, confirm PR base/head and no unresolved blocking findings, then merge using the normal PR path. Never force-push main or bypass protections.
-- [ ] Track the main-commit GitHub Pages workflow to success and functionally verify the deployed app. Do not equate a successful build with deployment.
+- [x] Run production validation for both root and `GITHUB_PAGES=true` builds, pairing each build with its matching browser path (`PAGES_BUILD=true` for Pages). Save exit codes and current-run results.
+- [x] Create the PR against main with concrete behavior, test evidence, compatibility limits and release plan. Dispatch a fresh whole-branch professional code reviewer, fix important findings, rerun affected checks and re-review fixes.
+- [x] Verify remote CI and required checks, confirm PR base/head and no unresolved blocking findings, then merge using the normal PR path. Never force-push main or bypass protections.
+- [x] Track the main-commit GitHub Pages workflow to success and functionally verify the deployed app. Do not equate a successful build with deployment.
 - [ ] Finalize README/release status using verified links and results; do not claim unpublished behavior is live. If another docs PR is needed, use normal checks/review/merge.
 - [ ] Create an annotated `v1.2.0` tag at the verified merged commit and publish a GitHub Release with tested behavior, limitations and deployment link. Verify remote tag/release metadata.
 - [ ] Report actual completed stages and exact external blockers; leave blocked stages pending with ready-to-run artifacts rather than claiming completion.
@@ -68,5 +70,8 @@
 - Baseline: main commit `95fd483`, Node.js 24.19.0, 9/9 logic tests pass. Existing onboarding verified the root production browser suite using system Chromium with normal Playwright launch parameters.
 - Cursor cleanup committed separately as `977a548`.
 - Initial access check: GitHub HTTPS Git read worked, while GitHub API CONNECT was blocked by network policy (HTTP 403); required domains were saved to the environment configuration draft. This was a historical observation, not the current access status.
-- 2026-10-20 recheck: GitHub API access works; Pages is enabled and v1.2.0 is available. Task 1 commit `068a6d1` passed independent spec/code review. Root and Pages local production browser suites passed; external delivery stages remain pending.
-- Task 2 documentation/version preparation is complete; task-scoped independent review remains pending.
+- 2026-10-20 recheck: GitHub API access works; Pages is enabled and v1.2.0 is available. Task 1 commit `068a6d1` passed independent spec/code review. Root and Pages local production browser suites passed; external delivery was pending at this checkpoint.
+- Task 2 documentation/version preparation and independent review completed before PR #10 merged.
+- Combined wave + 650ms lime implementation passed root/Pages full suites, 9 logic tests and five-viewport 81-center-pixel checks. PR #11 merged as `8fb93f3`; final review had zero findings: [public review](https://github.com/yuqiuqi/SudokuTaro/pull/11#issuecomment-6285295237).
+- At `8fb93f3`, [main CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39383720380) and [actual Pages publication](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39383720348) succeeded. [Live site](https://yuqiuqi.github.io/SudokuTaro/) assets were fetched with normal system curl TLS verification (18 requests), rendered via a local relay by Chromium and functionally checked for wave → flat seam light → results and records-once; runtimeErrors=[]. This is not direct online Chromium navigation or real-device validation; trust settings were unchanged and TLS checks stayed enabled.
+- Final status documentation is prepared; its PR review/merge/deploy and v1.2.0 tag/Release remain separate completion gates. Track final external status through the documentation PR and [Releases](https://github.com/yuqiuqi/SudokuTaro/releases).

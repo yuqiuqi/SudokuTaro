@@ -34,17 +34,17 @@
 
 **Interfaces:** preserve `.is-celebrating`, native `.sudoku-cell` and `.dialog-won`; add an explicit seam phase with a dedicated decorative selector. CSS owns each animation duration. Last-wave animationend begins seam; seam animationend ends celebration. Any extra layer is aria-hidden and pointer-events:none.
 
-- [ ] Add meaningful failing browser tests on the current wave-only build: seams absent until final wave settles, immediate seam start while all 81 cells flat, lime-only unfilled seam strokes with narrow falloff, results held until real seam completion.
-- [ ] Implement event-driven phase transitions and the seam light layer. Retain the original wave values and gradients. Use one light pulse with a bright core and spatial falloff; do not use a full-board tint or 81 separate animated filters.
-- [ ] Extend both-phase cancellation, static/dynamic reduced motion, refresh/records-once, normal/280×320/480×240/568×240/visualViewport=400 assertions. Adapt original wave final-result assertions to the new intermediate phase without losing their ordering guarantees.
-- [ ] Run typecheck, all 9 logic tests, production root build and complete browser regression. Capture seam onset/peak/fade frames, inspect normal and short-landscape images; record the test that first failed.
-- [ ] Update feature documentation to wave → lime seams → results and explain actual timing/test limits. Keep deployment/release status pending until verified. Save a useful unique actual seam screenshot without overwriting earlier screenshots. Version/dependencies stay unchanged.
-- [ ] Self-review and commit, then obtain independent spec and quality review. Resolve important findings with tests before proceeding.
+- [x] Add meaningful failing browser tests on the current wave-only build: seams absent until final wave settles, immediate seam start while all 81 cells flat, lime-only unfilled seam strokes with narrow falloff, results held until real seam completion.
+- [x] Implement event-driven phase transitions and the seam light layer. Retain the original wave values and gradients. Use one light pulse with a bright core and spatial falloff; do not use a full-board tint or 81 separate animated filters.
+- [x] Extend both-phase cancellation, static/dynamic reduced motion, refresh/records-once, normal/280×320/480×240/568×240/visualViewport=400 assertions. Adapt original wave final-result assertions to the new intermediate phase without losing their ordering guarantees.
+- [x] Run typecheck, all 9 logic tests, production root build and complete browser regression. Capture seam onset/peak/fade frames, inspect normal and short-landscape images; record the test that first failed.
+- [x] Update feature documentation to wave → lime seams → results and explain actual timing/test limits. Keep deployment/release status pending until verified. Save a useful unique actual seam screenshot without overwriting earlier screenshots. Version/dependencies stay unchanged.
+- [x] Self-review and commit, then obtain independent spec and quality review. Resolve important findings with tests before proceeding.
 
 ## Task 2: Complete the authorized release workflow
 
-- [ ] Match a Pages subpath build with the full Pages browser suite, create a second feature PR, perform professional whole-change review and wait for actual successful CI checks before merging exact reviewed head.
-- [ ] Track main SHA-specific CI and real Pages deploy; fetch published resources with normal TLS verification and functionally check wave → seam → result on those exact deployed resources.
+- [x] Match a Pages subpath build with the full Pages browser suite, create a second feature PR, perform professional whole-change review and wait for actual successful CI checks before merging exact reviewed head.
+- [x] Track main SHA-specific CI and real Pages deploy; fetch published resources with normal TLS verification and functionally check wave → seam → result on those exact deployed resources.
 - [ ] After deployment, finalize README and release notes with verified links/status through reviewed documentation PR as needed; do not claim direct online Chromium navigation when only verified fetched assets were rendered locally.
 - [ ] Tag the final verified main merge as v1.2.0 and publish/verify GitHub Release, then report actual completed stages.
 
@@ -54,3 +54,10 @@
 - Wave-only published assets passed browser functional smoke via a loopback relay fetching actual live resources using system curl TLS verification (18 verified requests, real Z displacement, result order, records-once, runtimeErrors=[]). Direct cloud Chromium HTTPS navigation failed because its trust store lacks the cloud proxy CA.
 - Auto-review rejected adding the proxy CA to Chromium's persistent NSS store because it expands trust and was not specifically authorized. Trust settings remain unchanged; no TLS checks were disabled. The supported safer validation uses the existing system trust store and clearly discloses its rendering route.
 - Original v1.2.0 release/tag was intentionally deferred when this user-requested addition arrived; no release was prematurely published.
+
+## Combined delivery evidence (2026-10-20)
+
+- Reviewed head `b34e114` passed independent task review and final whole-change review with zero findings; [public review](https://github.com/yuqiuqi/SudokuTaro/pull/11#issuecomment-6285295237). Typecheck, 9 logic tests, root and Pages full browser suites passed; actual center pixels of all 81 cells remained unchanged in five viewports.
+- [PR #11](https://github.com/yuqiuqi/SudokuTaro/pull/11) CI `39383430447` succeeded and merged as `8fb93f373e2edb98c42a8e77ff28b3ea78153e47`. That main SHA passed [CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39383720380) and [Pages including Publish website](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39383720348).
+- [Published site](https://yuqiuqi.github.io/SudokuTaro/) resources passed functional smoke after 18 normal-TLS-verified system curl requests and Chromium rendering via local relay: real 3D wave, then flat cells and unfilled seam light, then results; records once after refresh; runtimeErrors=[]. This is not direct online Chromium navigation or real-device testing. Trust settings unchanged; TLS checks enabled.
+- Final documentation is prepared for its own reviewed PR; that PR's merge/deployment and the final v1.2.0 tag/Release remain pending. Track actual final state via the documentation PR and [Releases](https://github.com/yuqiuqi/SudokuTaro/releases).

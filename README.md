@@ -24,7 +24,11 @@
 
 ![青柠缝隙光峰值](docs/screenshots/lime-seams-regular-peak.png)
 
-新增缝隙光已通过类型检查、9 项逻辑测试、根路径生产构建与完整 Chromium 浏览器回归；运行时错误为空，构建保留已有入口体积警告。测试暂停末格与缝隙动画来验证顺序，并覆盖正常／极短横屏／压缩可视区的线条几何、平面格子和原生点击、两阶段取消及减少动态效果。原有交互、双语弹窗、分区模拟回归保留。此前波浪版本已验证根路径与 Pages 子路径；新增缝隙光的 Pages 子路径、远端部署和正式发布仍待核实。真实 iOS Safari 或折叠设备尚未验证。详见 [v1.2.0 更新说明](docs/releases/v1.2.0.md)。
+完整的「2.4 秒彩虹波浪 → 650ms 青柠缝隙光 → 成绩」已通过类型检查、9 项逻辑测试、根路径及 Pages 子路径生产构建与完整 Chromium 浏览器回归；运行时错误为空，构建保留已有入口体积警告。测试暂停末格与缝隙动画验证顺序，并检查五种视口下全部 81 格中央像素未变、平面格子和原生点击、两阶段取消及减少动态效果。原有交互、双语弹窗、分区模拟回归保留。
+
+[在线试玩](https://yuqiuqi.github.io/SudokuTaro/)已包含 [彩虹波浪 PR #10](https://github.com/yuqiuqi/SudokuTaro/pull/10) 与 [青柠缝隙光 PR #11](https://github.com/yuqiuqi/SudokuTaro/pull/11)；独立任务审查与最终整体审查均无发现，见 [审查记录](https://github.com/yuqiuqi/SudokuTaro/pull/11#issuecomment-6285295237)。合并提交 `8fb93f3` 的 [主分支 CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39383720380) 和 [Pages 发布](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39383720348)均成功。
+
+已通过系统 curl 的正常 TLS 校验取得实际线上资源（18 次请求），再经本地转接由 Chromium 渲染，确认真实抬升、格子落平后仅缝隙发光、光结束后成绩出现、刷新仅记一次胜场且无运行时错误。云端 Chromium 直接 HTTPS 导航受代理证书信任限制；此次验证未修改信任库或关闭 TLS 校验，也不代表直接在线浏览器或真实 iOS Safari／折叠设备测试。正式标签及发布状态以 [GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases)为准，详见 [v1.2.0 更新说明](docs/releases/v1.2.0.md)。
 
 ## 历史版本：v1.1.0 依赖维护
 
@@ -173,8 +177,8 @@ SudokuTaro/
 
 - **部署产物：** 本仓库目前仅维护浏览器 H5 版本，不包含微信/抖音小程序或小游戏构建。
 - **本地试玩：** 使用 `npm run dev:h5`，然后打开构建工具输出的本地地址。
-- **生产验证：** `npm run build:h5`；建议在 PR 和默认分支上启用 GitHub Actions 检查。
-- **在线试玩：** 规划使用 GitHub Pages 托管。**是否已经上线请以仓库 Pages/Actions 状态为准**，避免把尚未发布的链接误写成可用演示。
+- **生产验证：** PR 和主分支已启用 GitHub Actions；本地执行 `npm run build:h5`，Pages 子路径使用下方对应构建与测试命令。
+- **在线试玩：** [GitHub Pages 数独](https://yuqiuqi.github.io/SudokuTaro/)，已验证部署包含彩虹波浪与青柠缝隙光；最新部署状态见 [Pages 工作流](https://github.com/yuqiuqi/SudokuTaro/actions/workflows/deploy-pages.yml)。
 
 ### 建议的 GitHub Topics
 
