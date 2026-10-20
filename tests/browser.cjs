@@ -218,6 +218,7 @@ async function rainbowWaveRegressions(p, capture = false, holdLast = true) {
     }, at)
     assert.ok(out.every((cell) => cell.fits && cell.readable), `${name}: all lifted cells and digits fit the usable viewport`)
     assert.equal(await p.locator('.dialog-won').count(), 0, `${name}: results do not cover the wave`)
+    assert.equal(await p.locator('.victory-seams').count(), 0, `${name}: no lime until the entire wave settles`)
     if (capture && process.env.SCREENSHOT_DIR) {
       fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true})
       await p.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `rainbow-${capture === true ? '' : capture + '-'}${name}.png`)})
@@ -245,6 +246,7 @@ async function rainbowWaveRegressions(p, capture = false, holdLast = true) {
   })
   if (holdLast) await p.waitForTimeout(total + 100)
   assert.equal(await p.locator('.dialog-won').count(), 0, 'even a delayed final animation must settle before results')
+  assert.equal(await p.locator('.victory-seams').count(), 0, 'a delayed last wave cannot start the seam light')
   await p.evaluate(() => {
     window.waveLastEnd = null
     document.addEventListener('animationend', (e) => {
@@ -258,10 +260,109 @@ async function rainbowWaveRegressions(p, capture = false, holdLast = true) {
     const last = window.waveAnimations.at(-1)
     last.play()
   })
-  await p.waitForSelector('.dialog-won', {timeout: 1000})
+  await p.waitForFunction(() => window.waveLastEnd !== null)
+  assert.equal(await p.locator('.victory-seams').count(), 1, 'the final wave end must immediately start seam light')
+  await limeSeamRegressions(p, capture, holdLast)
   assert.deepEqual(await p.evaluate(() => window.waveLastEnd), {dialogVisible: false, z: 0}, 'last cell settles before the results are mounted')
   assert.equal(await p.locator('.is-celebrating').count(), 0)
   assert.ok(await p.locator('.sudoku-cell').evaluateAll((cells) => cells.every((c) => getComputedStyle(c).transform === 'none')), 'cleanup restores flat native hit targets')
+}
+// Only unfilled grid strokes may emit light; a paused pulse must hold results.
+async function limeSeamRegressions(p, capture, hold) {
+  const timing = await p.evaluate(() => {
+    const layer = document.querySelector('.victory-seams')
+    window.seamAnimation = layer.getAnimations().find((a) => a.animationName === 'victory-seam-light')
+    window.seamAnimation.pause()
+    return window.seamAnimation.effect.getTiming()
+  })
+  assert.ok(timing.duration >= 600 && timing.duration <= 700, 'one approximately 650ms seam pulse')
+  assert.equal(timing.delay, 0, 'seams start without a deliberate inter-stage pause')
+  assert.equal(timing.iterations, 1, 'the seam light never strobes repeatedly')
+  const frame = async (at, name) => {
+    const out = await p.evaluate((at) => {
+      window.seamAnimation.currentTime = at
+      const layer = document.querySelector('.victory-seams'),
+        style = getComputedStyle(layer),
+        cells = [...document.querySelectorAll('.sudoku-cell')],
+        bounds = layer.getBoundingClientRect(), board = document.querySelector('.sudoku-board').getBoundingClientRect()
+      return {
+        opacity: Number(style.opacity), hidden: layer.getAttribute('aria-hidden'), pointer: style.pointerEvents,
+        background: style.backgroundColor,
+        flat: cells.every((c) => getComputedStyle(c).transform === 'none'),
+        centers: cells.map((c) => {
+          const s = getComputedStyle(c), r = c.getBoundingClientRect(), digit = c.querySelector('.cell-digit')
+          return {x: r.x + r.width / 2, y: r.y + r.height / 2, background: s.backgroundColor, color: getComputedStyle(digit).color,
+            readable: getComputedStyle(digit).opacity === '1',
+            hit: document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('[data-cell]') === c}
+        }),
+        aligned: [...layer.querySelectorAll('.seam-core line')].every((line) => {
+          const r = line.getBoundingClientRect(), i = Number(line.dataset.seam), axis = line.dataset.axis,
+            cell = cells[axis === 'x' ? i - 1 : (i - 1) * 9].getBoundingClientRect()
+          return Math.abs(axis === 'x' ? r.x - cell.right : r.y - cell.bottom) < 0.8
+        }),
+        fits: bounds.left >= 0 && bounds.top >= 0 && bounds.right <= innerWidth && bounds.bottom <= Math.min(innerHeight, visualViewport.height),
+        boardAligned: Math.abs(bounds.x - board.x - 1) < 0.1 && Math.abs(bounds.width - board.width + 2) < 0.1,
+        lines: layer.querySelectorAll('.seam-core line').length,
+        perimeter: layer.querySelector('.seam-core rect')?.getBoundingClientRect().toJSON(),
+        strokes: [...layer.querySelectorAll('line, rect')].every((l) => getComputedStyle(l).fill === 'none'),
+        layers: ['bloom', 'emission', 'core'].map((name) => {
+          const s = getComputedStyle(layer.querySelector('.seam-' + name))
+          return {width: parseFloat(s.strokeWidth), color: s.stroke, filter: s.filter}
+        }),
+      }
+    }, at)
+    assert.equal(out.hidden, 'true')
+    assert.equal(out.pointer, 'none')
+    assert.equal(out.background, 'rgba(0, 0, 0, 0)', 'no board tint')
+    assert.ok(out.flat && out.centers.every((c) => c.readable && c.hit), 'all faces stay flat, readable and clickable during seam light')
+    assert.ok(out.aligned && out.boardAligned && out.fits, 'seam strokes match the live cell boundaries and fit the usable viewport')
+    assert.equal(out.lines, 16, 'all eight horizontal and vertical interior seams are lit')
+    assert.ok(out.perimeter.width > 0 && out.strokes, 'perimeter and interior lines use unfilled strokes only')
+    assert.ok(out.layers[2].width <= 1 && out.layers[1].width > out.layers[2].width && out.layers[0].width <= 5, 'pale-hot narrow core with limited spatial falloff')
+    const rgb = out.layers[1].color.match(/[\d.]+/g).map(Number)
+    assert.ok(rgb[1] > rgb[0] && rgb[0] > rgb[2], 'emission is lime')
+    assert.equal(await p.locator('.dialog-won').count(), 0, 'results cannot cover the seam light')
+    const shot = await p.screenshot()
+    // Decode the actual rendered frame in an off-DOM canvas: computed styles
+    // alone cannot detect bloom spilling from seams into tiny cell centers.
+    out.pixels = await p.evaluate(async ({data, centers}) => {
+      const image = new Image()
+      image.src = 'data:image/png;base64,' + data
+      await image.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = image.width
+      canvas.height = image.height
+      const context = canvas.getContext('2d')
+      context.drawImage(image, 0, 0)
+      return centers.map(({x, y}) => [...context.getImageData(Math.floor(x), Math.floor(y), 1, 1).data])
+    }, {data: shot.toString('base64'), centers: out.centers})
+    if (capture && process.env.SCREENSHOT_DIR) {
+      fs.writeFileSync(path.join(process.env.SCREENSHOT_DIR, `lime-${capture === true ? 'regular' : capture}-${name}.png`), shot)
+    }
+    return out
+  }
+  const onset = await frame(0, 'onset'), peak = await frame(timing.duration * 0.2, 'peak'), fade = await frame(timing.duration * 0.8, 'fade')
+  assert.equal(onset.opacity, 0, 'light emerges smoothly from darkness')
+  assert.ok(peak.opacity > 0.9 && fade.opacity > 0 && fade.opacity < peak.opacity, 'one bright emergence with softer decay')
+  assert.deepEqual(peak.pixels, onset.pixels, 'actual rendered cell-center pixels stay unchanged at the seam peak')
+  assert.deepEqual(fade.pixels, onset.pixels, 'actual rendered cell-center pixels stay unchanged during seam decay')
+  assert.deepEqual(peak.centers, onset.centers, 'the pulse does not recolor cell centers or digits')
+  assert.deepEqual(fade.centers, onset.centers, 'cell center styling stays unchanged through decay')
+  if (hold) await p.waitForTimeout(timing.duration + 100)
+  assert.equal(await p.locator('.dialog-won').count(), 0, 'paused seam animation holds results beyond nominal duration')
+  await p.evaluate(() => {
+    window.seamEnd = null
+    document.addEventListener('animationend', function ended(e) {
+      if (e.animationName !== 'victory-seam-light') return
+      window.seamEnd = {dialogVisible: !!document.querySelector('.dialog-won'), opacity: Number(getComputedStyle(e.target).opacity)}
+      document.removeEventListener('animationend', ended, true)
+    }, true)
+    window.seamAnimation.currentTime = window.seamAnimation.effect.getTiming().duration - 1
+    window.seamAnimation.play()
+  })
+  await p.waitForSelector('.dialog-won', {timeout: 1000})
+  assert.deepEqual(await p.evaluate(() => window.seamEnd), {dialogVisible: false, opacity: 0}, 'real seam animationend precedes results')
+  assert.equal(await p.locator('.victory-seams').count(), 0, 'completion removes the decorative light')
 }
 async function victoryFeedbackRegressions(p, url) {
   const seed = async () => {
@@ -515,6 +616,40 @@ async function victoryFeedbackRegressions(p, url) {
   await p.emulateMedia({reducedMotion: 'no-preference'})
   await p.waitForTimeout(2600)
   assert.equal(await p.locator('.dialog-won').count(), 1, 'preference changes cannot reopen or duplicate results')
+  // Exercise every interruption in the second stage as well as the wave above.
+  const seamWin = async () => {
+    await win()
+    await p.evaluate(() => {
+      document.querySelector('.sudoku-board').getAnimations({subtree: true}).forEach((a) => a.finish())
+    })
+    await p.waitForSelector('.victory-seams')
+    await p.evaluate(() => document.querySelector('.victory-seams').getAnimations().forEach((a) => a.pause()))
+    assert.equal(await p.locator('.dialog-won').count(), 0)
+  }
+  for (const action of ['Escape', 'settings', 'new', 'reload', 'reduced']) {
+    await seamWin()
+    if (action === 'Escape') await p.keyboard.press('Escape')
+    if (action === 'settings') {
+      await p.getByRole('button', {name: '设置', exact: true}).click()
+      await p.waitForSelector('.victory-seams', {state: 'detached'})
+      await p.getByRole('button', {name: '关闭', exact: true}).click()
+    }
+    if (action === 'new') await p.getByRole('button', {name: '再挑战一局', exact: true}).click()
+    if (action === 'reload') {
+      await p.reload()
+      await p.waitForSelector('[data-cell="80"]')
+    }
+    if (action === 'reduced') {
+      await p.emulateMedia({reducedMotion: 'reduce'})
+      await p.waitForSelector('.dialog-won', {timeout: 1000})
+      await p.emulateMedia({reducedMotion: 'no-preference'})
+    }
+    await p.waitForTimeout(800)
+    assert.equal(await p.locator('.victory-seams, .is-celebrating').count(), 0, `${action} clears both celebration stages`)
+    assert.equal(await p.locator('.dialog-won').count(), action === 'reduced' ? 1 : 0, `${action} leaves no stale seam result`)
+    assert.equal(await p.evaluate(() => JSON.parse(localStorage.getItem('sudokutaro:records:v1')).wins), 1, `${action} records the win once`)
+    assert.ok(await p.locator('.sudoku-cell').evaluateAll((cells) => cells.every((c) => getComputedStyle(c).transform === 'none')), `${action} restores flat cell hit targets`)
+  }
   await p.emulateMedia({reducedMotion: 'reduce'})
   await seed()
   await p.locator('[data-cell="2"]').click()
@@ -526,6 +661,7 @@ async function victoryFeedbackRegressions(p, url) {
     'reduced motion skips the celebration delay',
   )
   assert.ok(await p.locator('.victory-emblem').isVisible())
+  assert.equal(await p.locator('.victory-seams').count(), 0, 'static reduced motion skips the seam pulse too')
   await p.emulateMedia({reducedMotion: 'no-preference'})
   await p.evaluate(
     ({game, KEY}) => {
@@ -1371,7 +1507,7 @@ async function viewportRegressions(p) {
             'resize + refresh persist',
             'paginated bilingual rules',
             'victory + once-only records',
-            'board celebration then results; admire + reopen + refresh + new game',
+            'wave then single lime seam pulse then results; admire + reopen + refresh + new game',
             'small-screen victory badge + side-by-side landscape + reduced motion + Escape cleanup',
           ],
           runtimeErrors: errors,
