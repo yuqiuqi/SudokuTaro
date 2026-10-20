@@ -214,24 +214,25 @@ export default function IndexPage() {
       /* Keep the in-session achievement. */
     }
   }, [game.won, game.seconds, game.difficulty, records, vibration])
+  const finishCelebration = useCallback(() => {
+    setCelebrating(false)
+    setModal((current) => (current === null ? 'won' : current))
+  }, [])
   useEffect(() => {
     if (!celebrating) return
-    const finish = () => {
+    // Opening any menu cancels the wave, even if it closes before the wave ends.
+    if (modal) {
       setCelebrating(false)
-      // A menu opened during celebration keeps its focus and content.
-      setModal((current) => (current === null ? 'won' : current))
+      return
     }
-    const timer = setTimeout(finish, 1100)
     const reduced = matchMedia('(prefers-reduced-motion: reduce)')
     const onPreference = () => {
-      if (reduced.matches) finish()
+      if (reduced.matches) finishCelebration()
     }
     reduced.addEventListener?.('change', onPreference)
-    return () => {
-      clearTimeout(timer)
-      reduced.removeEventListener?.('change', onPreference)
-    }
-  }, [celebrating])
+    onPreference()
+    return () => reduced.removeEventListener?.('change', onPreference)
+  }, [celebrating, modal, finishCelebration])
   useEffect(() => {
     if (game.won && !modal && !celebrating)
       resultsTrigger.current?.focus({preventScroll: true})
@@ -414,8 +415,8 @@ export default function IndexPage() {
               data-cell={index}
               style={
                 {
-                  '--celebration-order':
-                    Math.floor(r / 3) * 3 + Math.floor(c / 3),
+                  '--celebration-order': r + c,
+                  '--wave-hue': (c * 40 + r * 6) % 360,
                 } as CSSProperties
               }
               data-fixed={fixed}
@@ -520,6 +521,16 @@ export default function IndexPage() {
                   '九行九列，选择格子后使用下方数字按钮',
                   'Nine by nine Sudoku. Select a cell, then a number.',
                 )}
+                onAnimationEnd={(event) => {
+                  // CSS owns the 960ms envelope + 16 × 90ms diagonal stagger.
+                  // Wait for actual completion, including in throttled tabs.
+                  if (
+                    celebrating &&
+                    event.animationName === 'victory-wave' &&
+                    (event.target as HTMLElement).dataset.cell === '80'
+                  )
+                    finishCelebration()
+                }}
               >
                 {renderedCells}
               </div>

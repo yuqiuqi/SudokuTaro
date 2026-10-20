@@ -2,6 +2,13 @@
 
 开始工作前阅读 `CONTEXT.md`；响应式设计与测试说明见 `docs/RESPONSIVE_DESIGN.md`。
 
+## 协作与规划入口
+
+- 使用中文简体；能自行运行的命令先执行，改动克制并匹配现有风格，无明确要求不写大段无关文档。
+- 项目规划入口：`.planning/PROJECT.md`、`.planning/STATE.md`；路线与需求见 `.planning/ROADMAP.md`、`.planning/REQUIREMENTS.md`；代码库地图见 `.planning/codebase/`。
+- 涉及历史阶段时，按需阅读对应阶段的计划和 UI-SPEC；Phase 1 设计契约位于 `.planning/phases/01-apple-ui-motion/01-UI-SPEC.md`。历史资料与当前实现冲突时，以 `CONTEXT.md` 的当前实现、现有代码及用户最新要求为准。
+- 视觉与动效工作先查看相关 UI-SPEC 的 **Motion** 与 **Color**；动效优先使用 `transform` / `opacity`，遵循减少动态效果偏好。
+
 ## 每次代码修改后的必做验证
 
 用户要求：每次完成一轮代码修改后，必须进行浏览器模拟测试，再交付、提交或更新 PR。
