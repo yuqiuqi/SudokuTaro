@@ -33,12 +33,12 @@
 
 **Interfaces:** retain `.is-celebrating`, `.dialog-won`, native `.sudoku-cell` buttons and existing victory lifecycle. Use row + column for diagonal delay; keep the timer/animation completion consistent with the CSS duration. Consume `PLAYWRIGHT_MODULE=/workspace/sudokutaro-tools/playwright.cjs` for local browser tests.
 
-- [ ] Add behavior tests that fail against the existing green glow: diagonal propagation, actual positive Z displacement/tilt, rainbow layer activation, descent, and results withheld until the last cell finishes. Capture the expected failure before implementation.
-- [ ] Implement rainbow cell highlights, 3D rise/tilt and soft shadow, smooth return and afterglow, using an overlapping diagonal envelope lasting about 2.4 seconds overall. Keep the wave inside responsive layouts without masking clipped controls.
-- [ ] Update existing celebration timing tests to follow the new lifecycle; retain every existing assertion. Add small-screen, reduced-motion, dynamic preference, Escape, menu/new-game cancellation and refresh checks as needed.
-- [ ] Run `npm run typecheck`, `npm test`, `npm run build:h5`, then `PLAYWRIGHT_MODULE=/workspace/sudokutaro-tools/playwright.cjs npm run test:browser`. Do not start dev:h5 concurrently because it clears dist.
-- [ ] Capture actual early/center/late wave screenshots outside the checkout for visual review. Inspect a rendered frame for readable digits, rainbow coloring and credible depth.
-- [ ] Self-review and commit only the task's files. Report commands, failures/fixes and artifact paths. Independent reviewer must approve spec compliance and code quality.
+- [x] Add behavior tests that fail against the existing green glow: diagonal propagation, actual positive Z displacement/tilt, rainbow layer activation, descent, and results withheld until the last cell finishes. Capture the expected failure before implementation.
+- [x] Implement rainbow cell highlights, 3D rise/tilt and soft shadow, smooth return and afterglow, using an overlapping diagonal envelope lasting about 2.4 seconds overall. Keep the wave inside responsive layouts without masking clipped controls.
+- [x] Update existing celebration timing tests to follow the new lifecycle; retain every existing assertion. Add small-screen, reduced-motion, dynamic preference, Escape, menu/new-game cancellation and refresh checks as needed.
+- [x] Run `npm run typecheck`, `npm test`, `npm run build:h5`, then `PLAYWRIGHT_MODULE=/workspace/sudokutaro-tools/playwright.cjs npm run test:browser`. Do not start dev:h5 concurrently because it clears dist.
+- [x] Capture actual early/center/late wave screenshots outside the checkout for visual review. Inspect a rendered frame for readable digits, rainbow coloring and credible depth.
+- [x] Self-review and commit only the task's files. Report commands, failures/fixes and artifact paths. Independent reviewer must approve spec compliance and code quality.
 
 ## Task 2: Prepare release documentation and version
 
@@ -46,9 +46,9 @@
 
 **Interfaces:** consume Task 1's final timing and behavior; proposed version `1.2.0` for this additive visual feature, unless remote tags establish a conflict.
 
-- [ ] Describe the actual wave, timing, fallback and tested scope in README; replace the obsolete 1.1-second description and keep historical claims distinguishable.
-- [ ] Update context and responsive verification guidance with current behavior and add release notes including the earlier Cursor cleanup.
-- [ ] Bump version consistently in package.json and package-lock.json without updating dependencies. Validate matching root versions, `git diff --check`, and unchanged dependency graph.
+- [x] Describe the actual wave, timing, fallback and tested scope in README; replace the obsolete 1.1-second description and keep historical claims distinguishable.
+- [x] Update context and responsive verification guidance with current behavior and add release notes including the earlier Cursor cleanup.
+- [x] Bump version consistently in package.json and package-lock.json without updating dependencies. Validate matching root versions, `git diff --check`, and unchanged dependency graph.
 - [ ] Commit and obtain task-scoped review. Include verified screenshots in repository docs only if they are useful, small and do not overwrite pre-existing user files.
 
 ## Task 3: Review, integrate, deploy and release
@@ -67,4 +67,6 @@
 
 - Baseline: main commit `95fd483`, Node.js 24.19.0, 9/9 logic tests pass. Existing onboarding verified the root production browser suite using system Chromium with normal Playwright launch parameters.
 - Cursor cleanup committed separately as `977a548`.
-- GitHub HTTPS Git read works. GitHub API CONNECT is blocked by network policy (HTTP 403); required `api.github.com` and Pages verification host `yuqiuqi.github.io` saved to environment configuration draft. Saving a draft does not apply runtime access.
+- Initial access check: GitHub HTTPS Git read worked, while GitHub API CONNECT was blocked by network policy (HTTP 403); required domains were saved to the environment configuration draft. This was a historical observation, not the current access status.
+- 2026-10-20 recheck: GitHub API access works; Pages is enabled and v1.2.0 is available. Task 1 commit `068a6d1` passed independent spec/code review. Root and Pages local production browser suites passed; external delivery stages remain pending.
+- Task 2 documentation/version preparation is complete; task-scoped independent review remains pending.
