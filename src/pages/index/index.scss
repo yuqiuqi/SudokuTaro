@@ -396,11 +396,27 @@
 .hint-card {
   width: 100%;
   border-radius: 24px;
-  padding: 12px 14px;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   animation: appear 180ms ease-out;
+}
+.hint-copy {
+  display: grid;
+}
+.hint-stage {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.hint-measure {
+  // Noninteractive, aria-hidden copies reserve the largest natural text stage.
+  // The active heading/paragraph remain fully visible and uniquely accessible.
+  visibility: hidden;
+  pointer-events: none;
 }
 .hint-eyebrow {
   color: var(--accent);
@@ -431,12 +447,14 @@
   border: 1px solid var(--line);
   border-radius: 50%;
 }
-.hint-card h2 {
+.hint-card h2,
+.hint-measure-title {
   font-size: 16px;
   font-weight: 550;
   line-height: 1.4;
 }
-.hint-card p {
+.hint-card p,
+.hint-measure-text {
   font-size: 12px;
   line-height: 1.55;
   color: var(--muted);
@@ -538,14 +556,16 @@
     flex-basis: 28px;
   }
   .hint-card {
-    padding: 10px;
+    padding: 8px;
     gap: 6px;
     border-radius: 18px;
   }
-  .hint-card h2 {
+  .hint-card h2,
+  .hint-measure-title {
     display: none;
   }
-  .hint-card p {
+  .hint-card p,
+  .hint-measure-text {
     font-size: 11px;
     line-height: 1.5;
   }
@@ -731,10 +751,12 @@
     gap: 5px;
     border-radius: 18px;
   }
-  .hint-card h2 {
+  .hint-card h2,
+  .hint-measure-title {
     font-size: 14px;
   }
-  .hint-card p {
+  .hint-card p,
+  .hint-measure-text {
     font-size: 11px;
     line-height: 1.4;
   }
@@ -747,6 +769,13 @@
   .hint-eyebrow {
     min-height: 24px;
   }
+}
+// Hint mode replaces all digit input and clears feedback. Its permanent
+// instruction uses its natural 1–2 lines; the 42px error slot remains reserved
+// in playable mode. This keeps the longest tiny-landscape hint in that budget.
+.layout-wide.height-limited.has-hint .input-caption {
+  height: auto;
+  flex: 0 0 auto;
 }
 .layout-fold-horizontal {
   .game-shell {

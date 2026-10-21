@@ -1008,6 +1008,194 @@ async function inlineHintRegressions(p) {
   assert.ok(alignment, 'portrait outer content uses 6px gutters and the constrained board stays centered')
   await p.locator('[data-cell="2"]').click()
 }
+// Test physical geometry/focus, including repeated clicks at the original point.
+async function interactionComfortRegressions(p, url) {
+  const failures = [], records = []
+  const check = (ok, label) => { if (!ok) failures.push(label) }
+  const rects = () => p.evaluate(() => Object.fromEntries(
+    ['.board-frame', '.game-meta', '.topbar', '.tools', '.number-panel', '.input-caption', '.hint-card', '.hint-card .dialog-actions'].map((s) =>
+      [s, document.querySelector(s)?.getBoundingClientRect().toJSON()]),
+  ))
+  const compare = (before, after, selectors, label) => {
+    for (const s of selectors) for (const k of ['x', 'y', 'width', 'height'])
+      check(Math.abs(before[s][k] - after[s][k]) < .6, `${label} ${s}.${k} ${before[s][k]} → ${after[s][k]}`)
+  }
+  const capture = async (name) => {
+    if (!process.env.SCREENSHOT_DIR) return
+    fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true})
+    await p.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `comfort-${name}.png`)})
+  }
+  const activeCell = () => p.evaluate(() => document.activeElement?.dataset.cell)
+  await p.locator('[data-cell="2"]').click()
+  await p.keyboard.press('ArrowRight')
+  check(await activeCell() === '3', 'arrow focus follows selected cell2→3')
+  await p.keyboard.press('Enter')
+  check(await p.locator('.sudoku-cell[aria-pressed="true"]').getAttribute('data-cell') === '3', 'Enter after arrow retains new selection')
+  for (const [from, key, to] of [[8, 'ArrowRight', 8], [9, 'ArrowLeft', 9], [0, 'ArrowUp', 0], [80, 'ArrowDown', 80], [2, 'ArrowDown', 11], [3, 'ArrowLeft', 2], [11, 'ArrowUp', 2]]) {
+    await p.locator(`[data-cell="${from}"]`).click()
+    await p.keyboard.press(key)
+    check(await activeCell() === String(to), `${key} nativefocus ${from}→${to}`)
+    await p.keyboard.press('Space')
+    check(await p.locator('.sudoku-cell[aria-pressed="true"]').getAttribute('data-cell') === String(to), `Space retains arrow selection ${to}`)
+  }
+  for (const [width, height, visible, fold] of [
+    [390,720,720], [390,844,844], [320,480,480], [280,480,480],
+    [844,390,390], [480,240,240], [280,320,320], [390,720,400],
+    [720,540,540,'vertical'], [720,740,740,'horizontal'],
+  ]) {
+    await p.setViewportSize({width, height})
+    await p.evaluate(({visible, fold}) => {
+      Object.defineProperty(visualViewport, 'height', {configurable: true, value: visible})
+      if (fold) {
+        const values = fold === 'vertical' ? [[0,0,340,540],[380,0,340,540]] : [[0,0,720,350],[0,390,720,350]]
+        Object.defineProperty(window, 'viewport', {configurable: true, value: {segments: values.map(([left,top,width,height]) => ({left,top,width,height,right:left+width,bottom:top+height}))}})
+      }
+      visualViewport.dispatchEvent(new Event('resize'))
+    }, {visible, fold})
+    await p.waitForTimeout(80)
+    for (const en of [false,true]) {
+      const label = `${width}x${height}/${visible}/${fold || 'plain'}/${en ? 'en' : 'zh'}`
+      await p.locator('[data-cell="2"]').click()
+      await p.keyboard.press('ArrowRight')
+      check(await activeCell() === '3', `${label} arrow nativefocus after resize`)
+      await p.keyboard.press('Enter')
+      check(await p.locator('.sudoku-cell[aria-pressed="true"]').getAttribute('data-cell') === '3', `${label} Enter keeps arrow selection`)
+      await p.locator('[data-cell="2"]').click()
+      const before = await rects()
+      if (width === 390 && height === 720 && visible === 720 && !en) await capture('phone-before')
+      await p.getByRole('button', {name: en ? 'Hint' : '提示', exact:true}).click()
+      await p.locator('.hint-card').evaluate(async (n) => Promise.all(n.getAnimations().map((a) => a.finished.catch(() => {}))))
+      const first = await rects()
+      check(await p.locator('.hint-card p').count() === 1 && await p.locator('.hint-card h2').count() === 1 &&
+        await p.locator('.hint-measure').evaluateAll((nodes) => nodes.every((n) => n.getAttribute('aria-hidden') === 'true' &&
+          getComputedStyle(n).visibility === 'hidden' && !n.querySelector('button,a,input,[tabindex]'))), `${label} unique accessible active text; sizing copies hidden and unfocusable`)
+      const next = p.getByRole('button', {name: en ? 'Another clue' : '再给一点线索', exact:true})
+      const attempt = p.getByRole('button', {name: en ? 'Let me try' : '我来试试', exact:true})
+      const box = await next.boundingBox(), x = box.x + box.width/2, y = box.y + box.height/2
+      const stages = []
+      for (let stage=0; stage<3; stage++) {
+        const now = await rects(); stages.push(now)
+        compare(before, now, ['.board-frame','.game-meta','.topbar'], `${label} hintstage${stage}`)
+        compare(first, now, ['.hint-card .dialog-actions'], `${label} stablehintactions${stage}`)
+        const fits = await p.locator('.hint-card').evaluate((card) => {
+          const b = document.querySelector('.board-frame').getBoundingClientRect(), r = card.getBoundingClientRect()
+          return r.top >= 0 && r.bottom <= visualViewport.height + .5 && r.left >= 0 && r.right <= innerWidth &&
+            !(r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) &&
+            card.scrollHeight <= card.clientHeight + 1 && [...card.querySelectorAll('p,h2,button')].every((n) => {
+              const c = n.getBoundingClientRect(); return getComputedStyle(n).display === 'none' ||
+                (c.bottom <= r.bottom + .5 && c.right <= r.right + .5 && n.scrollHeight <= n.clientHeight + 1)
+            })
+        })
+        check(fits, `${label} hint${stage} fulltext/actions fit without overlap/clipping`)
+        if (stage < 2) {
+          await p.mouse.click(x,y)
+          const advanced = (await p.locator('.hint-step').innerText()).replace(/\s/g,'') === `${stage+2}/3`
+          check(advanced, `${label} originalcoordinate repeatclick advances stage${stage+1}`)
+          if (!advanced) await next.click()
+          if (stage === 0) check(await next.evaluate((n) => document.activeElement === n), `${label} intermediateNext retains focus`)
+        }
+      }
+      check(await attempt.evaluate((n) => document.activeElement === n), `${label} finalhint focus moves to Let me try`)
+      await p.keyboard.press('Shift+Tab')
+      check(await p.locator('.hint-card').evaluate((n) => n.contains(document.activeElement)), `${label} finalhint keyboard stays in nearby hint controls`)
+      if (!en && ((width === 390 && visible === 720) || (width === 320 && height === 480))) await capture(`${width}x${height}-hint`)
+      await attempt.click()
+      compare(before, await rects(), ['.board-frame','.game-meta','.topbar'], `${label} hintclosed`)
+      check(await p.getByRole('button', {name: en ? 'Hint' : '提示',exact:true}).evaluate((n) => document.activeElement === n), `${label} close restores hint trigger`)
+      await geometry(p, label)
+      if(width===844 || (width===480&&height===240) || (width===280&&height===320) || visible===400) {
+        const errorBefore=await rects()
+        await p.locator('[data-cell="2"]').click();await p.locator('[data-number="5"]').click()
+        const errorDuring=await rects()
+        check(errorDuring['.input-caption'].height===42 && (await p.locator('.feedback').innerText()).length>0,`${label} realconflict restores fixed42pxfeedbackslot`)
+        compare(errorBefore,errorDuring,['.board-frame','.game-meta','.tools','.number-panel','.input-caption'],`${label} posthint conflict`)
+        await p.locator('[data-cell="2"]').click()
+        compare(errorBefore,await rects(),['.board-frame','.game-meta','.tools','.number-panel','.input-caption'],`${label} posthint conflictcleared`)
+      }
+      records.push({label,before,stages,after:await rects()})
+      await p.getByRole('button',{name:en?'Settings':'设置',exact:true}).click()
+      await p.getByRole('button',{name:'中文 / EN',exact:true}).click()
+      await p.getByRole('button',{name:en?'关闭':'Close',exact:true}).click()
+    }
+    await p.evaluate(() => {delete window.viewport;delete visualViewport.height;visualViewport.dispatchEvent(new Event('resize'))})
+  }
+  // Cover real findHint branches beyond the ordinary single: a hidden single
+  // without any naked singles, all-nine-candidate exploration, and one-step review.
+  for (const kind of ['hidden','explore','review']) {
+    for (const [width,height,visible] of [[390,720,720],[320,480,480],[280,480,480],[480,240,240],[280,320,320],[390,720,400]]) {
+      await p.setViewportSize({width,height})
+      for(const en of [false,true]) {
+        await p.evaluate(({game,KEY,kind,en})=>{
+          let initial=game.initial.map((r)=>[...r]),board
+          if(kind==='hidden') initial=['530070000','600105000','098000060','800060003','400803001','700020006','060000080','000419000','000080079'].map((s)=>[...s].map(Number))
+          if(kind==='explore') initial=Array.from({length:9},()=>Array(9).fill(0))
+          board=initial.map((r)=>[...r]);if(kind==='review') board[0][2]=1
+          localStorage.setItem(KEY,JSON.stringify({...game,initial,board}))
+          localStorage.setItem('sudokutaro:language',en?'en':'zh')
+        },{game,KEY,kind,en})
+        await p.reload();await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,url)
+        await p.evaluate((visible)=>{Object.defineProperty(visualViewport,'height',{configurable:true,value:visible});visualViewport.dispatchEvent(new Event('resize'))},visible)
+        await p.waitForTimeout(80)
+        const before=await rects(), label=`${kind}/${width}x${height}/${visible}/${en?'en':'zh'}`
+        await p.getByRole('button',{name:en?'Hint':'提示',exact:true}).click()
+        await p.locator('.hint-card').evaluate(async(n)=>Promise.all(n.getAnimations().map((a)=>a.finished.catch(()=>{}))))
+        const first=await rects(), texts=[]
+        if(width===480&&height===240) check(first['.input-caption'].height===14,`${label} 300pxwide hintinstruction fits natural14pxline`)
+        if((width===280&&height===320)||visible===400) check(first['.input-caption'].height===(en?28:14),`${label} 150pxwide hintinstruction uses complete natural ${en?28:14}px`)
+        for(let stage=0;stage<(kind==='review'?1:3);stage++){
+          const now=await rects();compare(before,now,['.board-frame','.game-meta'],`${label} stage${stage}`)
+          compare(first,now,['.hint-card .dialog-actions'],`${label} stableactions${stage}`)
+          texts.push(await p.locator('.hint-card p').innerText())
+          const fits=await p.locator('.hint-card').evaluate((card)=>{
+            const r=card.getBoundingClientRect(),b=document.querySelector('.board-frame').getBoundingClientRect(),caption=document.querySelector('.input-caption').getBoundingClientRect()
+            return r.bottom<=visualViewport.height+.5 && caption.bottom<=visualViewport.height+.5 &&
+              !(r.left<b.right&&r.right>b.left&&r.top<b.bottom&&r.bottom>b.top) && card.scrollHeight<=card.clientHeight+1 &&
+              [...card.querySelectorAll('p,button')].every((n)=>n.scrollWidth<=n.clientWidth+1&&n.getBoundingClientRect().bottom<=r.bottom+.5)
+          })
+          check(fits,`${label} longestkind fulltext/card/actions/caption fit stage${stage}`)
+          if(stage<2&&kind!=='review') await p.getByRole('button',{name:en?'Another clue':'再给一点线索',exact:true}).click()
+        }
+        check(kind==='hidden'?texts.some((t)=>t.includes(en?'highlighted unit':'高亮区域')):kind==='explore'?texts.some((t)=>t.includes(en?'1, 2, 3, 4, 5, 6, 7, 8, 9':'1、2、3、4、5、6、7、8、9')):texts[0].includes(en?'Review':'回看'),`${label} real expected hint branch`)
+        if(width===390&&height===720&&visible===720&&en) await capture(`${kind}-phone-en`)
+        await p.getByRole('button',{name:en?'Let me try':'我来试试',exact:true}).click()
+        compare(before,await rects(),['.board-frame','.game-meta'],`${label} closed`)
+        records.push({label,before,hint:first,after:await rects()})
+      }
+      await p.evaluate(()=>{delete visualViewport.height;visualViewport.dispatchEvent(new Event('resize'))})
+    }
+  }
+  await p.evaluate(({game,KEY})=>{localStorage.setItem(KEY,JSON.stringify(game));localStorage.setItem('sudokutaro:language','zh')},{game,KEY})
+  await p.reload();await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,url)
+  // Measure after initial convergence, then across60 real animation frames.
+  for (const [width,height] of [[390,578],[390,580],[390,594],[390,596],[844,518],[844,520],[844,535],[844,536],[844,540]]) {
+    await p.setViewportSize({width,height})
+    await p.waitForTimeout(80)
+    const frames = await p.evaluate(async () => {
+      const out=[]
+      for(let i=0;i<60;i++) {await new Promise(requestAnimationFrame);const r=document.querySelector('.board-frame').getBoundingClientRect();out.push({mode:document.querySelector('main').className,x:r.x,y:r.y,width:r.width,height:r.height})}
+      return out
+    })
+    check(new Set(frames.map((r)=>JSON.stringify(r))).size === 1, `${width}x${height} stable mode/geometry across60rAF frames`)
+    await geometry(p, `boundary ${width}x${height}`)
+    records.push({boundary:[width,height],frames})
+  }
+  await p.setViewportSize({width:390,height:720})
+  for (const en of [false,true]) {
+    const settings=p.getByRole('button',{name:en?'Settings':'设置',exact:true})
+    await settings.click()
+    await p.getByRole('button',{name:en?'Choose difficulty / New game':'选择难度 / 开始新局',exact:true}).click()
+    check(await p.locator('.dialog').evaluate((n)=>n.contains(document.activeElement)), `modalcontext ${en?'en':'zh'} immediatefocus inside newgame`)
+    await p.keyboard.press('Tab')
+    check(await p.locator('.dialog').evaluate((n)=>n.contains(document.activeElement)), `modalcontext Tab remains inside`)
+    await p.keyboard.press('Escape')
+    check(await settings.evaluate((n)=>document.activeElement===n), 'modalcontext closing restores originalSettings opener')
+    await settings.click()
+    await p.getByRole('button',{name:'中文 / EN',exact:true}).click()
+    await p.getByRole('button',{name:en?'关闭':'Close',exact:true}).click()
+  }
+  if(process.env.SCREENSHOT_DIR) fs.writeFileSync(path.join(process.env.SCREENSHOT_DIR,'comfort-geometry.json'),JSON.stringify(records,null,2))
+  assert.deepEqual(failures, [], 'interaction comfort geometry and native focus')
+}
 // A feedback state must only change text/highlights, never playable geometry.
 async function stableFeedbackKeypadRegressions(p) {
   const failures = [], geometryRecords = []
@@ -1305,6 +1493,8 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    await interactionComfortRegressions(p, url)
+    if (process.env.COMFORT_ONLY) { console.log('interaction comfort checks passed'); return }
     await stableFeedbackKeypadRegressions(p)
     if (process.env.LAYOUT_ONLY) { console.log('stable feedback / thumb keypad checks passed'); return }
     await victoryFeedbackRegressions(p, url)

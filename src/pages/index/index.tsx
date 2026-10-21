@@ -136,7 +136,8 @@ export default function IndexPage() {
   const conflictTimer = useRef<ReturnType<typeof setTimeout>>()
   const resultsTrigger = useRef<HTMLButtonElement>(null)
   const hintClose = useRef<HTMLButtonElement>(null),
-    hintTrigger = useRef<HTMLButtonElement>(null)
+    hintTrigger = useRef<HTMLButtonElement>(null),
+    hintTry = useRef<HTMLButtonElement>(null)
   const hintOpen = !!hint
   const hadHint = useRef(false)
   useEffect(() => {
@@ -144,7 +145,7 @@ export default function IndexPage() {
     else if (hadHint.current) hintTrigger.current?.focus({preventScroll: true})
     hadHint.current = hintOpen
   }, [hintOpen])
-  const layout = useGameLayout(!!hint),
+  const layout = useGameLayout(),
     en = lang === 'en'
   const say = useCallback(
     (zh: string, english: string) => (en ? english : zh),
@@ -377,7 +378,11 @@ export default function IndexPage() {
           [dr, dc] = directions[e.key],
           row = Math.max(0, Math.min(8, Math.floor(index / 9) + dr)),
           col = Math.max(0, Math.min(8, (index % 9) + dc))
-        choose(row * 9 + col)
+        const next = row * 9 + col
+        choose(next)
+        document
+          .querySelector<HTMLButtonElement>(`[data-cell="${next}"]`)
+          ?.focus({preventScroll: true})
       }
     }
     document.addEventListener('keydown', onKey)
@@ -385,6 +390,15 @@ export default function IndexPage() {
   }, [modal, hint, fill, selected, choose])
   const filled = game.board.flat().filter(Boolean).length
   const clues = hint ? hintSteps(hint.value, lang) : []
+  const hintTitles = clues.map((_, stage) =>
+    hint?.value.kind === 'review'
+      ? say('回看你的填写', 'Review your entry')
+      : stage === 0
+        ? say('先看高亮的这一格', 'Look at this cell')
+        : stage === 1
+          ? say('从已有数字里排除', 'Eliminate the known digits')
+          : say('核对这一步推理', 'Check the reasoning'),
+  )
   const focus = hint?.value.index ?? selected
   const hintUnit =
     hint?.value.kind === 'hidden' && hint.value.unit !== undefined
@@ -614,25 +628,29 @@ export default function IndexPage() {
                       <GameIcon name="close" />
                     </button>
                   </div>
-                  <h2 id="hint-heading">
-                    {hint.value.kind === 'review'
-                      ? say('回看你的填写', 'Review your entry')
-                      : hint.stage === 0
-                        ? say('先看高亮的这一格', 'Look at this cell')
-                        : hint.stage === 1
-                          ? say(
-                              '从已有数字里排除',
-                              'Eliminate the known digits',
-                            )
-                          : say('核对这一步推理', 'Check the reasoning')}
-                  </h2>
-                  <p>{clues[hint.stage]}</p>
+                  <div className="hint-copy">
+                    <div className="hint-stage">
+                      <h2 id="hint-heading">{hintTitles[hint.stage]}</h2>
+                      <p>{clues[hint.stage]}</p>
+                    </div>
+                    {clues.map((clue, stage) => (
+                      <div
+                        className="hint-stage hint-measure"
+                        aria-hidden="true"
+                        key={stage}
+                      >
+                        <span className="hint-measure-title">{hintTitles[stage]}</span>
+                        <span className="hint-measure-text">{clue}</span>
+                      </div>
+                    ))}
+                  </div>
                   <div
                     className={`dialog-actions ${clues.length === 1 ? 'hint-single-action' : ''}`}
                   >
                     <button
                       type="button"
                       className="secondary-button"
+                      ref={hintTry}
                       onClick={() => setHint(null)}
                     >
                       {say('我来试试', 'Let me try')}
@@ -642,7 +660,14 @@ export default function IndexPage() {
                         type="button"
                         className="primary-button"
                         disabled={hint.stage >= clues.length - 1}
-                        onClick={() =>
+                        onClick={(e) => {
+                          // Move focus before this button becomes disabled; intermediate
+                          // clues keep their native focus and the same click coordinates.
+                          if (
+                            hint.stage === clues.length - 2 &&
+                            document.activeElement === e.currentTarget
+                          )
+                            hintTry.current?.focus({preventScroll: true})
                           setHint((h) =>
                             h
                               ? {
@@ -654,7 +679,7 @@ export default function IndexPage() {
                                 }
                               : h,
                           )
-                        }
+                        }}
                       >
                         {say('再给一点线索', 'Another clue')}
                       </button>
@@ -766,7 +791,7 @@ export default function IndexPage() {
             aria-labelledby="dialog-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <DialogFocus onClose={() => setModal(null)} />
+            <DialogFocus context={modal} onClose={() => setModal(null)} />
             {modal !== 'won' && (
               <div className="dialog-top">
                 <button
@@ -927,7 +952,7 @@ export default function IndexPage() {
 }
 
 /** Keep keyboard focus inside a dialog and restore it without opening a mobile keyboard. */
-function DialogFocus({onClose}: {onClose: () => void}) {
+function DialogFocus({context, onClose}: {context: string; onClose: () => void}) {
   const marker = useRef<HTMLSpanElement>(null),
     closeRef = useRef(onClose)
   closeRef.current = onClose
@@ -939,7 +964,6 @@ function DialogFocus({onClose}: {onClose: () => void}) {
         card?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ||
           [],
       )
-    buttons()[0]?.focus({preventScroll: true})
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
@@ -964,5 +988,12 @@ function DialogFocus({onClose}: {onClose: () => void}) {
       previous?.focus({preventScroll: true})
     }
   }, [])
+  // Context changes reuse this component, preserving the original opener until
+  // final dismissal while focusing the new dialog's first available control.
+  useEffect(() => {
+    marker.current?.parentElement
+      ?.querySelector<HTMLButtonElement>('button:not(:disabled)')
+      ?.focus({preventScroll: true})
+  }, [context])
   return <span ref={marker} hidden />
 }
