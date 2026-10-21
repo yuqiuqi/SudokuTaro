@@ -35,23 +35,28 @@
 
 **Interfaces:** eliminate feedback visibility as a layout sizing input; keep feedback state only for content/style. Coordinate consistent reserved caption height with initial geometry budgets. Add an explicit keypad mode/class or CSS breakpoint if required, with a single coherent source of truth.
 
-- [ ] Add failing browser reproduction for conflict-driven shrinking using existing seed `[data-cell="2"]` + conflicting digit5. Compare board, relevant shell/controls and keypad rectangles before/during/after feedback, including automatic expiry at least once. Demonstrate the expected failure before production changes.
-- [ ] Add failing checks for clarified6px outer gutters and the selected adaptive keypad arrangements/target geometry on representative normal/tall/wide phones. Record the chosen breakpoints and their height trade-offs.
-- [ ] Implement a stable feedback slot and remove transient message-driven budget changes across all modes. Keep full feedback visible. Implement outer6px gutters and thumb keypad layouts using available height so it does not create new jumps or clipped controls.
-- [ ] Extend real clicking and notes/undo/conflict checks after resize, and preserve all existing geometry/dialog/wave/seam tests. Update any intentional alignment assertion with the new user requirement and a clear reason; never replace meaningful checks with class-name-only checks.
-- [ ] Run typecheck, all9logic tests, root production build and full Chromium suite with `PLAYWRIGHT_MODULE=/workspace/sudokutaro-tools/playwright.cjs` (BROWSER_EXECUTABLE unset). Save RED/final logs under `/workspace/sudokutaro-tools/keypad-work`; no simultaneous dev server.
-- [ ] Capture and inspect actual390×720,390×844,430×932,small-phone and844×390 views, plus before/error/after screenshots. Keep useful unique docs screenshots and accurately update feature/test documentation without claiming not-yet-performed Pages/deployment.
-- [ ] Self-review, commit scoped files and report. Obtain independent spec+quality review; resolve important findings with coverage before delivery.
+- [x] Add failing browser reproduction for conflict-driven shrinking using existing seed `[data-cell="2"]` + conflicting digit5. Compare board, relevant shell/controls and keypad rectangles before/during/after feedback, including automatic expiry at least once. Demonstrate the expected failure before production changes.
+- [x] Add failing checks for clarified6px outer gutters and the selected adaptive keypad arrangements/target geometry on representative normal/tall/wide phones. Record the chosen breakpoints and their height trade-offs.
+- [x] Implement a stable feedback slot and remove transient message-driven budget changes across all modes. Keep full feedback visible. Implement outer6px gutters and thumb keypad layouts using available height so it does not create new jumps or clipped controls.
+- [x] Extend real clicking and notes/undo/conflict checks after resize, and preserve all existing geometry/dialog/wave/seam tests. Update any intentional alignment assertion with the new user requirement and a clear reason; never replace meaningful checks with class-name-only checks.
+- [x] Run typecheck, all9logic tests, root production build and full Chromium suite with `PLAYWRIGHT_MODULE=/workspace/sudokutaro-tools/playwright.cjs` (BROWSER_EXECUTABLE unset). Save RED/final logs under `/workspace/sudokutaro-tools/keypad-work`; no simultaneous dev server.
+- [x] Capture and inspect actual390×720,390×844,430×932,small-phone and844×390 views, plus before/error/after screenshots. Keep useful unique docs screenshots and accurately update feature/test documentation without claiming not-yet-performed Pages/deployment.
+- [x] Self-review, commit scoped files and report. Obtain independent spec+quality review; resolve important findings with coverage before delivery.
 
 ## Task 2: Continue complete reviewed release delivery
 
-- [ ] Run matched Pages build+full browser suite; create feature PR, professional whole-change review, actual remote CI checks and exact-head merge.
-- [ ] Verify SHA-specific main CI and real Pages deployment; use normal TLS to fetch actual published resources and validate both stable feedback/adaptive keypad and preserved victory phases on them. Direct cloud browser trust remains unchanged.
-- [ ] Finalize current README/release evidence through reviewed documentation changes as needed; keep historical wave/lime deployment records distinguishable from the new layout deployment.
-- [ ] Publish annotatedv1.2.0tag at the final verified merged commit and GitHub Release; verify remote metadata and report all stages completed.
+- [x] Run matched Pages build+full browser suite; create feature PR, professional whole-change review, actual remote CI checks and exact-head merge.
+- [x] Verify SHA-specific main CI and real Pages deployment; use normal TLS to fetch actual published resources and validate both stable feedback/adaptive keypad and preserved victory phases on them. Direct cloud browser trust remains unchanged.
+- [ ] Finalize current README/release evidence through reviewed documentation changes as needed; track actual completion in the [public execution record](https://github.com/yuqiuqi/SudokuTaro/pull/14#issuecomment-6309725414). Keep historical wave/lime deployment records distinguishable from the new layout deployment.
+- [ ] Publish annotated v1.2.0 tag at the final verified merged commit and GitHub Release; verify remote metadata. Track completion in the [public execution record](https://github.com/yuqiuqi/SudokuTaro/pull/14#issuecomment-6309725414) and [Releases](https://github.com/yuqiuqi/SudokuTaro/releases); this repository checkbox records the pre-release checkpoint.
 
 ## Prior state
 
 - Rainbow#10, lime#11, documentation#12 already reviewed and merged; main77461b3. Combined victory implementation passed root/Pages/browser/pixel tests and actual deployed-resource functional checks before this layout addition.
 - No v1.2.0tag or Release exists yet. Publication remains deferred until this requested fix/redesign is complete.
 - The retained local browser adapter is `/workspace/sudokutaro-tools/playwright.cjs`. Deployed-resource verification uses systemcurlTLS plus local rendering because direct Chromium trust lacks the cloud proxy CA; trust modification was rejected, and no TLS verification was disabled.
+
+## 已验证交付记录
+
+- PR #13 已审查、通过匹配根路径／Pages 完整回归及远端 CI，合并为 `a777f27`，主 CI `39527714680`、实际 Pages `39527714582`成功；实际线上资源经正常 curl TLS 校验、本地转接 Chromium 验证稳定反馈／6px／数字区／胜利流程，runtimeErrors=[]。
+- 后续 PR #14 保留上述功能并修复提示／焦点／临界尺寸；合并 `43c26c8` 的主 CI `39555925083`、实际 Pages `39555924968` 与本轮18次TLS资源功能验证通过。最终文档和正式版本交付按上方公开记录持续更新，不为标签后回填复选框追加源码提交。

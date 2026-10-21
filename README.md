@@ -8,25 +8,35 @@
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-7.0.2-3178c6?logo=typescript&logoColor=white)
 
-## v1.2.0 彩虹浪潮与青柠缝隙光
+## v1.2.0 移动交互与彩虹胜利反馈
 
-本轮交互舒适度修复仍待发布：提示开启、换层和关闭保持棋盘／状态位置与大小，三层提示按钮留在同一坐标，正文完整显示。方向键同步移动原生焦点，Enter／空格继续操作新选格；最后一层将焦点交给「我来试试」，设置切到新局也保留内部焦点并在关闭时回到原触发器。临界屏高改用稳定尺寸分类，避免连续重排。本轮已通过类型检查、9 项逻辑、根路径构建与完整 Chromium；Pages 与发布尚待本轮流程验证。
+本轮交互舒适度修复已上线：提示开启、换层和关闭保持棋盘／状态位置与大小，三层提示按钮留在同一坐标，正文完整显示。方向键同步移动原生焦点，Enter／空格继续操作新选格；最后一层将焦点交给「我来试试」，设置切到新局也保留内部焦点并在关闭时回到原触发器。临界屏高改用稳定尺寸分类，避免连续重排。本轮已通过类型检查、9 项逻辑测试、根路径及 Pages 子路径生产构建与完整 Chromium 回归，运行时错误为空；保留已有入口体积警告。
+
+以下 comfort 截图采集于 PR #14 实现阶段的根路径生产构建，展示真实浏览器提示状态；它们不是线上导航截图。
 
 | 提示前 · 390×720 | 提示第三层 · 棋盘尺寸不变 |
 |---|---|
 | ![开启提示前的棋盘](docs/screenshots/comfort-board-before-390x720.png) | ![棋盘与提示按钮稳定](docs/screenshots/comfort-hint-stable-390x720.png) |
 
 
-此前已部署的移动布局：冲突反馈使用常驻空间，出现、自动消失或选格关闭时不再缩放棋盘或移动工具、数字区。整个手机游戏区左右各留 6px（有更大安全区时优先安全区）；标题、状态与工具实际延伸到该边界。较矮竖屏保留 5/4 两排数字，高竖屏改为靠近底部的 3×3 数字区，宽度最多 300px，横屏使用棋盘旁的 3×3。常规手机数字键高度约 45px，极小屏保留紧凑回退；浏览器几何测试不能代替真实单手体验。该移动布局已随 [PR #13](https://github.com/yuqiuqi/SudokuTaro/pull/13) 部署；本轮舒适度修复与正式标签／Release 状态另行核实。
+### 此前移动布局（PR #13）
+
+此前已部署的移动布局：冲突反馈使用常驻空间，出现、自动消失或选格关闭时不再缩放棋盘或移动工具、数字区。整个手机游戏区左右各留 6px（有更大安全区时优先安全区）；标题、状态与工具实际延伸到该边界。较矮竖屏保留 5/4 两排数字，高竖屏改为靠近底部的 3×3 数字区，宽度最多 300px，横屏使用棋盘旁的 3×3。常规手机数字键高度约 45px，极小屏保留紧凑回退；浏览器几何测试不能代替真实单手体验。该移动布局已随 [PR #13](https://github.com/yuqiuqi/SudokuTaro/pull/13) 部署；本轮舒适度修复由下方 PR #14 的部署证据说明；正式标签／Release 状态见公开执行记录。
+
+以下 thumb 截图采集于 PR #13 布局实现阶段，保留用于说明两排与高屏数字区；后续提示与焦点行为以 PR #14 为准。
 
 | 390×720 · 两排 | 390×844 · 底部九宫格 |
 |---|---|
 | ![两排手机数字区](docs/screenshots/thumb-phone-390x720.png) | ![高屏九宫数字区](docs/screenshots/thumb-tall-390x844.png) |
 
 
+### 彩虹波浪与青柠缝隙光
+
 最后落笔后，81 个格子从左上到右下依次抬升、倾斜，形成带彩虹高光和深度阴影的对角波脊，再平缓落回棋盘并留下淡淡余辉。完整波浪约 2.4 秒；最后一格真实落定后立即从全部格子边界与棋盘外缘透出一次约 650ms 的青柠光，再揭晓成绩。窄亮芯、青柠发光与有限柔光只沿缝隙展开，格面不变色、不再次起伏；两个阶段均由实际动画结束事件衔接，无新增运行时依赖。
 
 减少动态效果时直接显示静态结果，庆祝中启用该偏好也立即结束动效。Escape 可跳过庆祝；打开菜单或开始新局会取消旧庆祝，关闭菜单不会突然弹出旧成绩。刷新已完成局面不重播、不重复计胜场。
+
+下方波浪与缝隙光截图分别采集于 PR #10／#11 的实现验证阶段，保留用于展示动效；布局和提示界面以新截图为准。
 
 下图是 Chromium 实际渲染的中段波峰（约 989ms），静态截图用于展示色彩和布局；抬升、倾角及结束顺序另由浏览器动画采样与事件断言验证。
 
@@ -39,6 +49,18 @@
 ![青柠缝隙光峰值](docs/screenshots/lime-seams-regular-peak.png)
 
 完整的「2.4 秒彩虹波浪 → 650ms 青柠缝隙光 → 成绩」已通过类型检查、9 项逻辑测试、根路径及 Pages 子路径生产构建与完整 Chromium 浏览器回归；运行时错误为空，构建保留已有入口体积警告。测试暂停末格与缝隙动画验证顺序，并检查五种视口下全部 81 格中央像素未变、平面格子和原生点击、两阶段取消及减少动态效果。原有交互、双语弹窗、分区模拟回归保留。
+
+### 当前部署与验证（PR #14）
+
+[交互舒适度 PR #14](https://github.com/yuqiuqi/SudokuTaro/pull/14) 已合并；两次独立审查均无发现，见 [公开审查](https://github.com/yuqiuqi/SudokuTaro/pull/14#issuecomment-6309655076)。提交 `43c26c887fe68bbebe6be3969ad86cba4e9c83b5` 的 [主分支 CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39555925083) 和 [Pages 实际发布](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39555924968)均成功，[在线试玩](https://yuqiuqi.github.io/SudokuTaro/)已包含本轮修复、此前移动布局与完整胜利动效。
+
+本轮通过系统 curl 正常 TLS 校验取得实际线上资源（18 次请求），再经本地转接由 Chromium 渲染。验证了冲突反馈前／出现时／到期后的几何稳定、左右各 6px 边界、常规手机九键约 45px、高屏底部三排与横屏侧边三排；390×580、844×520、844×535 各连续 60 帧无布局变化，提示棋盘与按钮稳定、键盘焦点跟随选格、设置切到新局及关闭后的焦点恢复正确。彩虹抬升 → 平面格子与无填充缝隙光 → 成绩、刷新只记一次胜场均通过，运行时错误为空。
+
+云端 Chromium 直接 HTTPS 导航受代理证书信任限制；未修改信任库或关闭 TLS 校验。上述线上资源转接验证不等同于直接在线浏览器或真实设备测试；真实 iOS Safari、屏幕阅读器、非零安全区及折叠硬件仍未实测，几何稳定也不代表真实单手舒适度已获验证。
+
+最终文档交付及正式标签／Release 的实际结果持续更新于 [公开执行记录](https://github.com/yuqiuqi/SudokuTaro/pull/14#issuecomment-6309725414)；正式发布状态以 [GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases)为准。此处不将已部署等同于已创建正式 Release。
+
+### 历史胜利动效部署（2026-10-20）
 
 [在线试玩](https://yuqiuqi.github.io/SudokuTaro/)已包含 [彩虹波浪 PR #10](https://github.com/yuqiuqi/SudokuTaro/pull/10) 与 [青柠缝隙光 PR #11](https://github.com/yuqiuqi/SudokuTaro/pull/11)；独立任务审查与最终整体审查均无发现，见 [审查记录](https://github.com/yuqiuqi/SudokuTaro/pull/11#issuecomment-6285295237)。合并提交 `8fb93f3` 的 [主分支 CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39383720380) 和 [Pages 发布](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39383720348)均成功。
 
@@ -192,7 +214,7 @@ SudokuTaro/
 - **部署产物：** 本仓库目前仅维护浏览器 H5 版本，不包含微信/抖音小程序或小游戏构建。
 - **本地试玩：** 使用 `npm run dev:h5`，然后打开构建工具输出的本地地址。
 - **生产验证：** PR 和主分支已启用 GitHub Actions；本地执行 `npm run build:h5`，Pages 子路径使用下方对应构建与测试命令。
-- **在线试玩：** [GitHub Pages 数独](https://yuqiuqi.github.io/SudokuTaro/)，已验证部署包含彩虹波浪与青柠缝隙光；最新部署状态见 [Pages 工作流](https://github.com/yuqiuqi/SudokuTaro/actions/workflows/deploy-pages.yml)。
+- **在线试玩：** [GitHub Pages 数独](https://yuqiuqi.github.io/SudokuTaro/)，已验证部署包含稳定反馈、自适应数字区、提示／键盘焦点修复及彩虹波浪与青柠缝隙光；最新部署状态见 [Pages 工作流](https://github.com/yuqiuqi/SudokuTaro/actions/workflows/deploy-pages.yml)。
 
 ### 建议的 GitHub Topics
 
