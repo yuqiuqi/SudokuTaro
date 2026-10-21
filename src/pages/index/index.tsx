@@ -144,7 +144,7 @@ export default function IndexPage() {
     else if (hadHint.current) hintTrigger.current?.focus({preventScroll: true})
     hadHint.current = hintOpen
   }, [hintOpen])
-  const layout = useGameLayout(!!hint, !!message),
+  const layout = useGameLayout(!!hint),
     en = lang === 'en'
   const say = useCallback(
     (zh: string, english: string) => (en ? english : zh),
@@ -467,7 +467,7 @@ export default function IndexPage() {
 
   return (
     <main
-      className={`sudoku-app layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''} ${celebration === 'wave' ? 'is-victory-wave' : ''} ${celebration === 'seams' ? 'is-victory-seams' : ''}`}
+      className={`sudoku-app layout-${layout.mode} ${layout.thumbGrid ? 'thumb-grid' : ''} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''} ${celebration === 'wave' ? 'is-victory-wave' : ''} ${celebration === 'seams' ? 'is-victory-seams' : ''}`}
       style={layout.style}
     >
       <div className="game-shell" ref={layout.ref}>
