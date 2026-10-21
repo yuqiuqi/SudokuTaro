@@ -13,7 +13,8 @@
 - 候选数、完整撤销、分层逻辑提示、唯一解验证、中英文分页规则、自动保存、通关纪录。胜利组件 `VictoryResult.tsx/scss` 提供庆祝、成绩卡与小屏专属布局；减少动态效果跳过庆祝，刷新不重复记胜场。撤销/擦除免费；`gameEconomy.ts` 是保留的旧模块，主游戏不再消耗道具。
 - 胜利波浪使用原生 81 格的 CSS 3D 变换与彩虹高光，从左上到右下推进；单格包络 960ms、相邻 `row + column` 对角线延迟 90ms，总计 2400ms。最后一格真实 `victory-wave` animationend 立即进入 650ms 单次青柠缝隙光；装饰 SVG 的窄亮芯／发光／有限柔光覆盖全部格缝与外缘，格面保持平面及原色，再由真实 `victory-seam-light` animationend 揭晓成绩。阶段为 `wave → seams → null`，`.is-celebrating` 涵盖两段；不使用固定结果定时器。菜单／新局取消旧庆祝，Escape 可跳过；动态启用减少动态效果立即结束。详见 `docs/releases/v1.2.0.md`。
 - 完整波浪与缝隙光已通过类型检查、9 项逻辑测试、根路径／Pages 子路径生产构建与完整 Chromium 浏览器回归；保留原有入口体积警告。合并提交 `8fb93f3` 的主分支 CI 和 Pages 实际发布成功。经系统 curl 正常 TLS 校验获取线上资源、由 Chromium 经本地转接渲染，功能验证通过且运行时错误为空；未修改信任库或关闭 TLS 校验。这不是直接在线 Chromium 导航或真实 Safari／折叠设备验证。正式标签与 Release 状态见 [Releases](https://github.com/yuqiuqi/SudokuTaro/releases)，部署证据见 `docs/releases/v1.2.0.md`。
-- 本轮移动布局待发布：反馈从布局尺寸输入移除；竖屏常驻 28px、宽屏常驻 42px 反馈行。手机整区左右 6px（安全区优先），标题／状态／工具与外边缘对齐；棋盘独立限高居中。实际游戏高度 ≥740px 的常规竖屏用底部 3×3、最多 300px 宽数字区，其余竖屏保留 5/4 两排；横屏侧边 3×3，极短横屏数字区随实际可视高度缩减。依赖、存档与两阶段胜利流程保持不变。
+- 已部署移动布局（PR #13）：反馈从布局尺寸输入移除；竖屏常驻 28px、宽屏常驻 42px 反馈行。手机整区左右 6px（安全区优先），标题／状态／工具与外边缘对齐；棋盘独立限高居中。实际游戏高度 ≥740px 的常规竖屏用底部 3×3、最多 300px 宽数字区，其余竖屏保留 5/4 两排；横屏侧边 3×3，极短横屏数字区随实际可视高度缩减。依赖、存档与两阶段胜利流程保持不变。
+- 本轮交互舒适度修复待发布：hint 不再参与棋盘预算；提示标题／正文通过 aria-hidden、不可聚焦的自然尺寸副本预留各层最大空间，按钮可原坐标连续点击且 active 全文唯一可访问。方向键同步 focus({preventScroll:true})；仅末层 Next 移交焦点给「我来试试」。模式判定使用 parent 规范20px／安全区基准，真实 h 仍用于棋盘预算；DialogFocus context 变化聚焦内部，关闭保留原 opener。极短横屏提示期间说明行按完整文字自然14/28px，回到可填数模式仍固定42px错误槽。
 - 布局根据实际可用 CSS 宽高选择，几何与交互测试见 `tests/browser.cjs`，测试矩阵和能力限制见 `docs/RESPONSIVE_DESIGN.md`。
 - 命令：`npm run typecheck`、`npm test`、`npm run build:h5`、`npx playwright install chromium && npm run test:browser`。
 - 用户要求每次代码修改完成后必做浏览器模拟测试，再交付或更新 PR；完整流程与已知回归场景见仓库根目录 `AGENTS.md`。仅文档修改检查差异即可。

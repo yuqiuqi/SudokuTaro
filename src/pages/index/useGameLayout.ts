@@ -20,7 +20,7 @@ type Layout = {
   direction?: string
 }
 /** Measure usable CSS space rather than device pixels; resizing never recreates a game. */
-export function useGameLayout(hintVisible = false) {
+export function useGameLayout() {
   const ref = useRef<HTMLDivElement>(null)
   const [layout, setLayout] = useState<Layout>({
     mode: 'regular',
@@ -36,6 +36,12 @@ export function useGameLayout(hintVisible = false) {
         padding = getComputedStyle(parent)
       const pl = parseFloat(padding.paddingLeft),
         pr = parseFloat(padding.paddingRight)
+      // Classify against one safe-area-aware baseline. Mode-specific 12/20px
+      // padding may change actual h, but cannot feed back into its own mode.
+      const modeHeight =
+        parent.clientHeight -
+        Math.max(20, parseFloat(padding.paddingTop)) -
+        Math.max(20, parseFloat(padding.paddingBottom))
       const w = Math.min(1000, parent.clientWidth - pl - pr)
       const win = window as Window & {
         getWindowSegments?: () => Segment[]
@@ -55,16 +61,16 @@ export function useGameLayout(hintVisible = false) {
         ? 'fold-horizontal'
         : vertical ||
             w >= 600 ||
-            (h < 440 && w >= 240) ||
-            (w / h >= 1.3 && w >= 440)
+            (modeHeight < 440 && w >= 240) ||
+            (w / modeHeight >= 1.3 && w >= 440)
           ? 'wide'
-          : h < 555
+          : modeHeight < 555
             ? 'short'
-            : h < 665
+            : modeHeight < 665
               ? 'compact'
               : 'regular'
       // Three rows earn their extra height only on tall portrait screens.
-      const thumbGrid = mode === 'regular' && h >= 740
+      const thumbGrid = mode === 'regular' && modeHeight >= 740
       const hinge = vertical
         ? Math.max(0, segments[1].left - segments[0].right)
         : h < 440
@@ -82,22 +88,11 @@ export function useGameLayout(hintVisible = false) {
               w - hinge - controlMinimum,
             )
           : mode === 'short'
-            ? Math.min(
-                224,
-                w,
-                h - (hintVisible ? 286 : 248),
-              )
+            ? Math.min(224, w, h - 248)
             : Math.min(
                 mode === 'regular' ? 414 : 350,
                 w,
-                h -
-                  (hintVisible
-                    ? 354
-                    : thumbGrid
-                      ? 358
-                      : mode === 'compact'
-                        ? 312
-                        : 306),
+                h - (thumbGrid ? 358 : mode === 'compact' ? 312 : 306),
               )
       let columns: string | undefined,
         rows: string | undefined,
@@ -117,7 +112,7 @@ export function useGameLayout(hintVisible = false) {
       }
       setLayout({
         mode,
-        heightLimited: h < 496,
+        heightLimited: modeHeight < 496,
         thumbGrid,
         board: Math.max(90, Math.floor(board)),
         hinge,
@@ -153,7 +148,7 @@ export function useGameLayout(hintVisible = false) {
       horizontal.removeEventListener?.('change', updateHeight)
       vertical.removeEventListener?.('change', updateHeight)
     }
-  }, [hintVisible])
+  }, [])
   return {
     ref,
     mode: layout.mode,
