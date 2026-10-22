@@ -5,20 +5,15 @@
 
 ---
 
-## 当前实现（v1.2.0 · 2026-10 移动交互与彩虹胜利反馈）
+## 当前实现（v1.2.1 · 手机整体布局与只读题面）
 
-- 本节覆盖下方历史时间线中的旧界面、输入和道具描述。当前真源为 `src/pages/index/index.tsx`、`useGameLayout.ts`、`src/utils/gameplay.ts` 与 `src/styles/_glass-tokens.scss`。
-- 已确认的 Figma 文件：`AhWwkAjjXti2imJAbhgrTY`，V2 设计根节点 `20:545`（原响应式稿 `9:173` 保留）。H5 使用实际 CSS px，关闭 `h5.postcss.pxtransform`，不要恢复 rpx 缩放。
-- 原生按钮选择格子 + 页面内常驻 1～9。不要恢复隐藏 Input 或 ScrollView。Taro 会改写 CSS 的 button 标签选择器，原生按钮样式用 `[type="button"]`。
-- 候选数、完整撤销、分层逻辑提示、唯一解验证、中英文分页规则、自动保存、通关纪录。胜利组件 `VictoryResult.tsx/scss` 提供庆祝、成绩卡与小屏专属布局；减少动态效果跳过庆祝，刷新不重复记胜场。撤销/擦除免费；`gameEconomy.ts` 是保留的旧模块，主游戏不再消耗道具。
-- 胜利波浪使用原生 81 格的 CSS 3D 变换与彩虹高光，从左上到右下推进；单格包络 960ms、相邻 `row + column` 对角线延迟 90ms，总计 2400ms。最后一格真实 `victory-wave` animationend 立即进入 650ms 单次青柠缝隙光；装饰 SVG 的窄亮芯／发光／有限柔光覆盖全部格缝与外缘，格面保持平面及原色，再由真实 `victory-seam-light` animationend 揭晓成绩。阶段为 `wave → seams → null`，`.is-celebrating` 涵盖两段；不使用固定结果定时器。菜单／新局取消旧庆祝，Escape 可跳过；动态启用减少动态效果立即结束。详见 `docs/releases/v1.2.0.md`。
-- 此前胜利动效验证（PR #10／#11）：完整波浪与缝隙光已通过类型检查、9 项逻辑测试、根路径／Pages 子路径生产构建与完整 Chromium 浏览器回归；保留原有入口体积警告。合并提交 `8fb93f3` 的主分支 CI 和 Pages 实际发布成功。经系统 curl 正常 TLS 校验获取线上资源、由 Chromium 经本地转接渲染，功能验证通过且运行时错误为空；未修改信任库或关闭 TLS 校验。这不是直接在线 Chromium 导航或真实 Safari／折叠设备验证。正式标签与 Release 状态见 [Releases](https://github.com/yuqiuqi/SudokuTaro/releases)，部署证据见 `docs/releases/v1.2.0.md`。
-- 已部署移动布局（PR #13）：反馈从布局尺寸输入移除；竖屏常驻 28px、宽屏常驻 42px 反馈行。手机整区左右 6px（安全区优先），标题／状态／工具与外边缘对齐；棋盘独立限高居中。实际游戏高度 ≥740px 的常规竖屏用底部 3×3、最多 300px 宽数字区，其余竖屏保留 5/4 两排；横屏侧边 3×3，极短横屏数字区随实际可视高度缩减。依赖、存档与两阶段胜利流程保持不变。
-- 已部署交互舒适度修复（PR #14）：hint 不再参与棋盘预算；提示标题／正文通过 aria-hidden、不可聚焦的自然尺寸副本预留各层最大空间，按钮可原坐标连续点击且 active 全文唯一可访问。方向键同步 focus({preventScroll:true})；仅末层 Next 移交焦点给「我来试试」。模式判定使用 parent 规范20px／安全区基准，真实 h 仍用于棋盘预算；DialogFocus context 变化聚焦内部，关闭保留原 opener。极短横屏提示期间说明行按完整文字自然14/28px，回到可填数模式仍固定42px错误槽。
-- 当前发布证据：PR #14 合并为 `43c26c8`；已审查实现 `5eeddb4` 通过类型检查、9 项逻辑及根路径／Pages 完整浏览器回归，两次独立审查无发现。同合并 SHA 的 [主分支 CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39555925083) 和 [Pages 实际发布](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39555924968)成功；18 次正常 TLS 资源请求后，经本地转接由 Chromium 验证稳定反馈、提示／焦点、临界尺寸及胜利流程，运行时错误为空。此方式不等同直接在线导航或真实 Safari、屏幕阅读器、安全区／折叠设备实测；未修改信任库或关闭 TLS 校验。文档与标签／Release 后续结果见 [公开执行记录](https://github.com/yuqiuqi/SudokuTaro/pull/14#issuecomment-6309725414)。
-- 布局根据实际可用 CSS 宽高选择，几何与交互测试见 `tests/browser.cjs`，测试矩阵和能力限制见 `docs/RESPONSIVE_DESIGN.md`。
-- 命令：`npm run typecheck`、`npm test`、`npm run build:h5`、`npx playwright install chromium && npm run test:browser`。
-- 用户要求每次代码修改完成后必做浏览器模拟测试，再交付或更新 PR；完整流程与已知回归场景见仓库根目录 `AGENTS.md`。仅文档修改检查差异即可。
+- 本节覆盖下方历史中的旧界面、输入和道具描述。当前真源为 `src/pages/index/index.tsx`、`index.scss`、`useGameLayout.ts`、`src/utils/gameplay.ts` 与 `src/styles/_glass-tokens.scss`。Figma 文件 `AhWwkAjjXti2imJAbhgrTY` 的 V2 根节点 `20:545` 为视觉基准；H5 使用实际 CSS px，关闭 `h5.postcss.pxtransform`，不要恢复 rpx 缩放。
+- 手机标题、状态、棋盘、工具及数字面板共用 `--board-size` 主列；充分空间时左右目标各 6px，安全区优先，棋盘最大 414px。紧凑头部 52px，选格说明并入固定 28px 反馈行。普通手机工具真实点击高度 44px、数字 45px，统一 5/4 两排，工具到数字区 10px；完整 `game-shell` 上下 auto margin 居中。320×480 整列回退到 202px、工具高度 34px、组间距 8px，数字高度仍 45px，但宽度约 33px；小屏不能套用普通手机触控目标保证。不要恢复高屏键盘独立钉底。
+- 尺寸预算取 parent 的真实安全可用高度，避免自然内容高度反馈；模式分类采用独立稳定的 20px／安全区基准。错误、提示开关及换层不改变棋盘预算；提示通过不可访问的自然尺寸副本预留各层全文空间，active 文案唯一可访问。横屏与折叠分区保留专用回退。
+- 棋盘为原生按钮，initial 给定格原生 `disabled` 并恢复 `opacity:1`，保留可读数值／标签，不可点击、修改或进入焦点；choose／fill 也防御题面。方向键仅在原行／列内搜索可编辑格，跳过给定数，无目标保留原格，并同步 `focus({preventScroll:true})`。同数、行列宫与提示辅助高亮保留，不等于独占 `is-selected` 框。Taro 会改写 button 标签选择器，原生按钮样式用 `[type="button"]`；不要恢复隐藏 Input 或 ScrollView。
+- 保留候选数、完整撤销、唯一解、中英文分层提示／规则、保存与纪录；撤销／擦除免费，`gameEconomy.ts` 是历史保留模块。胜利流程仍为 `wave → seams → null`：960ms 单格包络、90ms 对角延迟，总 2400ms，随后 650ms 单次青柠缝隙光，两段由真实 animationend 衔接。减少动态效果、Escape、菜单／新局取消及刷新不重复记胜场不变。
+- 功能 [PR #16](https://github.com/yuqiuqi/SudokuTaro/pull/16) 合并为 `5e2e912`，与已审查实现 `ec0bf50` 的 tree 一致。类型检查、9 项逻辑测试、根路径／Pages 完整 Chromium 回归通过，运行时错误为空；独立 AI 代码与视觉审阅无必改项。该合并提交的 [Pages 实际部署](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39742465142) 已成功；18 次正常 TLS 请求取得线上资源，经 loopback Chromium 验证布局、只读题面、反馈／提示、焦点及胜利／刷新流程，运行时错误为空。此路线不同于直接在线导航，未修改信任库或关闭 TLS。同合并提交的 [主分支 CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39742465146) 已通过；正式 tag／Release 后续状态见 [公开执行记录](https://github.com/yuqiuqi/SudokuTaro/pull/16#issuecomment-6335382360)，完整证据见 [v1.2.1 说明](docs/releases/v1.2.1.md)；历史证据见 [v1.2.0](docs/releases/v1.2.0.md)。
+- 代码修改后按 `AGENTS.md` 完成类型检查、逻辑测试、构建与浏览器回归；Pages 需配对子路径构建与测试，仅文档修改检查差异。浏览器 CSS 尺寸／分区模拟不等同小米 17 移动 Edge、iOS Safari、屏幕阅读器或安全区／折叠硬件实测。现行测量与回归见 `docs/RESPONSIVE_DESIGN.md`。
 
 ## 1. 项目卡片
 
