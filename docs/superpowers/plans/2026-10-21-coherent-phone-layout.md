@@ -17,9 +17,9 @@
 - [x] 新契约回归先复现，再实施共享主列、垂直平衡和固定题面只读。
 - [x] 类型检查、9 项逻辑测试、根路径生产构建与完整浏览器回归；运行时错误为空。
 - [x] Pages 子路径生产构建与完整浏览器回归；运行时错误为空。八组中英文截图及提示／错误状态经独立 AI 视觉审阅通过，代码审阅无阻断问题。
-- [ ] 提 PR；独立功能／视觉审阅与远端 CI 通过，再合并。
-- [ ] 核实同合并提交的主分支 CI、Pages 实际部署及发布资源功能。
-- [ ] 更新 README、上下文及响应式说明，以实际证据区分历史与当前行为。
-- [ ] 创建并核实新的 annotated v1.2.1 tag 与正式 Release；保持 v1.2.0 不变。
+- [x] [PR #16](https://github.com/yuqiuqi/SudokuTaro/pull/16) 经独立代码／视觉 AI 审阅及两项远端 CI，通过后合并为 `5e2e912307756ed22ebc86679c8c08f874b196a2`；[公开审查](https://github.com/yuqiuqi/SudokuTaro/pull/16#issuecomment-6335381997)。
+- [x] 同合并提交的[主分支 CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39742465146)与[Pages 实际部署](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39742465142)均成功。18 次正常 TLS 资源请求后转接 Chromium 验证共享列、只读题面、反馈／提示与胜利流程通过，运行时错误为空；不等同真机或直接在线浏览器导航。
+- [x] 更新 README、上下文、响应式及 v1.2.1 说明，使用本轮四张最终 Pages 截图，以实际证据区分历史与当前行为；文档经独立审阅无发现。最终文档 PR／CI／部署结果见[公开执行记录](https://github.com/yuqiuqi/SudokuTaro/pull/16#issuecomment-6335382360)。
+- [ ] 创建并核实新的 annotated v1.2.1 tag 与正式 Release；保持 v1.2.0 不变。文档提交后的实际最终状态持续更新于[公开执行记录](https://github.com/yuqiuqi/SudokuTaro/pull/16#issuecomment-6335382360)。
 
 执行日志与截图暂存于 `/workspace/sudokutaro-tools/proportion-review/`，该目录不随仓库发布；最终说明只引用实际完成的验证。
