@@ -268,15 +268,15 @@
   justify-content: center;
 }
 .selection-caption {
-  height: 16px;
   width: 100%;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 16px;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 10px;
+  line-height: 14px;
+  white-space: normal;
+}
+.sudoku-app .sudoku-cell:disabled {
+  opacity: 1;
+  cursor: default;
 }
 .control-pane {
   width: 100%;
@@ -590,38 +590,6 @@
     gap: 10px;
   }
 }
-.thumb-grid {
-  .number-panel {
-    width: min(100%, 300px);
-    justify-self: center;
-    height: 162px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr));
-  }
-  .number-key,
-  .number-key:nth-child(6) {
-    grid-column: auto;
-  }
-}
-// Only roomy portrait distributes spare height: board/tools stay put while the
-// thumb cluster rests above the permanent caption and bottom safe area.
-.thumb-grid:not(.has-hint) {
-  .play-layout,
-  .control-pane {
-    flex: 1;
-  }
-  .board-pane {
-    flex-shrink: 0;
-  }
-  .game-controls {
-    flex: 1;
-    min-height: 0;
-    grid-template-rows: 44px minmax(162px, 1fr);
-  }
-  .number-panel {
-    align-self: end;
-  }
-}
 .layout-wide {
   .game-shell {
     width: min(100%, 1000px);
@@ -777,6 +745,50 @@
   height: auto;
   flex: 0 0 auto;
 }
+.phone-layout {
+  display: flex;
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  .game-shell {
+    width: var(--board-size);
+    height: auto;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 32px 18px;
+    gap: 2px 6px;
+    height: 52px;
+    flex: 0 0 52px;
+  }
+  .brand { font-size: 20px; }
+  .topbar nav { gap: 4px; }
+  .topbar .text-button { min-height: 32px; padding: 4px 7px; font-size: 10px; }
+  .game-meta { grid-column: 1 / -1; height: 18px; gap: 4px; margin: 0; }
+  .game-meta .difficulty-button { min-height: 24px; font-size: 10px; }
+  .metrics { font-size: 10px; gap: 8px; }
+  .play-layout { gap: 8px; }
+  .board-pane { gap: 0; }
+  .control-pane { height: 200px; flex: 0 0 200px; gap: 6px; }
+  .game-controls { height: 166px; gap: 10px; grid-template-rows: 46px 110px; }
+  .tools { height: 46px; padding: 0; }
+  .number-panel { width: 100%; height: 110px; padding: 6px; gap: 6px; }
+  .hint-card { height: 166px; flex: 0 0 166px; }
+  .hint-card .dialog-actions { margin-top: auto; }
+  .input-caption { height: 28px; flex: 0 0 28px; }
+  .selection-caption { font-size: 10px; line-height: 14px; }
+  &.height-limited {
+    .control-pane { height: 188px; flex-basis: 188px; gap: 6px; }
+    .brand { font-size: 17px; }
+    .metrics { font-size: 9px; gap: 5px; }
+    .game-controls { height: 154px; grid-template-rows: 36px 110px; gap: 8px; }
+    .tools { height: 36px; }
+    .number-panel { height: 110px; gap: 6px; }
+    .hint-card { height: 154px; flex-basis: 154px; }
+  }
+}
 .layout-fold-horizontal {
   .game-shell {
     width: 100%;
@@ -794,9 +806,6 @@
   .board-pane {
     justify-content: center;
     height: 100%;
-  }
-  .selection-caption {
-    display: none;
   }
   .control-pane {
     align-self: center;

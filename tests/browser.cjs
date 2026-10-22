@@ -573,8 +573,10 @@ async function victoryFeedbackRegressions(p, url) {
     await p.waitForSelector('.is-celebrating')
     await rainbowWaveRegressions(p, width === 480 ? '480x240' : false, false)
     await p.getByRole('button', {name: '欣赏棋盘', exact: true}).click()
-    await p.locator('[data-cell="80"]').click()
-    assert.equal(await p.locator('[data-cell="80"]').getAttribute('aria-pressed'), 'true', 'settled cells retain native hit targets')
+    await p.locator('[data-cell="80"]').evaluate((n) => n.click())
+    assert.equal(await p.locator('[data-cell="80"]').getAttribute('aria-pressed'), 'false', 'settled givens remain readonly')
+    await p.locator('[data-cell="2"]').click()
+    assert.equal(await p.locator('[data-cell="2"]').evaluate((n) => document.activeElement === n), true, 'settled editable cells retain native hit targets')
     await geometry(p, `settled wave ${width}x${height}/${visible}`)
     await p.evaluate(() => {
       delete visualViewport.height
@@ -675,6 +677,13 @@ async function victoryFeedbackRegressions(p, url) {
   await loadTestFonts(p, url)
 }
 async function cornerHighlightRegression(p) {
+  // These corner values belong to the player in this fixture; fixed clues are
+  // intentionally readonly under the new input contract.
+  await p.evaluate(({game, KEY}) => {
+    const initial=game.initial.map(r=>[...r]);for(const i of [0,8,72,80]) initial[Math.floor(i/9)][i%9]=0
+    localStorage.setItem(KEY,JSON.stringify({...game,initial}))
+  },{game,KEY})
+  await p.reload();await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,p.url())
   for (const [width, height] of [
     [390, 720],
     [320, 480],
@@ -724,6 +733,8 @@ async function cornerHighlightRegression(p) {
     }
   }
   await p.setViewportSize({width: 390, height: 720})
+  await p.evaluate(({game,KEY})=>localStorage.setItem(KEY,JSON.stringify(game)),{game,KEY})
+  await p.reload();await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,p.url())
 }
 async function singleReviewHintRegression(p, url) {
   await p.evaluate(
@@ -997,16 +1008,65 @@ async function inlineHintRegressions(p) {
   )
   const alignment = await p.evaluate(() => {
     const b = document.querySelector('.board-frame').getBoundingClientRect()
-    // User now requires the whole game area at 6px, while the board may be
-    // constrained by height. Preserve real edge/centering checks for both.
+    // The revised phone design contracts the whole column with its board.
+    // Six pixels is the safe minimum, not an independently stretched header.
     return Math.abs(b.left + b.right - innerWidth) <= 1 && b.left >= 6 &&
-      [...document.querySelectorAll('.topbar,.game-meta,.selection-caption,.control-pane,.tools')].every((n) => {
+      [...document.querySelectorAll('.topbar,.game-meta,.control-pane,.tools,.number-panel')].every((n) => {
         const r = n.getBoundingClientRect()
-        return Math.abs(r.left - 6) <= 1 && Math.abs(r.right - (innerWidth - 6)) <= 1
+        return Math.abs(r.left - b.left) <= 1 && Math.abs(r.right - b.right) <= 1
       })
   })
-  assert.ok(alignment, 'portrait outer content uses 6px gutters and the constrained board stays centered')
+  assert.ok(alignment, 'portrait content shares the centered board column with safe outer gutters')
   await p.locator('[data-cell="2"]').click()
+}
+async function coherentPhoneRegressions(p) {
+  const failures=[],reports=[]
+  const check=(ok,label)=>{if(!ok) failures.push(label)}
+  for(const [width,height] of [[393,650],[393,720],[393,852],[407,650],[407,760],[412,700],[430,932],[320,480]]){
+    await p.setViewportSize({width,height});await p.waitForTimeout(100)
+    const r=await p.evaluate(()=>({width:innerWidth,height:visualViewport.height,rects:Object.fromEntries(
+      ['.game-shell','.topbar','.game-meta','.board-frame','.control-pane','.tools','.number-panel','.input-caption'].map(s=>[s,document.querySelector(s).getBoundingClientRect().toJSON()])),keys:[...document.querySelectorAll('.number-key')].map(n=>n.getBoundingClientRect().toJSON())}))
+    const b=r.rects['.board-frame'],t=r.rects['.topbar'],end=r.rects['.input-caption']
+    for(const s of ['.topbar','.game-meta','.tools','.number-panel']) check(Math.abs(r.rects[s].left-b.left)<1&&Math.abs(r.rects[s].right-b.right)<1,`${width}x${height} ${s} shares board column`)
+    if(height>480){check(b.width>=(width-12)*.9,`${width}x${height} board occupies >=90% usablewidth`);check(r.keys.every(k=>k.height>=44),`${width}x${height} keys >=44px`)}
+    const gap=r.rects['.number-panel'].top-r.rects['.tools'].bottom
+    check(gap>=8&&gap<=16,`${width}x${height} coherent8–16px tool/key gap (${gap})`)
+    check(Math.abs((t.top+end.bottom)/2-height/2)<=12,`${width}x${height} complete group vertically balanced`)
+    check(b.left>=6&&b.right<=width-6,`${width}x${height} shared minimum side safety`)
+    await geometry(p,`coherent phone ${width}x${height}`)
+    reports.push(r)
+    if(process.env.SCREENSHOT_DIR){fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.SCREENSHOT_DIR,`phone-${width}x${height}.png`)})}
+    await p.getByRole('button',{name:'设置',exact:true}).click();await p.getByRole('button',{name:'中文 / EN',exact:true}).click();await p.getByRole('button',{name:'Close',exact:true}).click()
+    const header=await p.locator('.topbar').evaluate((n)=>{
+      const brand=n.querySelector('.brand').getBoundingClientRect(),nav=n.querySelector('nav').getBoundingClientRect(),m=n.querySelector('.game-meta')
+      return {fits:brand.right<=nav.left&&n.scrollWidth<=n.clientWidth+1&&m.scrollWidth<=m.clientWidth+1,menus:[...n.querySelectorAll('nav button')].every(b=>b.getBoundingClientRect().height>=32),tools:[...document.querySelectorAll('.tools button')].map(b=>b.getBoundingClientRect().height)}
+    })
+    check(header.fits&&header.menus,`${width}x${height} English header/32pxmenus fit without overlap`)
+    if(height>480) check(header.tools.every(h=>h>=44),`${width}x${height} actual tool buttons >=44px`)
+    if(process.env.SCREENSHOT_DIR) await p.screenshot({path:path.join(process.env.SCREENSHOT_DIR,`phone-${width}x${height}-en.png`)})
+    await p.getByRole('button',{name:'Settings',exact:true}).click();await p.getByRole('button',{name:'中文 / EN',exact:true}).click();await p.getByRole('button',{name:'关闭',exact:true}).click()
+  }
+  await p.setViewportSize({width:393,height:650});await p.waitForTimeout(80)
+  await p.locator('[data-cell="2"]').click()
+  const before=await p.locator('.sudoku-cell[aria-pressed="true"]').getAttribute('data-cell')
+  await p.locator('[data-cell="0"]').evaluate(n=>{const r=n.getBoundingClientRect();window.givenPoint={x:r.x+r.width/2,y:r.y+r.height/2}})
+  const point=await p.evaluate(()=>window.givenPoint);await p.mouse.click(point.x,point.y)
+  check(await p.locator('.sudoku-cell[aria-pressed="true"]').getAttribute('data-cell')===before,'given pointer is a selection no-op')
+  const given=await p.locator('[data-fixed="true"]').evaluateAll(nodes=>nodes.map(n=>({disabled:n.disabled,opacity:getComputedStyle(n).opacity,label:n.getAttribute('aria-label'),digit:n.querySelector('.cell-digit').textContent})))
+  check(given.every(g=>g.disabled&&g.opacity==='1'&&g.label.includes(g.digit)),'all givens remain readable native disabled non-tab controls')
+  await p.locator('[data-cell="0"]').evaluate(n=>n.focus());await p.keyboard.press('Enter')
+  check(await p.locator('.sudoku-cell[aria-pressed="true"]').getAttribute('data-cell')===before,'given cannot receive focus or Enter activation')
+  for(const [from,key,to] of [[2,'ArrowLeft',2],[2,'ArrowRight',3],[5,'ArrowDown',23],[40,'ArrowRight',42],[40,'ArrowUp',22],[10,'ArrowLeft',10],[8,'ArrowRight',8]]){
+    await p.locator(`[data-cell="${from}"]`).click();await p.keyboard.press(key)
+    check(await p.locator('.sudoku-cell[aria-pressed="true"]').getAttribute('data-cell')===String(to),`${key} skipsgivens ${from}→${to}`)
+    check(await p.evaluate(()=>document.activeElement.dataset.cell)===String(to),`${key} keepsfocus ${to}`)
+  }
+  if(process.env.SCREENSHOT_DIR) fs.writeFileSync(path.join(process.env.SCREENSHOT_DIR,'phone-geometry.json'),JSON.stringify(reports,null,2))
+  await p.locator('[data-cell="2"]').click();await p.locator('[data-number="4"]').click();await p.locator('[data-cell="2"]').click()
+  check(await p.locator('[data-cell="36"].is-same').count()===1,'player value retains cross-region same-value clue highlight')
+  if(process.env.SCREENSHOT_DIR) await p.screenshot({path:path.join(process.env.SCREENSHOT_DIR,'phone-same-value-393x650.png')})
+  await p.getByRole('button',{name:'撤销',exact:true}).click()
+  assert.deepEqual(failures,[],'coherent phone composition and readonly clues')
 }
 // Test physical geometry/focus, including repeated clicks at the original point.
 async function interactionComfortRegressions(p, url) {
@@ -1031,7 +1091,7 @@ async function interactionComfortRegressions(p, url) {
   check(await activeCell() === '3', 'arrow focus follows selected cell2→3')
   await p.keyboard.press('Enter')
   check(await p.locator('.sudoku-cell[aria-pressed="true"]').getAttribute('data-cell') === '3', 'Enter after arrow retains new selection')
-  for (const [from, key, to] of [[8, 'ArrowRight', 8], [9, 'ArrowLeft', 9], [0, 'ArrowUp', 0], [80, 'ArrowDown', 80], [2, 'ArrowDown', 11], [3, 'ArrowLeft', 2], [11, 'ArrowUp', 2]]) {
+  for (const [from, key, to] of [[8, 'ArrowRight', 8], [10, 'ArrowLeft', 10], [2, 'ArrowUp', 2], [78, 'ArrowDown', 78], [2, 'ArrowDown', 11], [3, 'ArrowLeft', 2], [11, 'ArrowUp', 2]]) {
     await p.locator(`[data-cell="${from}"]`).click()
     await p.keyboard.press(key)
     check(await activeCell() === String(to), `${key} nativefocus ${from}→${to}`)
@@ -1218,7 +1278,7 @@ async function stableFeedbackKeypadRegressions(p) {
     await p.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `thumb-${name}.png`)})
   }
   for (const [width, height, rows, minKeyHeight] of [
-    [390, 720, 2, 44], [390, 844, 3, 44], [430, 932, 3, 44],
+    [390, 720, 2, 44], [390, 844, 2, 44], [430, 932, 2, 44],
     [320, 480, 2, 28], [844, 390, 3, 36], [280, 320, 3, 20],
   ]) {
     await p.setViewportSize({width, height})
@@ -1265,12 +1325,11 @@ async function stableFeedbackKeypadRegressions(p) {
       check(keys[i].y > keys[i - 1].y + .5 || keys[i].x > keys[i - 1].x + .5, `${width}x${height} row-major digits`)
     if (height > width && height >= 440) {
       const edges = await p.locator('.topbar,.game-meta,.tools').evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()))
-      check(edges.every((r) => Math.abs(r.left - 6) <= .6 && Math.abs(width - r.right - 6) <= .6),
-        `${width}x${height} meaningful game content has 6px outer gutters`)
-      if (rows === 3) {
-        check(keys[2].right - keys[0].left <= 300, 'wide portrait thumb cluster limits horizontal travel')
-        check(height - keys[8].bottom <= 70, `${width}x${height} tall portrait digits stay near the bottom thumb area`)
-      }
+      const board = await p.locator('.board-frame').boundingBox()
+      check(edges.every((r) => Math.abs(r.left - board.x) <= .6 && Math.abs(r.right - board.x - board.width) <= .6) && board.x >= 6,
+        `${width}x${height} phone content shares the safe board column`)
+      const group = await p.locator('.game-shell').boundingBox()
+      check(Math.abs(group.y + group.height/2 - height/2) <= 12, `${width}x${height} complete phone group is balanced`)
     }
     if (width >= 440) {
       const edges = await p.locator('.topbar,.board-frame,.number-panel').evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()))
@@ -1374,11 +1433,11 @@ async function viewportRegressions(p) {
   await p.waitForTimeout(80)
   for (const [cell, key, want] of [
     [8, 'ArrowRight', '8'],
-    [9, 'ArrowLeft', '9'],
-    [0, 'ArrowUp', '0'],
-    [80, 'ArrowDown', '80'],
-    [40, 'ArrowRight', '41'],
-    [40, 'ArrowUp', '31'],
+    [10, 'ArrowLeft', '10'],
+    [2, 'ArrowUp', '2'],
+    [78, 'ArrowDown', '78'],
+    [40, 'ArrowRight', '42'],
+    [40, 'ArrowUp', '22'],
   ]) {
     await p.locator(`[data-cell="${cell}"]`).click()
     await p.keyboard.press(key)
@@ -1493,6 +1552,8 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    await coherentPhoneRegressions(p)
+    if(process.env.PHONE_ONLY){console.log("coherent phone checks passed");return}
     await interactionComfortRegressions(p, url)
     if (process.env.COMFORT_ONLY) { console.log('interaction comfort checks passed'); return }
     await stableFeedbackKeypadRegressions(p)

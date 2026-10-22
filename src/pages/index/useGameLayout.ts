@@ -12,7 +12,6 @@ type Segment = {
 type Layout = {
   mode: string
   heightLimited?: boolean
-  thumbGrid?: boolean
   board: number
   hinge: number
   columns?: string
@@ -31,9 +30,9 @@ export function useGameLayout() {
     const measure = () => {
       const el = ref.current
       if (!el) return
-      const {height: h} = el.getBoundingClientRect()
       const parent = el.parentElement!,
         padding = getComputedStyle(parent)
+      const h = parent.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom)
       const pl = parseFloat(padding.paddingLeft),
         pr = parseFloat(padding.paddingRight)
       // Classify against one safe-area-aware baseline. Mode-specific 12/20px
@@ -69,8 +68,6 @@ export function useGameLayout() {
             : modeHeight < 665
               ? 'compact'
               : 'regular'
-      // Three rows earn their extra height only on tall portrait screens.
-      const thumbGrid = mode === 'regular' && modeHeight >= 740
       const hinge = vertical
         ? Math.max(0, segments[1].left - segments[0].right)
         : h < 440
@@ -88,11 +85,11 @@ export function useGameLayout() {
               w - hinge - controlMinimum,
             )
           : mode === 'short'
-            ? Math.min(224, w, h - 248)
+            ? Math.min(414, w, h - (modeHeight < 496 ? 254 : 266))
             : Math.min(
-                mode === 'regular' ? 414 : 350,
+                414,
                 w,
-                h - (thumbGrid ? 358 : mode === 'compact' ? 312 : 306),
+                h - 266,
               )
       let columns: string | undefined,
         rows: string | undefined,
@@ -113,7 +110,6 @@ export function useGameLayout() {
       setLayout({
         mode,
         heightLimited: modeHeight < 496,
-        thumbGrid,
         board: Math.max(90, Math.floor(board)),
         hinge,
         columns,
@@ -153,7 +149,6 @@ export function useGameLayout() {
     ref,
     mode: layout.mode,
     heightLimited: layout.heightLimited,
-    thumbGrid: layout.thumbGrid,
     style: {
       '--board-size': `${layout.board}px`,
       '--hinge-gap': `${layout.hinge}px`,
