@@ -245,6 +245,7 @@ export default function IndexPage() {
   }
 
   const choose = useCallback((index: number) => {
+    if (gameRef.current.initial[Math.floor(index / 9)][index % 9]) return
     setSelected(index)
     clearTimeout(conflictTimer.current)
     setConflicts([])
@@ -257,15 +258,7 @@ export default function IndexPage() {
         setMessage(say('先选择一个空格', 'Select an empty cell first'))
         return
       }
-      if (old.initial[Math.floor(selected / 9)][selected % 9]) {
-        setMessage(
-          say(
-            '这是题目给定的数字，请选择空格',
-            'Original clues stay fixed. Choose an empty cell.',
-          ),
-        )
-        return
-      }
+      if (old.initial[Math.floor(selected / 9)][selected % 9]) return
       const result = move(old, selected, value, !erase && noteMode)
       if (result.conflicts.length) {
         setConflicts(result.conflicts)
@@ -323,7 +316,7 @@ export default function IndexPage() {
     if (game.won) return
     const h = findHint(game)
     if (!h) return
-    setSelected(h.index)
+    if (!game.initial[Math.floor(h.index / 9)][h.index % 9]) setSelected(h.index)
     setHint({value: h, stage: 0})
     setConflicts([])
     setGame((g) => ({...g, hints: g.hints + 1}))
@@ -374,14 +367,20 @@ export default function IndexPage() {
       }
       if (e.key in directions) {
         e.preventDefault()
-        const index = selected ?? 0,
-          [dr, dc] = directions[e.key],
-          row = Math.max(0, Math.min(8, Math.floor(index / 9) + dr)),
-          col = Math.max(0, Math.min(8, (index % 9) + dc))
-        const next = row * 9 + col
+        const initial = gameRef.current.initial
+        const [dr, dc] = directions[e.key]
+        let next = selected
+        if (next === null) next = initial.flat().findIndex((n) => n === 0)
+        else {
+          let row = Math.floor(next / 9) + dr, col = next % 9 + dc
+          while (row >= 0 && row < 9 && col >= 0 && col < 9) {
+            if (!initial[row][col]) { next = row * 9 + col; break }
+            row += dr; col += dc
+          }
+        }
+        if (next === null || next < 0) return
         choose(next)
-        document
-          .querySelector<HTMLButtonElement>(`[data-cell="${next}"]`)
+        document.querySelector<HTMLButtonElement>(`[data-cell="${next}"]`)
           ?.focus({preventScroll: true})
       }
     }
@@ -417,7 +416,7 @@ export default function IndexPage() {
         row.map((value, c) => {
           const index = r * 9 + c,
             fixed = game.initial[r][c] !== 0
-          const sel = focus === index,
+          const sel = !fixed && focus === index,
             related = focus !== null && peers(focus, index)
           const same =
             selected !== null &&
@@ -435,6 +434,7 @@ export default function IndexPage() {
                 } as CSSProperties
               }
               data-fixed={fixed}
+              disabled={fixed}
               className={[
                 'sudoku-cell',
                 related ? 'is-related' : '',
@@ -447,7 +447,7 @@ export default function IndexPage() {
                 r === 2 || r === 5 ? 'box-bottom' : '',
               ].join(' ')}
               aria-label={`${cellLocation(index, lang)}: ${value || say('空格', 'empty')}${fixed ? say('，题目给定', ', given') : ''}${!value && game.notes[index].length ? `${say('，候选数', ', notes ')} ${game.notes[index].join(', ')}` : ''}`}
-              aria-pressed={selected === index}
+              aria-pressed={!fixed && selected === index}
               onClick={() => choose(index)}
             >
               {value ? (
@@ -479,9 +479,40 @@ export default function IndexPage() {
     ],
   )
 
+  const phoneLayout = layout.mode !== 'wide' && layout.mode !== 'fold-horizontal'
+  const gameMeta = (
+    <div className="game-meta">
+              <button
+                type="button"
+                className="difficulty-button"
+                onClick={() => setModal('new')}
+              >
+                {say('自由练习', 'Practice')} · {label(game.difficulty)}{' '}
+                <span aria-hidden="true">⌄</span>
+              </button>
+              <span className="metrics">
+                <span aria-label={say('用时', 'Time')}>
+                  {time(game.seconds)}
+                </span>
+                <span>{filled} / 81</span>
+              </span>
+            </div>
+  )
+  const selectionCaption = (
+    <>{game.won ? (
+                <span data-victory-status role="status" aria-live="polite">
+                  {say('漂亮，解开了！', 'Beautifully solved!')}
+                </span>
+              ) : selected === null ? (
+                say('选一个空格，开始你的推理', 'Choose an empty cell to begin')
+              ) : (
+                `${cellLocation(selected, lang)} · ${selectedNotes.length ? say('候选数 ', 'Notes ') + selectedNotes.join('、') : noteMode ? say('笔记模式', 'Notes on') : say('点击数字填写', 'Tap a number to fill')}`
+              )}</>
+  )
+
   return (
     <main
-      className={`sudoku-app layout-${layout.mode} ${layout.thumbGrid ? 'thumb-grid' : ''} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''} ${celebration === 'wave' ? 'is-victory-wave' : ''} ${celebration === 'seams' ? 'is-victory-seams' : ''}`}
+      className={`sudoku-app ${phoneLayout ? 'phone-layout' : ''} layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''} ${celebration === 'wave' ? 'is-victory-wave' : ''} ${celebration === 'seams' ? 'is-victory-seams' : ''}`}
       style={layout.style}
     >
       <div className="game-shell" ref={layout.ref}>
@@ -506,28 +537,14 @@ export default function IndexPage() {
               {say('设置', 'Settings')}
             </button>
           </nav>
+          {phoneLayout && gameMeta}
         </header>
         <div className="play-layout">
           <section
             className="board-pane"
             aria-label={say('数独棋盘', 'Sudoku board')}
           >
-            <div className="game-meta">
-              <button
-                type="button"
-                className="difficulty-button"
-                onClick={() => setModal('new')}
-              >
-                {say('自由练习', 'Practice')} · {label(game.difficulty)}{' '}
-                <span aria-hidden="true">⌄</span>
-              </button>
-              <span className="metrics">
-                <span aria-label={say('用时', 'Time')}>
-                  {time(game.seconds)}
-                </span>
-                <span>{filled} / 81</span>
-              </span>
-            </div>
+            {!phoneLayout && gameMeta}
             <div className="board-frame glass-panel">
               <div
                 className="sudoku-board"
@@ -553,17 +570,6 @@ export default function IndexPage() {
                 )}
               </div>
               {celebration === 'wave' && <VictorySparkles />}
-            </div>
-            <div className="selection-caption">
-              {game.won ? (
-                <span data-victory-status role="status" aria-live="polite">
-                  {say('漂亮，解开了！', 'Beautifully solved!')}
-                </span>
-              ) : selected === null ? (
-                say('选一个空格，开始你的推理', 'Choose an empty cell to begin')
-              ) : (
-                `${cellLocation(selected, lang)} · ${selectedNotes.length ? say('候选数 ', 'Notes ') + selectedNotes.join('、') : noteMode ? say('笔记模式', 'Notes on') : say('点击数字填写', 'Tap a number to fill')}`
-              )}
             </div>
           </section>
           <section
@@ -765,19 +771,9 @@ export default function IndexPage() {
                   </>
                 )}
               </div>
-              {!message && (
-                <span>
-                  {hint
-                    ? say(
-                        '理解之后，答案由你亲手填写。',
-                        'Understand it, then make the move yourself.',
-                      )
-                    : say(
-                        '先观察，再落笔。',
-                        'Observe first. Make your next move.',
-                      )}
-                </span>
-              )}
+              {!message && (hint ? (
+                <span>{say('理解之后，答案由你亲手填写。', 'Understand it, then make the move yourself.')}</span>
+              ) : <div className="selection-caption">{selectionCaption}</div>)}
             </div>
           </section>
         </div>
