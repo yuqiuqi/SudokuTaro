@@ -1,4 +1,4 @@
-name: Deploy SudokuTaro to GitHub Pages
+name: Deploy Fangcun Sudoku to GitHub Pages
 
 on:
   push:

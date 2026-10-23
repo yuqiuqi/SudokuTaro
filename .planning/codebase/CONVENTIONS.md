@@ -64,7 +64,7 @@
 **Framework:** `console` only for diagnostics.
 
 **Patterns:**
-- Prefix `console.log` with `[SudokuTaro:diag]` via `logRuntimeDiagnostics` in `src/utils/devDiagnostics.ts` (H5 boot debugging). Not used for production logging pipelines.
+- Prefix `console.log` with `[FangcunSudoku:diag]` via `logRuntimeDiagnostics` in `src/utils/devDiagnostics.ts` (H5 boot debugging). Not used for production logging pipelines.
 
 ## Comments
 

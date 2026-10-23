@@ -1,6 +1,6 @@
 # GitHub Pages 在线试玩部署
 
-此仓库构建 **H5 网页**，GitHub Pages 已启用。在线试玩：[SudokuTaro](https://yuqiuqi.github.io/SudokuTaro/)。
+此仓库构建 **H5 网页**，GitHub Pages 已启用。在线试玩：[方寸数独](https://yuqiuqi.github.io/SudokuTaro/)。
 
 ## 当前部署与后续更新
 

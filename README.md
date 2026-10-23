@@ -1,4 +1,6 @@
-# 方寸数独
+# 方寸数独 · Fangcun Sudoku
+
+**简体中文** | [English](README.en.md)
 
 方寸之间，专注推演。基于 [Taro 4](https://taro.zone/) + React 18 + TypeScript，**仅输出 H5**（浏览器），已移除微信/抖音小程序与微信小游戏子工程。
 （若你需要 **React Native** 或原生 App，需另起 RN/Expo 工程；本仓不是 RN 项目。）
@@ -7,6 +9,10 @@
 ![Taro](https://img.shields.io/badge/Taro-4.3.0-07c160)
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-7.0.2-3178c6?logo=typescript&logoColor=white)
+
+## v1.2.5 · 双语文档与品牌统一
+
+中文与英文 README 现在可相互切换；产品名称统一为「方寸数独 · Fangcun Sudoku」，兼容原有链接和存档。仓库安全配置与权限边界已整理，实际状态见 [安全说明](docs/REPOSITORY_SECURITY.md)。本轮记录见 [v1.2.5 更新说明](docs/releases/v1.2.5.md)。
 
 ## v1.2.4 · 新手图解与清晰操作
 
@@ -22,7 +28,7 @@
 |---|---|
 | ![新局入口与留有间隔的工具键](docs/screenshots/guide-phone-393x720.png) | ![明确的语言选项与振动不可用说明](docs/screenshots/guide-settings-393x720.png) |
 
-截图来自本轮 Pages 子路径生产构建的回环 Chromium：主界面为实际生成的中等新局（32 个给定数）；设置图模拟无 Vibration API 的状态，不作为 iOS 真机实测。本轮类型检查、26 项逻辑测试及根路径／Pages 完整浏览器回归均通过。变更与验证范围见 [v1.2.4 更新说明](docs/releases/v1.2.4.md)，适配规则见 [自适应设计](docs/RESPONSIVE_DESIGN.md)。远端构建、部署与正式发布状态以 [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions)、[GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases) 和 [PR 记录](https://github.com/yuqiuqi/SudokuTaro/pulls) 为准。
+截图来自 v1.2.4 的 Pages 子路径生产构建的回环 Chromium：主界面为实际生成的中等新局（32 个给定数）；设置图模拟无 Vibration API 的状态，不作为 iOS 真机实测。v1.2.4 的类型检查、26 项逻辑测试及根路径／Pages 完整浏览器回归均通过。变更与验证范围见 [v1.2.4 更新说明](docs/releases/v1.2.4.md)，适配规则见 [自适应设计](docs/RESPONSIVE_DESIGN.md)。远端构建、部署与正式发布状态以 [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions)、[GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases) 和 [PR 记录](https://github.com/yuqiuqi/SudokuTaro/pulls) 为准。
 
 ## 功能概览
 
@@ -114,6 +120,12 @@ PAGES_BUILD=true npm run test:browser
 
 协作者先阅读 [AGENTS.md](AGENTS.md) 和 [CONTEXT.md](CONTEXT.md)。依赖维护与 Taro 兼容约束见 [依赖升级记录](docs/DEPENDENCY_UPGRADE.md)。
 
+## 仓库保护与源码访问
+
+本仓库保持公开，因此无法禁止克隆、下载或复制源码。主分支保护用于限制推送和合并，不提供源码保密；许可证也不是下载拦截措施。
+
+本次连接对 main 保护和仓库简介更新均收到 GitHub 403，尚未应用。具体配置、所需 Administration 权限与管理员操作／核验方式见 [仓库安全说明](docs/REPOSITORY_SECURITY.md)。配置文件准备好不等于已生效。
+
 ## 常见问题
 
 - **PowerShell 无法运行 npm**：确认 Node 已加入 PATH，或使用 `npm.cmd`；执行策略限制 `.ps1` 时可使用 cmd。
@@ -122,7 +134,7 @@ PAGES_BUILD=true npm run test:browser
 
 ## 许可证
 
-本仓库采用 [**CC BY-NC-ND 4.0**](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.zh-Hans)（署名-非商业性使用-禁止演绎）：允许在保留署名的前提下**非商业地分享**；**禁止**改编、衍生（二次编辑）及**商业使用/贩卖**。完整条款见仓库根目录 [`LICENSE`](./LICENSE)。
+本仓库采用 [**CC BY-NC-ND 4.0**](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.zh-Hans)（署名-非商业性使用-禁止演绎）：依条款允许**非商业复制和分享原作**，须保留署名；可为非商业目的制作和复制改编材料，但**不得分享改编材料**，商业使用不获本许可授权。完整条款见仓库根目录 [`LICENSE`](./LICENSE)。
 
 > 说明：CC 许可常用于作品与文档；若你需将代码以典型「开源软件」方式再分发，请自行评估是否与本许可兼容，必要时咨询法律专业人士。
 

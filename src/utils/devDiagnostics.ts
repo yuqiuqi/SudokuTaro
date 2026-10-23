@@ -1,6 +1,6 @@
 import Taro from '@tarojs/taro'
 
-const PREFIX = '[SudokuTaro:diag]'
+const PREFIX = '[FangcunSudoku:diag]'
 
 export type BootDiag = {
   at: string

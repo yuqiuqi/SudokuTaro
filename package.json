@@ -1,9 +1,9 @@
 {
-  "name": "SudokuTaro",
-  "version": "1.2.4",
+  "name": "fangcun-sudoku",
+  "version": "1.2.5",
   "license": "CC-BY-NC-ND-4.0",
   "private": true,
-  "description": "数独 — Taro 4 + React，仅 H5（浏览器）",
+  "description": "方寸数独 · Fangcun Sudoku — Taro 4 + React，仅 H5（浏览器）",
   "templateInfo": {
     "name": "default",
     "typescript": true,
@@ -19,7 +19,7 @@
   },
   "taroConfig": {
     "version": "1.0.0",
-    "desc": "SudokuTaro CI upload"
+    "desc": "Fangcun Sudoku CI upload"
   },
   "browserslist": [
     "defaults and fully supports es6-module",

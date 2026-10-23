@@ -1,4 +1,4 @@
-# Roadmap: SudokuTaro
+# Roadmap: 方寸数独
 
 **Created:** 2026-04-22  
 **Granularity:** Standard  
