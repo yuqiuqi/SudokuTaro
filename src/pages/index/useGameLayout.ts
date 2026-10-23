@@ -74,7 +74,9 @@ export function useGameLayout() {
           ? 16
           : 24
       // Very short screens keep a readable side panel instead of narrowing the whole stack.
-      const controlMinimum = h < 440 ? 150 : 210
+      // At the narrowest landscape width, retain the 90px board and both
+      // outer gutters by sharing the remaining width with the control tray.
+      const controlMinimum = Math.min(h < 440 ? 150 : 210, Math.max(0, w - hinge - 90))
       // Stable chrome + caption budgets mirror the corresponding Sass modes.
       let board =
         mode === 'wide'
@@ -91,7 +93,9 @@ export function useGameLayout() {
                 w,
                 h - 266,
               )
-      let columns: string | undefined,
+      let columns: string | undefined = mode === 'wide' && modeHeight < 496
+          ? `${Math.max(90, Math.floor(board))}px minmax(${controlMinimum}px, 300px)`
+          : undefined,
         rows: string | undefined,
         direction: string | undefined
       if (vertical) {

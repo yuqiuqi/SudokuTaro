@@ -8,8 +8,8 @@
   width: 100%;
   height: var(--viewport-height, 100dvh);
   padding: max(20px, env(safe-area-inset-top))
-    max(6px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
-    max(6px, env(safe-area-inset-left));
+    max(14px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
   color: var(--ink);
   font: 14px $ui-font-stack;
   background: var(--background);
@@ -161,10 +161,14 @@
   flex-shrink: 0;
   padding: 8px;
   border-radius: 24px;
+  background: linear-gradient(145deg, #ffffff, #e0e8f3);
+  // Solid lower edge, contact shadow, then ambient shadow: a level physical slab.
   box-shadow:
-    0 14px 28px -6px rgba(51, 74, 110, 0.13),
-    0 2px 6px rgba(51, 74, 110, 0.05),
-    inset 0 1px 1px rgba(255, 255, 255, 0.95);
+    0 4px 0 #aab9cf,
+    0 5px 5px rgba(51, 74, 110, 0.22),
+    0 14px 24px -6px rgba(51, 74, 110, 0.2),
+    inset 1px 1px 1px #fff,
+    inset -1px -1px 1px rgba(122, 146, 178, 0.25);
 }
 .sudoku-board {
   // Keep the outer arc inside a corner cell even on very small boards.
@@ -181,6 +185,7 @@
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--panel-border);
   border-radius: var(--grid-radius);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.95), -1px -1px 2px rgba(71, 91, 124, 0.16);
   overflow: hidden;
 }
 .sudoku-app .sudoku-cell {
@@ -192,7 +197,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 0;
-  background: rgba(255, 255, 255, 0.82);
+  background: linear-gradient(145deg, #fff, #f5f7fc);
+  // Shallow bevels keep the grid recessed without making givens look clickable.
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.95), inset -0.6px -0.6px 0 rgba(125, 145, 177, 0.12);
   border-right: 0.5px solid var(--line);
   border-bottom: 0.5px solid var(--line);
   transition:
@@ -242,6 +249,7 @@
   }
 }
 .cell-digit {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
   font-size: calc(var(--board-size) / 16);
   line-height: 1;
   font-weight: 500;
@@ -312,7 +320,8 @@
   font-size: 12px;
   font-weight: 500;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.6);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(230, 237, 248, 0.8));
+  box-shadow: 0 1px 0 rgba(151, 170, 197, 0.45), inset 1px 1px 0 rgba(255, 255, 255, 0.95);
 }
 .sudoku-app .tools .is-active {
   color: var(--accent);
@@ -338,7 +347,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.66);
+  background: linear-gradient(145deg, #fff, #e8eef9);
+  box-shadow: var(--key-shadow);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
   color: var(--key-ink);
   border: 0.6px solid rgba(161, 179, 204, 0.35);
   border-radius: 12px;
@@ -346,6 +357,7 @@
   font-weight: 500;
   transition:
     background-color 100ms ease,
+    box-shadow 100ms ease,
     transform 100ms ease;
 }
 .number-key:nth-child(6) {
@@ -354,10 +366,12 @@
 .sudoku-app .number-key.is-noted {
   color: var(--accent);
   background: var(--wash);
-  box-shadow: inset 0 0 0 1.5px var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--accent), var(--key-shadow);
 }
 .sudoku-app .number-key:not(:disabled):active {
-  transform: scale(0.95);
+  transform: translateY(1px);
+  box-shadow: var(--key-pressed-shadow);
+  text-shadow: none;
   color: var(--white);
   background: var(--accent);
 }
@@ -468,8 +482,8 @@
 }
 .layout-short {
   padding: max(12px, env(safe-area-inset-top))
-    max(6px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
-    max(6px, env(safe-area-inset-left));
+    max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
   .game-shell {
     gap: 6px;
   }
@@ -678,8 +692,8 @@
     );
   }
   padding: max(12px, env(safe-area-inset-top))
-    max(6px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
-    max(6px, env(safe-area-inset-left));
+    max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
   .side-intro {
     display: none;
   }
@@ -1160,4 +1174,13 @@
 
 .hint-card .hint-single-action {
   grid-template-columns: 1fr;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sudoku-app .number-key {
+    transition: none;
+  }
+  .sudoku-app .number-key:not(:disabled):active {
+    transform: none;
+  }
 }

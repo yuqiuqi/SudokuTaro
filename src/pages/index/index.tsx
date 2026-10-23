@@ -517,7 +517,7 @@ export default function IndexPage() {
     >
       <div className="game-shell" ref={layout.ref}>
         <header className="topbar">
-          <span className="brand">SudokuTaro</span>
+          <span className="brand">方寸数独</span>
           <nav aria-label={say('游戏菜单', 'Game menu')}>
             <button
               type="button"

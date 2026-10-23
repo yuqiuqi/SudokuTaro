@@ -1,16 +1,39 @@
 export type Difficulty = 'easy' | 'medium' | 'hard'
 
+// New-game clue bands are disjoint; saved games keep their original puzzles.
+export const GIVEN_RANGES: Record<Difficulty, readonly [number, number]> = {
+  easy: [36, 40],
+  medium: [31, 35],
+  hard: [26, 30],
+}
+
 export function getHoleCount(difficulty: Difficulty): number {
-  switch (difficulty) {
-    case 'easy':
-      return 45 + Math.floor(Math.random() * 6)
-    case 'medium':
-      return 50 + Math.floor(Math.random() * 6)
-    case 'hard':
-      return 55 + Math.floor(Math.random() * 11)
-    default:
-      return 45
-  }
+  const [min, max] = GIVEN_RANGES[difficulty]
+  return 81 - max + Math.floor(Math.random() * (max - min + 1))
+}
+
+/** A verified unique 30-clue puzzle bounds generation even if digging stalls. */
+export function createFallbackPuzzle(difficulty: Difficulty): {board: number[][]; solution: number[][]} {
+  const puzzle = [
+    '530070000', '600195000', '098000060',
+    '800060003', '400803001', '700020006',
+    '060000280', '000419005', '000080079',
+  ]
+  const solved = [
+    '534678912', '672195348', '198342567',
+    '859761423', '426853791', '713924856',
+    '961537284', '287419635', '345286179',
+  ]
+  // A digit permutation preserves the known puzzle's constraints and uniqueness.
+  const digits = shuffleInPlace([1, 2, 3, 4, 5, 6, 7, 8, 9])
+  const rename = (rows: string[]) => rows.map((row) => [...row].map((n) => Number(n) ? digits[Number(n) - 1] : 0))
+  const board = rename(puzzle), solution = rename(solved)
+  const [min, max] = GIVEN_RANGES[difficulty]
+  const target = Math.max(30, min + Math.floor(Math.random() * (max - min + 1)))
+  const empty = shuffleInPlace(Array.from({length: 81}, (_, i) => i).filter((i) => !board[Math.floor(i / 9)][i % 9]))
+  // Adding correct clues to a unique puzzle cannot introduce another solution.
+  for (const i of empty.slice(0, target - 30)) board[Math.floor(i / 9)][i % 9] = solution[Math.floor(i / 9)][i % 9]
+  return {board, solution}
 }
 
 function shuffleInPlace<T>(a: T[]): T[] {

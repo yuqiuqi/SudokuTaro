@@ -1,5 +1,7 @@
 import {
   collectConflictIndices,
+  createFallbackPuzzle,
+  GIVEN_RANGES,
   digHoles,
   generateSolution,
   getHoleCount,
@@ -65,10 +67,20 @@ export function completedUnits(board: number[][]): number[] {
   )
 }
 export function createGame(difficulty: Difficulty = 'medium'): Game {
-  const solution = generateSolution(),
-    board = copy(solution),
-    initial = copy(solution)
-  digHoles(board, initial, getHoleCount(difficulty))
+  const [min, max] = GIVEN_RANGES[difficulty]
+  let puzzle: {solution: number[][]; board: number[][]} | undefined
+  // Check actual clues after digging: uniqueness may prevent the exact target.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const solution = generateSolution(), board = copy(solution)
+    digHoles(board, copy(solution), getHoleCount(difficulty))
+    const given = board.flat().filter(Boolean).length
+    if (given >= min && given <= max) {
+      puzzle = {solution, board}
+      break
+    }
+  }
+  const {solution, board} = puzzle || createFallbackPuzzle(difficulty)
+  const initial = copy(board)
   return {
     solution,
     board,
