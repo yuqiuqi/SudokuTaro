@@ -23,7 +23,10 @@ import {
   getRewardedHintProvider,
   type RewardedHintProvider,
 } from '../../utils/hintAccess'
+import {tutorial} from '../../utils/tutorial'
 import {GameIcon} from './GameIcon'
+import {LanguageSwitch} from './LanguageSwitch'
+import {RulesDiagram} from './RulesDiagram'
 import {useGameLayout} from './useGameLayout'
 import {VictoryResult, VictorySeams, VictorySparkles} from './VictoryResult'
 import './index.scss'
@@ -70,44 +73,6 @@ function readRecords(): Records {
   }
   return {wins: 0, best: {}}
 }
-const tutorial = {
-  zh: [
-    [
-      '一个目标，三条规则',
-      '每行、每列、每个 3 × 3 宫，都要填入 1～9，且各出现一次。题目给定的数字不能修改。',
-    ],
-    [
-      '记录你的可能性',
-      '先选择空格，再开启「笔记」。点击 1～9 添加或取消候选数；同一格可以记录多个数字。笔记不算正式答案。',
-    ],
-    [
-      '从排除开始',
-      '观察目标格的行、列、宫，排除已经出现的数字。当只剩一种可能，就关闭笔记模式，亲手填写。',
-    ],
-    [
-      '需要一点启发？',
-      '提示先定位，再提问，最后解释推理。它不会自动填数。撤销和擦除可自由使用；填入冲突数字时会标出相关位置。',
-    ],
-  ],
-  en: [
-    [
-      'One goal. Three rules.',
-      'Every row, column and 3 × 3 box must contain each digit from 1 to 9 exactly once. Original clues cannot be changed.',
-    ],
-    [
-      'Record the possibilities',
-      'Select an empty cell and turn on Notes. Tap 1–9 to add or remove candidates. Multiple notes can share a cell; they are not final answers.',
-    ],
-    [
-      'Start by eliminating',
-      'Look at the row, column and box. Eliminate digits already present. When only one possibility remains, turn Notes off and enter it yourself.',
-    ],
-    [
-      'A little inspiration',
-      'Hints locate a cell, ask a question, then explain the reasoning. They never fill it for you. Undo and Erase are free; conflicting entries highlight the related cells.',
-    ],
-  ],
-}
 
 export default function IndexPage() {
   const [game, setGame] = useState<Game>(restore)
@@ -120,6 +85,7 @@ export default function IndexPage() {
       return 'zh'
     }
   })
+  const vibrationSupported = typeof navigator.vibrate === 'function'
   const [vibration, setVibration] = useState(() => {
     try {
       return localStorage.getItem('sudokutaro:vibration') === 'true'
@@ -226,7 +192,7 @@ export default function IndexPage() {
     setNewBest(best)
     setHint(null)
     setMessage('')
-    if (vibration) navigator.vibrate?.([18, 45, 28])
+    if (vibrationSupported && vibration) navigator.vibrate([18, 45, 28])
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) setModal('won')
     else setCelebration('wave')
     try {
@@ -234,7 +200,7 @@ export default function IndexPage() {
     } catch {
       /* Keep the in-session achievement. */
     }
-  }, [game.won, game.seconds, game.difficulty, records, vibration])
+  }, [game.won, game.seconds, game.difficulty, records, vibration, vibrationSupported])
   const finishCelebration = useCallback(() => {
     setCelebration(null)
     setModal((current) => (current === null ? 'won' : current))
@@ -300,7 +266,7 @@ export default function IndexPage() {
       setMessage('')
       setGame(result.game)
       gameRef.current = result.game
-      if (vibration) navigator.vibrate?.(10)
+      if (vibrationSupported && vibration) navigator.vibrate(10)
       const newUnits = completedUnits(result.game.board).filter(
         (u) => !old.celebrated.includes(u),
       )
@@ -320,7 +286,7 @@ export default function IndexPage() {
         setMessage(say('这一格，由你解开', 'You worked this one out.'))
       }
     },
-    [selected, noteMode, vibration, say],
+    [selected, noteMode, vibration, vibrationSupported, say],
   )
   const undo = useCallback(() => {
     clearTimeout(conflictTimer.current)
@@ -455,7 +421,8 @@ export default function IndexPage() {
     [selectedNotes],
   )
   const legalDigits = availableDigits(game, selected, noteMode)
-  const changeLanguage = () => setLang((l) => (l === 'zh' ? 'en' : 'zh'))
+  const lesson = tutorial[lang][ruleStep]
+  const lastLesson = ruleStep === tutorial[lang].length - 1
 
   const renderedCells = useMemo(
     () =>
@@ -566,6 +533,15 @@ export default function IndexPage() {
         <header className="topbar">
           <span className="brand">方寸数独</span>
           <nav aria-label={say('游戏菜单', 'Game menu')}>
+            <button
+              type="button"
+              className="text-button new-game-button"
+              aria-label={say('新开一局', 'New game')}
+              onClick={() => setModal('new')}
+            >
+              <span className="new-game-label">{say('新开一局', 'New game')}</span>
+              <span className="new-game-short" aria-hidden="true">{say('新局', 'New')}</span>
+            </button>
             <button
               type="button"
               className="text-button"
@@ -837,13 +813,7 @@ export default function IndexPage() {
             <DialogFocus context={modal} onClose={() => setModal(null)} />
             {modal !== 'won' && (
               <div className="dialog-top">
-                <button
-                  type="button"
-                  className="text-button language-button"
-                  onClick={changeLanguage}
-                >
-                  中文 / EN
-                </button>
+                <LanguageSwitch lang={lang} onChange={setLang} />
                 <button
                   type="button"
                   className="text-button close-button"
@@ -857,20 +827,13 @@ export default function IndexPage() {
             {modal === 'rules' && (
               <>
                 <div className="eyebrow">
-                  {say('学会数独', 'LEARN SUDOKU')} · {ruleStep + 1} / 4
+                  {say('学会数独', 'LEARN SUDOKU')} · <span className="rules-progress">{ruleStep + 1} / {tutorial[lang].length}</span>
                 </div>
-                <h1 id="dialog-title">{tutorial[lang][ruleStep][0]}</h1>
-                <div
-                  className={`rule-illustration rule-step-${ruleStep}`}
-                  aria-hidden="true"
-                >
-                  {DIGITS.map((n) => (
-                    <span key={n} className={n === 5 ? 'accent' : ''}>
-                      {ruleStep === 1 && n > 3 ? '' : n}
-                    </span>
-                  ))}
+                <h1 id="dialog-title">{lesson.title}</h1>
+                <div className="tutorial-body">
+                  <RulesDiagram kind={lesson.diagram} lang={lang} />
+                  <p className="dialog-copy">{lesson.body}</p>
                 </div>
-                <p className="dialog-copy">{tutorial[lang][ruleStep][1]}</p>
                 <div className="dialog-actions">
                   <button
                     type="button"
@@ -887,10 +850,10 @@ export default function IndexPage() {
                     type="button"
                     className="primary-button"
                     onClick={() =>
-                      ruleStep < 3 ? setRuleStep((s) => s + 1) : setModal(null)
+                      !lastLesson ? setRuleStep((s) => s + 1) : setModal(null)
                     }
                   >
-                    {ruleStep < 3
+                    {!lastLesson
                       ? say('继续', 'Next')
                       : say('我来试试', 'Let me try')}
                   </button>
@@ -899,24 +862,29 @@ export default function IndexPage() {
             )}
             {modal === 'settings' && (
               <>
-                <div className="eyebrow">SUDOKUTARO</div>
+                <div className="eyebrow">方寸数独</div>
                 <h1 id="dialog-title">
                   {say('按你的节奏', 'At your own pace')}
                 </h1>
-                <div className="settings-line">
+                <div className="settings-line settings-vibration">
                   <span>{say('轻触振动', 'Touch vibration')}</span>
                   <button
                     type="button"
-                    className={`toggle ${vibration ? 'toggle-on' : ''}`}
+                    className={`toggle ${vibrationSupported && vibration ? 'toggle-on' : ''}`}
+                    disabled={!vibrationSupported}
+                    aria-describedby={!vibrationSupported ? 'vibration-unsupported' : undefined}
                     role="switch"
-                    aria-checked={vibration}
+                    aria-checked={vibrationSupported && vibration}
                     aria-label={say('轻触振动', 'Touch vibration')}
                     onClick={() => setVibration((v) => !v)}
                   >
                     <span />
                   </button>
                 </div>
-                <div className="settings-line">
+                {!vibrationSupported && <p id="vibration-unsupported" className="vibration-support-copy">
+                  {say('当前浏览器不支持网页振动。', 'This browser does not support web vibration.')}
+                </p>}
+                <div className="settings-line settings-record">
                   <span>{say('已完成', 'Completed')}</span>
                   <strong>
                     {records.wins} {say('局', 'games')}
@@ -965,8 +933,8 @@ export default function IndexPage() {
                 </h1>
                 <p className="dialog-copy">
                   {say(
-                    '开始新局会替换当前进度。每道题均验证唯一解；难度以留空数量区分。',
-                    'A new game replaces this progress. Each puzzle has one verified solution; levels vary the number of empty cells.',
+                    '选择难度会生成新题并替换当前进度；关闭弹窗可继续原局。每题均验证唯一解，难度以留空数量区分。',
+                    'Choosing a difficulty creates a puzzle and replaces this progress. Close to keep playing. Each puzzle has one verified solution; levels vary empty cells.',
                   )}
                 </p>
                 <div className="difficulty-options">
@@ -999,7 +967,7 @@ export default function IndexPage() {
                 moves={game.moves}
                 usedNotes={game.usedNotes}
                 newBest={newBest}
-                onLanguage={changeLanguage}
+                onLanguage={setLang}
                 onClose={() => setModal(null)}
                 onViewBoard={() => setModal(null)}
                 onPlayAgain={() => newGame(game.difficulty)}

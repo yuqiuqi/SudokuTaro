@@ -69,6 +69,250 @@ const server = http.createServer((req, res) => {
   })
 })
 const errors = []
+async function setLanguage(p, en) {
+  const group = p.locator('.dialog .language-switch')
+  assert.equal(await group.count(), 1, 'each open dialog has one language selector')
+  const target = group.getByRole('button', {name: en ? 'English' : '中文', exact: true})
+  await target.click()
+  assert.equal(await target.getAttribute('aria-pressed'), 'true')
+  assert.equal(await group.getByRole('button', {name: en ? '中文' : 'English', exact: true}).getAttribute('aria-pressed'), 'false')
+}
+async function languageOptions(p, en, normal = false) {
+  await setLanguage(p, en)
+  const target = p.locator('.dialog .language-switch').getByRole('button', {name: en ? 'English' : '中文', exact: true})
+  const state = await p.locator('.dialog .language-switch').evaluate((group) => {
+    const buttons = [...group.querySelectorAll('button')]
+    return buttons.map((button) => {
+      const mark = button.querySelector('.language-switch__check')
+      return {pressed: button.getAttribute('aria-pressed'), height: button.getBoundingClientRect().height,
+        border: getComputedStyle(button).borderStyle, mark: mark && getComputedStyle(mark).visibility !== 'hidden' && getComputedStyle(mark).display !== 'none' && Number(getComputedStyle(mark).opacity) > 0 && !!(mark.textContent.trim() || mark.querySelector('svg')?.getBoundingClientRect().width)}
+    })
+  })
+  assert.equal(state.length, 2)
+  assert.ok(state.find(option => option.pressed === 'true').mark, 'current language has a visible non-color check mark')
+  assert.ok(state.every(option => option.height >= 44), 'language options have 44px targets at every tested size')
+  const before = await p.locator('.dialog').innerText()
+  await target.click()
+  assert.equal(await p.locator('.dialog').innerText(), before, 'choosing current language is a no-op')
+  assert.equal(await p.evaluate(() => localStorage.getItem('sudokutaro:language')), en ? 'en' : 'zh')
+  assert.equal(await p.getByRole('button', {name: en ? 'Settings' : '设置', exact: true}).count(), 1, 'underlying page language changes with dialog')
+}
+async function walkRules(p, en, label) {
+  const progress = async () => (await p.locator('.rules-progress').innerText()).match(/(\d+)\s*\/\s*(\d+)/).slice(1).map(Number)
+  const [first, total] = await progress()
+  assert.equal(first, 1)
+  assert.ok(total >= 7, 'beginner guide covers at least seven pages')
+  await p.getByRole('button', {name: en ? 'Back to game' : '回到游戏', exact: true}).click()
+  assert.equal(await p.locator('.dialog-rules').count(), 0, 'first guide page can return to game')
+  await p.getByRole('button', {name: en ? 'Rules' : '规则', exact: true}).click()
+  assert.deepEqual(await progress(), [1, total])
+  const seen = new Set()
+  for (let step = 1; step <= total; step++) {
+    assert.deepEqual(await progress(), [step, total])
+    await dialogFits(p, `${label} page ${step}/${total}`)
+    const guideHeader = await p.locator('.dialog-rules').evaluate(n => {
+      const box=s=>n.querySelector(s).getBoundingClientRect();const progress=box('.eyebrow'),language=box('.language-switch'),card=n.getBoundingClientRect();
+      return {inside:progress.left>=card.left&&progress.right<=card.right&&progress.top>=card.top&&progress.bottom<=card.bottom,
+        separate:progress.right<=language.left||progress.left>=language.right||progress.bottom<=language.top||progress.top>=language.bottom}
+    })
+    assert.ok(guideHeader.inside&&guideHeader.separate, `${label} progress is visible without covering language choices`)
+    const content = await p.locator('.dialog-rules').evaluate((dialog) => {
+      const title = dialog.querySelector('h1'), body = dialog.querySelector('.dialog-copy')
+      return {title: title.textContent, body: body.textContent, fits: [title, body].every(n => n.scrollWidth <= n.clientWidth + 1 && n.scrollHeight <= n.clientHeight + 1)}
+    })
+    assert.ok(content.fits && content.title.length > 0 && content.body.length >= 20, `${label} full readable teaching content`)
+    assert.equal(/[\u3400-\u9fff]/.test(content.body.replace(/中文/g, '')), !en, 'teaching prose uses selected language; English may name the Chinese option')
+    assert.ok(!seen.has(content.title), 'each guide page has a distinct teaching topic')
+    seen.add(content.title)
+    const diagram = p.locator('.rules-diagram')
+    const kind = await diagram.getAttribute('data-kind')
+    if (['row', 'column', 'box'].includes(kind)) {
+      const cells = await diagram.locator('[data-row][data-column]').evaluateAll(nodes => nodes.map(n => ({row:Number(n.dataset.row), column:Number(n.dataset.column), active:n.classList.contains('is-highlight')})))
+      assert.equal(cells.length, 81, `${kind} uses a full Sudoku diagram`)
+      assert.equal(new Set(cells.map(cell => `${cell.row},${cell.column}`)).size, 81)
+      const highlighted = cells.filter(cell => cell.active)
+      assert.equal(highlighted.length, 9)
+      const rows = new Set(highlighted.map(cell => cell.row)), columns = new Set(highlighted.map(cell => cell.column))
+      if (kind === 'row') {assert.equal(rows.size, 1);assert.equal(columns.size, 9)}
+      if (kind === 'column') {assert.equal(rows.size, 9);assert.equal(columns.size, 1)}
+      if (kind === 'box') {
+        assert.equal(rows.size, 3);assert.equal(columns.size, 3)
+        assert.equal(new Set(highlighted.map(cell => `${Math.floor(cell.row / 3)},${Math.floor(cell.column / 3)}`)).size, 1)
+      }
+    } else assert.ok(await diagram.innerText(), `${kind} operation has a visible illustration`)
+    if (step > 1) {
+      await p.getByRole('button', {name: en ? 'Back' : '上一步', exact: true}).click()
+      assert.deepEqual(await progress(), [step - 1, total])
+      await p.getByRole('button', {name: en ? 'Next' : '继续', exact: true}).click()
+      assert.deepEqual(await progress(), [step, total])
+      assert.equal(await p.locator('.dialog-rules h1').innerText(), content.title)
+    }
+    await p.getByRole('button', {name: step < total ? (en ? 'Next' : '继续') : (en ? 'Let me try' : '我来试试'), exact: true}).click()
+  }
+  assert.equal(await p.locator('.dialog-rules').count(), 0)
+}
+async function vibrationCapabilityRegressions(browser, url) {
+  // These pages simulate API availability and calls, never physical haptics.
+  for (const supported of [false, true]) {
+    const p = await browser.newPage({viewport:{width:390,height:720},hasTouch:true})
+    p.on('pageerror', error => errors.push(error.message))
+    try {
+      await p.addInitScript(({supported,game,KEY}) => {
+        window.vibrationCalls = []
+        Object.defineProperty(navigator,'vibrate',{configurable:true,value:supported ? (pattern) => {window.vibrationCalls.push(pattern);return true} : undefined})
+        if (!sessionStorage.getItem('vibration-seeded')) {
+          localStorage.setItem(KEY,JSON.stringify(game))
+          localStorage.setItem('sudokutaro:language','zh')
+          localStorage.setItem('sudokutaro:vibration',supported?'false':'true')
+          sessionStorage.setItem('vibration-seeded','1')
+        }
+      },{supported,game,KEY})
+      await p.goto(url);await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,url)
+      await p.getByRole('button',{name:'设置',exact:true}).click()
+      const toggle = p.getByRole('switch',{name:'轻触振动',exact:true})
+      if (!supported) {
+        assert.ok(await toggle.isDisabled(),'absent Vibration API disables switch despite stored true preference')
+        assert.equal(await toggle.getAttribute('aria-checked'),'false')
+        const descriptionId = await toggle.getAttribute('aria-describedby')
+        assert.ok(descriptionId && await p.locator(`#${descriptionId}`).isVisible(), 'unavailable vibration has an associated visible explanation')
+        assert.match(await p.locator('.dialog-settings').innerText(),/不支持.*振动/)
+        await dialogFits(p,'unsupported vibration settings zh')
+        await setLanguage(p,true)
+        assert.match(await p.locator('.dialog-settings').innerText(),/does not support.*vibration|vibration.*not supported/i)
+        await dialogFits(p,'unsupported vibration settings en')
+        for (const [width,height] of [[480,240],[568,240],[280,320],[390,400]]) {
+          await p.setViewportSize({width,height});await p.waitForTimeout(120)
+          await languageOptions(p,true)
+          await dialogFits(p,`unsupported vibration settings en ${width}x${height}`)
+        }
+        await p.setViewportSize({width:390,height:720});await p.waitForTimeout(120)
+        await p.getByRole('button',{name:'Close',exact:true}).click()
+        await p.locator('[data-cell="2"]').click();await p.locator('[data-number="4"]').click()
+        assert.equal(await p.locator('[data-cell="2"] .cell-digit').innerText(),'4')
+        assert.deepEqual(await p.evaluate(()=>window.vibrationCalls),[])
+        assert.equal(await p.evaluate(()=>localStorage.getItem('sudokutaro:vibration')),'true','unsupported browser preserves saved preference')
+      } else {
+        assert.ok(await toggle.isEnabled())
+        assert.equal(await toggle.getAttribute('aria-checked'),'false')
+        await toggle.click()
+        assert.equal(await toggle.getAttribute('aria-checked'),'true')
+        await p.getByRole('button',{name:'关闭',exact:true}).click()
+        await p.evaluate(()=>{window.vibrationCalls=[]})
+        await p.locator('[data-cell="2"]').click()
+        const disabled = p.locator('[data-number="5"]')
+        assert.ok(await disabled.isDisabled())
+        const rect = await disabled.boundingBox()
+        await p.mouse.click(rect.x+rect.width/2,rect.y+rect.height/2)
+        assert.deepEqual(await p.evaluate(()=>window.vibrationCalls),[],'disabled number does not call vibration API')
+        await p.locator('[data-number="4"]').click()
+        assert.equal(await p.locator('[data-cell="2"] .cell-digit').innerText(),'4')
+        assert.ok((await p.evaluate(()=>window.vibrationCalls)).length>0,'legal fill calls supported vibration API after user opts in')
+      }
+    } finally {await p.close()}
+  }
+}
+async function toolGapRegressions(p) {
+  for (const [width,height] of [[390,720],[320,480],[280,320],[480,240],[844,390]]) {
+    await p.setViewportSize({width,height});await p.waitForTimeout(80)
+    const controls = await p.locator('.tools button').evaluateAll(nodes => nodes.map(n => ({text:n.textContent,...n.getBoundingClientRect().toJSON()})))
+    assert.equal(controls.length,4)
+    const points = []
+    for(let index=1;index<controls.length;index++) {
+      const left=controls[index-1],right=controls[index]
+      const sameRow=Math.abs(left.top-right.top)<.5
+      const gap=sameRow ? right.left-left.right : right.top-left.bottom
+      assert.ok(gap>0,`${width}x${height} adjacent tools retain real ${sameRow?'horizontal':'vertical'} gap`)
+      const x=sameRow?(left.right+right.left)/2:Math.max(left.left,right.left)+Math.min(left.width,right.width)/2
+      const y=sameRow?Math.max(left.top,right.top)+Math.min(left.height,right.height)/2:(left.bottom+right.top)/2
+      points.push({x,y})
+    }
+    if(width===390) assert.ok(controls.every(control=>control.height>=44),'ordinary phone tools retain 44px height')
+    const snapshot = () => p.evaluate(KEY=> {
+      const {board,notes,history,moves,hints}=JSON.parse(localStorage.getItem(KEY))
+      return {board,notes,history,moves,hints,pressed:[...document.querySelectorAll('.tools [aria-pressed]')].map(n=>n.getAttribute('aria-pressed')),hintOpen:!!document.querySelector('.hint-card')}
+    },KEY)
+    for(const point of points) {
+      assert.equal(await p.evaluate(({x,y})=>!!document.elementFromPoint(x,y)?.closest('.tools button'),point),false,'visual gap is outside actual tool hit targets')
+      const before=await snapshot()
+      await p.mouse.click(point.x,point.y)
+      assert.deepEqual(await snapshot(),before,'clicking gap does not trigger neighboring tool')
+    }
+    await geometry(p,`tool separation ${width}x${height}`)
+  }
+  await p.setViewportSize({width:390,height:720})
+}
+
+async function guideLanguageRegressions(p, url) {
+  const saved = await p.evaluate(KEY => localStorage.getItem(KEY), KEY)
+  const boardState = () => p.evaluate(KEY => {
+    const {board, initial, solution, difficulty, notes, moves, hints, usedNotes, seconds} = JSON.parse(localStorage.getItem(KEY))
+    return {board, initial, solution, difficulty, notes, moves, hints, usedNotes, seconds}
+  }, KEY)
+  try {
+    for (const [width, height, visible] of [[390,720,720],[320,480,480],[280,320,320],[480,240,240],[390,720,400]]) {
+      await p.setViewportSize({width,height})
+      await p.evaluate(visible => {Object.defineProperty(visualViewport,'height',{configurable:true,value:visible});visualViewport.dispatchEvent(new Event('resize'))},visible)
+      await p.waitForTimeout(80)
+      for (const en of [false,true]) {
+        await p.locator('.topbar nav').getByRole('button',{name:/^(设置|Settings)$/,exact:true}).click()
+        await languageOptions(p,en,width===390&&visible===720)
+        await p.getByRole('button',{name:en?'Close':'关闭',exact:true}).click()
+        const trigger = p.locator('.topbar').getByRole('button',{name:en?'New game':'新开一局',exact:true})
+        const fits = await trigger.evaluate(button => {
+          const r = button.getBoundingClientRect(), header = button.closest('.topbar')
+          const others = [...header.querySelectorAll('.brand,nav button,.metrics')].filter(n => n !== button && !n.contains(button))
+          return r.width>0 && r.height>0 && r.left>=14 && r.right<=innerWidth-14 && r.top>=0 && r.bottom<=visualViewport.height &&
+            others.every(n => {const q=n.getBoundingClientRect();return !(q.left<r.right-.5&&q.right>r.left+.5&&q.top<r.bottom-.5&&q.bottom>r.top+.5)})
+        })
+        assert.ok(fits, `topbar new game visible without overlap ${width}x${height}/${visible}`)
+        const before = await boardState()
+        await trigger.click()
+        await dialogFits(p, 'topbar new game')
+        assert.match(await p.locator('.dialog-new .dialog-copy').innerText(),en?/replac.*progress/i:/替换.*进度/)
+        await languageOptions(p,en,width===390&&visible===720)
+        await p.waitForTimeout(1050)
+        const during = await boardState()
+        assert.deepEqual({...during,seconds:before.seconds},before,'opening new game preserves board and progress')
+        assert.ok(during.seconds >= before.seconds && during.seconds <= before.seconds + 3,'new-game chooser preserves elapsed time')
+        await p.getByRole('button',{name:en?'Close':'关闭',exact:true}).click()
+        assert.ok(await trigger.evaluate(n=>n===document.activeElement),'cancel restores topbar opener focus')
+        assert.deepEqual({...await boardState(),seconds:before.seconds},before,'cancel preserves current game')
+      }
+      // Switch back explicitly for the next viewport's existing Chinese entry.
+      await p.getByRole('button',{name:'Settings',exact:true}).click();await setLanguage(p,false);await p.getByRole('button',{name:'关闭',exact:true}).click()
+      await p.evaluate(()=>{delete visualViewport.height;visualViewport.dispatchEvent(new Event('resize'))})
+    }
+    await p.setViewportSize({width:390,height:720})
+    await p.emulateMedia({reducedMotion:'reduce'})
+    for (const modal of ['rules','settings','new']) {
+      const opener = modal==='new'?p.locator('.new-game-button'):p.getByRole('button',{name:modal==='rules'?'规则':'设置',exact:true})
+      await opener.click()
+      const before = await p.locator('.board-frame').boundingBox()
+      await languageOptions(p,true,true)
+      assert.deepEqual(await p.locator('.board-frame').boundingBox(),before,'language selection does not move board with reduced motion')
+      assert.ok(await p.locator('.language-switch button').evaluateAll(nodes=>nodes.every(n=>getComputedStyle(n).transform==='none')),'reduced motion language options do not translate')
+      await languageOptions(p,false,true)
+      await p.getByRole('button',{name:'关闭',exact:true}).click()
+    }
+    // Persist language via the real selector, then refresh the full page.
+    await p.getByRole('button',{name:'设置',exact:true}).click();await setLanguage(p,true)
+    await p.reload();await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,url)
+    assert.equal(await p.getByRole('button',{name:'Rules',exact:true}).count(),1)
+    await p.getByRole('button',{name:'Settings',exact:true}).click();await languageOptions(p,true,true);await setLanguage(p,false);await p.getByRole('button',{name:'关闭',exact:true}).click()
+    const before = await boardState()
+    await p.locator('.new-game-button').click();await p.getByRole('button',{name:'简单',exact:true}).click()
+    await p.waitForSelector('.dialog',{state:'detached'})
+    const after = await boardState()
+    assert.equal(after.difficulty,'easy')
+    assert.notDeepEqual(after.initial,before.initial,'only explicit difficulty choice replaces puzzle')
+    assert.ok(after.seconds <= 2 && after.moves === 0)
+  } finally {
+    await p.emulateMedia({reducedMotion:'no-preference'})
+    await p.evaluate(({KEY,saved})=>{localStorage.setItem(KEY,saved);localStorage.setItem('sudokutaro:language','zh');delete visualViewport.height;visualViewport.dispatchEvent(new Event('resize'))},{KEY,saved})
+    await p.setViewportSize({width:390,height:720});await p.reload();await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,url)
+  }
+}
+
 async function loadTestFonts(p, url) {
   if (process.env.TEST_FONT_DIR) {
     await p.addStyleTag({
@@ -466,6 +710,7 @@ async function victoryFeedbackRegressions(p, url) {
     }, visible)
     await p.waitForTimeout(80)
     for (const en of [false, true]) {
+      await languageOptions(p, en, width === 390 && visible === 720)
       await dialogFits(
         p,
         `victory ${width}x${height}/${visible} ${en ? 'en' : 'zh'}`,
@@ -543,7 +788,7 @@ async function victoryFeedbackRegressions(p, url) {
       )
       await resultsButton.click()
       await p.waitForSelector('.dialog-won')
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await setLanguage(p, !en)
     }
     await p.evaluate(() => {
       delete visualViewport.height
@@ -821,7 +1066,7 @@ async function singleReviewHintRegression(p, url) {
     await p
       .getByRole('button', {name: en ? 'Settings' : '设置', exact: true})
       .click()
-    await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+    await setLanguage(p, !en)
     await p
       .getByRole('button', {name: en ? '关闭' : 'Close', exact: true})
       .click()
@@ -1002,7 +1247,7 @@ async function inlineHintRegressions(p) {
       await p
         .getByRole('button', {name: en ? 'Settings' : '设置', exact: true})
         .click()
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await setLanguage(p, !en)
       await p
         .getByRole('button', {name: en ? '关闭' : 'Close', exact: true})
         .click()
@@ -1166,7 +1411,7 @@ async function coherentPhoneRegressions(p) {
     await geometry(p,`coherent phone ${width}x${height}`)
     reports.push(r)
     if(process.env.SCREENSHOT_DIR){fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.SCREENSHOT_DIR,`phone-${width}x${height}.png`)})}
-    await p.getByRole('button',{name:'设置',exact:true}).click();await p.getByRole('button',{name:'中文 / EN',exact:true}).click();await p.getByRole('button',{name:'Close',exact:true}).click()
+    await p.getByRole('button',{name:'设置',exact:true}).click();await setLanguage(p, true);await p.getByRole('button',{name:'Close',exact:true}).click()
     const header=await p.locator('.topbar').evaluate((n)=>{
       const brand=n.querySelector('.brand').getBoundingClientRect(),nav=n.querySelector('nav').getBoundingClientRect(),m=n.querySelector('.game-meta')
       return {fits:brand.right<=nav.left&&n.scrollWidth<=n.clientWidth+1&&m.scrollWidth<=m.clientWidth+1,menus:[...n.querySelectorAll('nav button')].every(b=>b.getBoundingClientRect().height>=32),tools:[...document.querySelectorAll('.tools button')].map(b=>b.getBoundingClientRect().height)}
@@ -1174,7 +1419,7 @@ async function coherentPhoneRegressions(p) {
     check(header.fits&&header.menus,`${width}x${height} English header/32pxmenus fit without overlap`)
     if(height>480) check(header.tools.every(h=>h>=44),`${width}x${height} actual tool buttons >=44px`)
     if(process.env.SCREENSHOT_DIR) await p.screenshot({path:path.join(process.env.SCREENSHOT_DIR,`phone-${width}x${height}-en.png`)})
-    await p.getByRole('button',{name:'Settings',exact:true}).click();await p.getByRole('button',{name:'中文 / EN',exact:true}).click();await p.getByRole('button',{name:'关闭',exact:true}).click()
+    await p.getByRole('button',{name:'Settings',exact:true}).click();await setLanguage(p, false);await p.getByRole('button',{name:'关闭',exact:true}).click()
   }
   await p.setViewportSize({width:393,height:650});await p.waitForTimeout(80)
   await p.locator('[data-cell="2"]').click()
@@ -1304,7 +1549,7 @@ async function interactionComfortRegressions(p, url) {
       }
       records.push({label,before,stages,after:await rects()})
       await p.getByRole('button',{name:en?'Settings':'设置',exact:true}).click()
-      await p.getByRole('button',{name:'中文 / EN',exact:true}).click()
+      await setLanguage(p, !en)
       await p.getByRole('button',{name:en?'关闭':'Close',exact:true}).click()
     }
     await p.evaluate(() => {delete window.viewport;delete visualViewport.height;visualViewport.dispatchEvent(new Event('resize'))})
@@ -1380,7 +1625,7 @@ async function interactionComfortRegressions(p, url) {
     await p.keyboard.press('Escape')
     check(await settings.evaluate((n)=>document.activeElement===n), 'modalcontext closing restores originalSettings opener')
     await settings.click()
-    await p.getByRole('button',{name:'中文 / EN',exact:true}).click()
+    await setLanguage(p, !en)
     await p.getByRole('button',{name:en?'关闭':'Close',exact:true}).click()
   }
   if(process.env.SCREENSHOT_DIR) fs.writeFileSync(path.join(process.env.SCREENSHOT_DIR,'comfort-geometry.json'),JSON.stringify(records,null,2))
@@ -1443,7 +1688,7 @@ async function stableFeedbackKeypadRegressions(p) {
       if (!en) await capture(`${width}x${height}-after`)
       await geometry(p, `stable feedback ${width}x${height}`)
       await p.getByRole('button', {name: en ? 'Settings' : '设置', exact: true}).click()
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await setLanguage(p, !en)
       await p.getByRole('button', {name: en ? '关闭' : 'Close', exact: true}).click()
     }
     const keys = await p.locator('.number-key').evaluateAll((nodes) => nodes.map((n) => ({
@@ -1520,7 +1765,7 @@ async function stableFeedbackKeypadRegressions(p) {
       await p.waitForTimeout(80)
       compare(before, await snapshot(), `${mode}/${en ? 'en' : 'zh'} cleared`)
       await p.getByRole('button', {name: en ? 'Settings' : '设置', exact: true}).click()
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await setLanguage(p, !en)
       await p.getByRole('button', {name: en ? '关闭' : 'Close', exact: true}).click()
     }
     await p.evaluate(() => {
@@ -1630,14 +1875,17 @@ async function viewportRegressions(p) {
           `${modal} ${width}x${height} visible${visible} ${en ? 'en' : 'zh'}`,
           () => dialogFits(p, modal),
         )
-        await p
-          .getByRole('button', {name: en ? 'Close' : '关闭', exact: true})
-          .click()
+        await languageOptions(p, en, width === 390 && visible === 720)
+        if (modal === 'rules') {
+          await walkRules(p, en, `rules ${width}x${height}/visible${visible}`)
+        } else {
+          await p.getByRole('button', {name: en ? 'Close' : '关闭', exact: true}).click()
+        }
       }
       await p
         .getByRole('button', {name: en ? 'Settings' : '设置', exact: true})
         .click()
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await setLanguage(p, !en)
       await p
         .getByRole('button', {name: en ? '关闭' : 'Close', exact: true})
         .click()
@@ -1692,6 +1940,9 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    await vibrationCapabilityRegressions(browser, url)
+    await toolGapRegressions(p)
+    await guideLanguageRegressions(p, url)
     await difficultyAndBrandRegressions(p, url)
     await legalDigitRegressions(p)
     await tactileKeyRegressions(p)
@@ -1824,29 +2075,16 @@ async function viewportRegressions(p) {
       await p.setViewportSize({width, height})
       await p.waitForTimeout(80)
       await p.getByRole('button', {name: '规则', exact: true}).click()
-      for (let i = 0; i < 4; i++) {
-        await dialogFits(p, `rules ${width}x${height} step${i}`)
-        await p
-          .getByRole('button', {name: i < 3 ? '继续' : '我来试试', exact: true})
-          .click()
-      }
+      await walkRules(p, false, `rules ${width}x${height}`)
       await p.getByRole('button', {name: '设置', exact: true}).click()
       await dialogFits(p, 'settings')
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await setLanguage(p, true)
       await dialogFits(p, 'settings en')
       await p.getByRole('button', {name: 'Close', exact: true}).click()
       await p.getByRole('button', {name: 'Rules', exact: true}).click()
-      for (let i = 0; i < 4; i++) {
-        await dialogFits(p, `English rules ${width}x${height} step${i}`)
-        await p
-          .getByRole('button', {
-            name: i < 3 ? 'Next' : 'Let me try',
-            exact: true,
-          })
-          .click()
-      }
+      await walkRules(p, true, `English rules ${width}x${height}`)
       await p.getByRole('button', {name: 'Settings', exact: true}).click()
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await setLanguage(p, false)
       await p.getByRole('button', {name: '关闭', exact: true}).click()
     }
     // Emulate the geometry API, not a specific device model or hinge angle.
@@ -1995,10 +2233,11 @@ async function viewportRegressions(p) {
         visualViewport.dispatchEvent(new Event('resize'))
       }, visible)
       await p.waitForTimeout(80)
+      await languageOptions(p, false, false)
       await dialogFits(p, 'win')
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await languageOptions(p, true, false)
       await dialogFits(p, 'win en')
-      await p.getByRole('button', {name: '中文 / EN', exact: true}).click()
+      await setLanguage(p, false)
     }
     await p.evaluate(() => {
       delete visualViewport.height

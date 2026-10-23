@@ -295,6 +295,14 @@
     }
   }
 }
+// Keep the 44px language choices and all result actions inside a 240px viewport.
+@container (max-height: 260px) {
+  .sudoku-app .dialog.dialog-won {
+    padding-block: 4px;
+    .victory-content { gap: 1px; }
+    .result-metrics { padding-block: 3px; }
+  }
+}
 @container (max-height: 450px) and (min-width: 400px) {
   .sudoku-app .dialog.dialog-won {
     width: min(100%, 640px);
