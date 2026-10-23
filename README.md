@@ -1,6 +1,6 @@
-# SudokuTaro
+# 方寸数独
 
-数独 — 基于 [Taro 4](https://taro.zone/) + React 18 + TypeScript，**仅输出 H5**（浏览器），已移除微信/抖音小程序与微信小游戏子工程。  
+方寸之间，专注推演。基于 [Taro 4](https://taro.zone/) + React 18 + TypeScript，**仅输出 H5**（浏览器），已移除微信/抖音小程序与微信小游戏子工程。
 （若你需要 **React Native** 或原生 App，需另起 RN/Expo 工程；本仓不是 RN 项目。）
 
 [![GitHub](https://img.shields.io/badge/GitHub-yuqiuqi%2FSudokuTaro-181717?logo=github)](https://github.com/yuqiuqi/SudokuTaro)
@@ -8,29 +8,27 @@
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-7.0.2-3178c6?logo=typescript&logoColor=white)
 
-## v1.2.1 手机整体布局与只读题面
+## v1.2.2 · 实体棋盘与凸起键帽
 
 [在线试玩](https://yuqiuqi.github.io/SudokuTaro/)
 
-手机标题、状态、棋盘、工具与数字面板共享同一主列。棋盘优先占据主要空间，数字保持 5/4 两排并紧接工具；较高屏幕把留白均匀分配到完整内容块上下。高度不足时整列一起收窄，保留全部操作。
+棋盘增加实体底沿与接触阴影，格面保持平整正视布局，浅倒角与轻微数字浮雕呈现厚度。工具键增加浅浮起质感；数字键使用凸起键帽，按下时轻沉 1px；偏好减少动态效果时保留颜色与阴影反馈，不移动按键。
 
-黑色题面数字保持清晰，不能选中、修改或进入键盘焦点。方向键在当前行／列内跳过题面；玩家填写的数字仍可修改。同数及同行、列、宫的辅助高亮继续保留，当前可编辑格用独立选中框标识。
+手机标题、状态、棋盘、工具与数字面板继续共享主列，保留 5/4 两排数字、整组上下平衡、只读题面与同数辅助。左右最小留白由各 6px 增至各 14px，安全区优先；高度或棋盘上限造成的额外留白继续保留。
 
-| 393×650 · 常规手机 | 430×932 · 高屏手机 |
+| 393×720 · 常规手机 | 430×932 · 高屏手机 |
 |---|---|
-| ![共享主列与两排数字区](docs/screenshots/coherent-phone-393x650.png) | ![完整游戏区居中](docs/screenshots/coherent-tall-430x932.png) |
+| ![实体棋盘与凸起数字键帽](docs/screenshots/depth-phone-393x720.png) | ![完整游戏区与高屏留白](docs/screenshots/depth-tall-430x932.png) |
 
-截图来自本轮最终 GitHub Pages 子路径生产构建的 Chromium 指定视口渲染，不是直接在线导航或小米 17／移动 Edge 真机截图。
-
-本轮功能已部署，发布与验证证据见 [v1.2.1 更新说明](docs/releases/v1.2.1.md)，现行适配规则见 [自适应设计](docs/RESPONSIVE_DESIGN.md)。正式标签／Release 的后续状态见 [公开执行记录](https://github.com/yuqiuqi/SudokuTaro/pull/16#issuecomment-6335382360)。此前移动布局、提示舒适度与胜利动效交付记录归档于 [v1.2.0](docs/releases/v1.2.0.md)。
+截图采集来源与本轮验证范围见 [v1.2.2 更新说明](docs/releases/v1.2.2.md)，现行适配规则见 [自适应设计](docs/RESPONSIVE_DESIGN.md)。远端构建、部署与正式发布状态以 [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions) 和 [GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases) 为准。此前共享主列与只读题面记录见 [v1.2.1](docs/releases/v1.2.1.md)。
 
 ## 功能概览
 
-- **界面与适配**：雾蓝与浅青光晕、悬浮棋盘、玻璃工具栏与数字底座；按浏览器实际可用宽高适配手机、横屏与分区，旋转和分屏保留进度。
+- **界面与适配**：雾蓝与浅青光晕、实体棋盘、玻璃工具托盘与凸起数字键帽；按浏览器实际可用宽高适配手机、横屏与分区，旋转和分屏保留进度。
 - **输入**：选可编辑格后点击常驻 1～9，不唤起系统键盘。支持物理数字键、方向键、Delete／Backspace、N 切换笔记、Escape 关闭弹层。
 - **笔记与撤销**：每格可记录多个候选数；填数清理相关候选，撤销恢复数字与笔记。擦除、撤销免费，无体力限制。
 - **分层提示**：观察位置 → 排除思考 → 推理解释；全文显示在棋盘外，按钮位置稳定，答案由玩家亲手填写。
-- **规则与出题**：中英文分页教学，简单／中等／困难按留空数量区分，题目检查唯一解。
+- **规则与出题**：中英文分页教学，新局实际给定数字按简单 36–40／中等 31–35／困难 26–30 严格分档，检查唯一解；旧存档不变。线索数量分档不等于专业逻辑技巧评级。
 - **通关**：约 2.4 秒彩虹立体波浪 → 约 650ms 青柠缝隙光 → 成绩与个人纪录；支持减少动态效果、跳过、欣赏棋盘与再挑战，刷新不重复记胜场。
 - **保存**：进度、纪录、语言与振动偏好保存在当前浏览器；存储不可用时仍可游玩。
 

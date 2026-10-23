@@ -1,18 +1,20 @@
-# SudokuTaro — 上下文与协作总览（CONTEXT）
+# 方寸数独 — 上下文与协作总览（CONTEXT）
 
 > **用途**：新会话或新协作者用 **Read 工具** 读本文件，在上下文将满时优先把**可复用事实**沉淀在此，避免重复交代 prompt、规则路径与工程约定。  
 > **原则**：具体实现以仓库代码为准；此处为索引与摘要，重大改动后请顺手更新对应小节。
 
 ---
 
-## 当前实现（v1.2.1 · 手机整体布局与只读题面）
+## 当前实现（v1.2.2 · 实体棋盘与凸起键帽）
 
+- 产品显示名为「方寸数独」，HTML／页面标题与可见品牌保持一致。技术包名、仓库名、Pages URL 与存档 key 继续使用原标识。新局实际给定数为简单 36–40／中等 31–35／困难 26–30，最多两次生成后使用唯一解模板兜底；只约束线索数量，不构成专业逻辑技巧评级。旧存档不按新范围淘汰。
 - 本节覆盖下方历史中的旧界面、输入和道具描述。当前真源为 `src/pages/index/index.tsx`、`index.scss`、`useGameLayout.ts`、`src/utils/gameplay.ts` 与 `src/styles/_glass-tokens.scss`。Figma 文件 `AhWwkAjjXti2imJAbhgrTY` 的 V2 根节点 `20:545` 为视觉基准；H5 使用实际 CSS px，关闭 `h5.postcss.pxtransform`，不要恢复 rpx 缩放。
-- 手机标题、状态、棋盘、工具及数字面板共用 `--board-size` 主列；充分空间时左右目标各 6px，安全区优先，棋盘最大 414px。紧凑头部 52px，选格说明并入固定 28px 反馈行。普通手机工具真实点击高度 44px、数字 45px，统一 5/4 两排，工具到数字区 10px；完整 `game-shell` 上下 auto margin 居中。320×480 整列回退到 202px、工具高度 34px、组间距 8px，数字高度仍 45px，但宽度约 33px；小屏不能套用普通手机触控目标保证。不要恢复高屏键盘独立钉底。
+- 手机标题、状态、棋盘、工具及数字面板共用 `--board-size` 主列；左右最小留白各 14px，安全区优先，棋盘最大 414px。紧凑头部 52px，选格说明并入固定 28px 反馈行。普通手机工具真实点击高度 44px、数字 45px，统一 5/4 两排，工具到数字区 10px；完整 `game-shell` 上下 auto margin 居中。320×480 整列回退到 202px、工具高度 34px、组间距 8px，数字高度仍 45px，但宽度约 33px；小屏不能套用普通手机触控目标保证。不要恢复高屏键盘独立钉底。
+- 棋盘采用平整正视的实体材质：4px 底沿、接触阴影、统一左上高光；格面浅倒角与数字轻浮雕保留数字可读性。工具键采用静态浅浮起质感；数字键以 2px 基座呈现凸起键帽，按下使用 `translateY(1px)`，减少动态效果时取消位移与过渡。极窄横屏按实际可用宽度同时预算棋盘与控制区，保留左右留白；不要把最窄控制区回退应用到全部宽屏。材质不改变共享主列、给定格只读、同数辅助、反馈／提示占位及胜利流程；未新增依赖。
 - 尺寸预算取 parent 的真实安全可用高度，避免自然内容高度反馈；模式分类采用独立稳定的 20px／安全区基准。错误、提示开关及换层不改变棋盘预算；提示通过不可访问的自然尺寸副本预留各层全文空间，active 文案唯一可访问。横屏与折叠分区保留专用回退。
 - 棋盘为原生按钮，initial 给定格原生 `disabled` 并恢复 `opacity:1`，保留可读数值／标签，不可点击、修改或进入焦点；choose／fill 也防御题面。方向键仅在原行／列内搜索可编辑格，跳过给定数，无目标保留原格，并同步 `focus({preventScroll:true})`。同数、行列宫与提示辅助高亮保留，不等于独占 `is-selected` 框。Taro 会改写 button 标签选择器，原生按钮样式用 `[type="button"]`；不要恢复隐藏 Input 或 ScrollView。
 - 保留候选数、完整撤销、唯一解、中英文分层提示／规则、保存与纪录；撤销／擦除免费，`gameEconomy.ts` 是历史保留模块。胜利流程仍为 `wave → seams → null`：960ms 单格包络、90ms 对角延迟，总 2400ms，随后 650ms 单次青柠缝隙光，两段由真实 animationend 衔接。减少动态效果、Escape、菜单／新局取消及刷新不重复记胜场不变。
-- 功能 [PR #16](https://github.com/yuqiuqi/SudokuTaro/pull/16) 合并为 `5e2e912`，与已审查实现 `ec0bf50` 的 tree 一致。类型检查、9 项逻辑测试、根路径／Pages 完整 Chromium 回归通过，运行时错误为空；独立 AI 代码与视觉审阅无必改项。该合并提交的 [Pages 实际部署](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39742465142) 已成功；18 次正常 TLS 请求取得线上资源，经 loopback Chromium 验证布局、只读题面、反馈／提示、焦点及胜利／刷新流程，运行时错误为空。此路线不同于直接在线导航，未修改信任库或关闭 TLS。同合并提交的 [主分支 CI](https://github.com/yuqiuqi/SudokuTaro/actions/runs/39742465146) 已通过；正式 tag／Release 后续状态见 [公开执行记录](https://github.com/yuqiuqi/SudokuTaro/pull/16#issuecomment-6335382360)，完整证据见 [v1.2.1 说明](docs/releases/v1.2.1.md)；历史证据见 [v1.2.0](docs/releases/v1.2.0.md)。
+- 本轮方寸数独版本的类型检查、13 项逻辑测试、根路径生产构建／完整浏览器回归及 Pages 子路径构建／完整浏览器回归均已通过。独立 AI 首轮根路径截图视觉审阅无 P0／P1／P2 必改项；静态审阅不替代交互验证。实际验证与范围见 [v1.2.2 说明](docs/releases/v1.2.2.md)；远端构建／部署与正式发布以 [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions) 和 [GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases) 为准。此前发布证据见 [v1.2.1](docs/releases/v1.2.1.md) 与 [v1.2.0](docs/releases/v1.2.0.md)。
 - 代码修改后按 `AGENTS.md` 完成类型检查、逻辑测试、构建与浏览器回归；Pages 需配对子路径构建与测试，仅文档修改检查差异。浏览器 CSS 尺寸／分区模拟不等同小米 17 移动 Edge、iOS Safari、屏幕阅读器或安全区／折叠硬件实测。现行测量与回归见 `docs/RESPONSIVE_DESIGN.md`。
 
 ## 1. 项目卡片

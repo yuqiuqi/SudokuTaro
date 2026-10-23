@@ -55,6 +55,69 @@ test('every difficulty generates a unique puzzle and leaves caller data unchange
       assert.ok(game.board.flat().filter((n) => !n).length >= 35)
     }
 })
+const givenRanges = {easy: [36, 40], medium: [31, 35], hard: [26, 30]}
+function seededRandom(seed) {
+  return () => {
+    let t = seed += 0x6D2B79F5
+    t = Math.imul(t ^ t >>> 15, t | 1)
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61)
+    return ((t ^ t >>> 14) >>> 0) / 4294967296
+  }
+}
+function assertDifficultyGame(game, difficulty) {
+  const given = game.initial.flat().filter(Boolean).length
+  const [min, max] = givenRanges[difficulty]
+  assert.ok(given >= min && given <= max, `${difficulty}: ${given} givens outside ${min}–${max}`)
+  assert.equal(game.difficulty, difficulty)
+  assert.deepEqual(game.board, game.initial)
+  assert.equal(e.countSolutions(game.board), 1)
+  assert.equal(e.countSolutions(game.solution), 1)
+  assert.ok(game.initial.every((row, r) => row.every((n, c) => !n || n === game.solution[r][c])))
+  assert.ok(g.isSavedGame(game))
+}
+test('new games keep actual given counts in strictly ordered, disjoint difficulty ranges', () => {
+  const original = Math.random
+  try {
+    for (const difficulty of Object.keys(givenRanges)) {
+      for (let seed = 1; seed <= 60; seed++) {
+        Math.random = seededRandom(seed)
+        assertDifficultyGame(g.createGame(difficulty), difficulty)
+      }
+    }
+  } finally { Math.random = original }
+})
+test('hole targets remain in the selected difficulty range at both random endpoints', () => {
+  const original = Math.random
+  try {
+    for (const difficulty of Object.keys(givenRanges)) {
+      for (const random of [0, 0.999999]) {
+        Math.random = () => random
+        const given = 81 - e.getHoleCount(difficulty)
+        assert.ok(given >= givenRanges[difficulty][0] && given <= givenRanges[difficulty][1], `${difficulty}: target ${given}`)
+      }
+    }
+  } finally { Math.random = original }
+})
+test('generation stops after two failed attempts and returns a valid in-range unique fallback', () => {
+  const originalDig = e.digHoles, originalGenerate = e.generateSolution, originalRandom = Math.random
+  try {
+    e.digHoles = () => {} // Simulate a generator unable to remove any clue.
+    for (const difficulty of Object.keys(givenRanges)) {
+      let attempts = 0
+      Math.random = seededRandom(29)
+      e.generateSolution = () => { attempts++; return originalGenerate() }
+      assertDifficultyGame(g.createGame(difficulty), difficulty)
+      assert.equal(attempts, 2, 'fallback must bound complete generation attempts')
+    }
+  } finally { e.digHoles = originalDig; e.generateSolution = originalGenerate; Math.random = originalRandom }
+})
+test('valid older saves retain their original puzzle even outside the new clue ranges', () => {
+  const game = fixture()
+  assert.equal(game.initial.flat().filter(Boolean).length, 30)
+  assert.equal(game.difficulty, 'easy')
+  assert.ok(g.isSavedGame(game))
+  assert.deepEqual(game.initial, puzzle)
+})
 test('counter detects multiple solutions and invalid filled boards', () => {
   assert.equal(
     e.countSolutions(Array.from({length: 9}, () => Array(9).fill(0))),

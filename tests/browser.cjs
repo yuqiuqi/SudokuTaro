@@ -107,6 +107,10 @@ async function geometry(p, label) {
     })
     return {
       bad,
+      gutters: [...document.querySelectorAll('.topbar,.board-frame,.tools,.number-panel')].every((n) => {
+        const r = n.getBoundingClientRect()
+        return r.left >= 13.5 && r.right <= w - 13.5
+      }),
       mode: document.querySelector('main').className,
       board: document.querySelector('.sudoku-board').getBoundingClientRect()
         .width,
@@ -123,6 +127,7 @@ async function geometry(p, label) {
     [],
     label + ' clipped controls: ' + JSON.stringify(result.bad),
   )
+  assert.ok(result.gutters, label + ' must retain the 14px outer gutters')
   assert.equal(result.inputs, 0)
   assert.ok(
     result.scrollWidth <= result.w && result.scrollHeight <= result.h,
@@ -1019,6 +1024,68 @@ async function inlineHintRegressions(p) {
   assert.ok(alignment, 'portrait content shares the centered board column with safe outer gutters')
   await p.locator('[data-cell="2"]').click()
 }
+async function difficultyAndBrandRegressions(p, url) {
+  assert.equal(await p.title(), '方寸数独')
+  assert.equal(await p.locator('.brand').innerText(), '方寸数独')
+  const generated = []
+  for (const [difficulty, label, min, max] of [['easy', '简单', 36, 40], ['medium', '中等', 31, 35], ['hard', '困难', 26, 30]]) {
+    await p.getByRole('button', {name: '设置', exact: true}).click()
+    await p.getByRole('button', {name: '选择难度 / 开始新局', exact: true}).click()
+    await p.getByRole('button', {name: label, exact: true}).click()
+    await p.waitForSelector('.dialog', {state: 'detached'})
+    const actual = await p.locator('[data-fixed="true"]').count()
+    assert.ok(actual >= min && actual <= max, `${difficulty} UI new game has ${actual} givens`)
+    assert.ok((await p.locator('.difficulty-button').innerText()).includes(label))
+    generated.push({difficulty, actual})
+    await p.reload()
+    await p.waitForSelector('[data-cell="80"]')
+    assert.equal(await p.locator('[data-fixed="true"]').count(), actual, 'reload retains selected difficulty puzzle')
+    assert.ok((await p.locator('.difficulty-button').innerText()).includes(label))
+  }
+  if (process.env.SCREENSHOT_DIR) {
+    fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true})
+    fs.writeFileSync(path.join(process.env.SCREENSHOT_DIR, 'difficulty-new-games.json'), JSON.stringify(generated, null, 2))
+  }
+  // Restore the classic saved fixture before all existing interaction regressions.
+  await p.evaluate(({KEY, game}) => localStorage.setItem(KEY, JSON.stringify(game)), {KEY, game})
+  await p.goto(url)
+  await p.waitForSelector('[data-cell="80"]')
+  await loadTestFonts(p, url)
+}
+
+// Pressing a key changes only its depth: no shrink, no board or page movement.
+async function tactileKeyRegressions(p) {
+  await p.setViewportSize({width: 393, height: 650})
+  await p.locator('[data-cell="2"]').click()
+  const key = p.locator('.number-key').first()
+  const snapshot = () => p.evaluate(() => {
+    const rect = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON()
+    return {key: rect('.number-key'), board: rect('.board-frame'), shell: rect('.game-shell'),
+      scroll: [scrollX, scrollY], shadow: getComputedStyle(document.querySelector('.number-key')).boxShadow}
+  })
+  for (const reduced of [false, true]) {
+    await p.emulateMedia({reducedMotion: reduced ? 'reduce' : 'no-preference'})
+    const before = await snapshot()
+    const box = await key.boundingBox()
+    await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await p.mouse.down()
+    await p.waitForTimeout(180)
+    const pressed = await snapshot()
+    assert.ok(Math.abs(pressed.key.width - before.key.width) < 0.1, 'key press must keep its width')
+    assert.ok(Math.abs(pressed.key.height - before.key.height) < 0.1, 'key press must keep its height')
+    assert.ok(Math.abs(pressed.key.y - before.key.y - (reduced ? 0 : 1)) < 0.1, 'key press depth/reduced motion')
+    assert.notEqual(pressed.shadow, before.shadow, 'key press contracts the base shadow')
+    for (const name of ['board', 'shell', 'scroll']) assert.deepEqual(pressed[name], before[name], `press moved ${name}`)
+    // Release outside the key so this depth check does not enter a number.
+    await p.mouse.move(0, 0)
+    await p.mouse.up()
+    await p.waitForTimeout(180)
+    const released = await snapshot()
+    assert.deepEqual(released.key, before.key, 'key release restores position and size')
+  }
+  await p.emulateMedia({reducedMotion: 'no-preference'})
+}
+
 async function coherentPhoneRegressions(p) {
   const failures=[],reports=[]
   const check=(ok,label)=>{if(!ok) failures.push(label)}
@@ -1028,11 +1095,11 @@ async function coherentPhoneRegressions(p) {
       ['.game-shell','.topbar','.game-meta','.board-frame','.control-pane','.tools','.number-panel','.input-caption'].map(s=>[s,document.querySelector(s).getBoundingClientRect().toJSON()])),keys:[...document.querySelectorAll('.number-key')].map(n=>n.getBoundingClientRect().toJSON())}))
     const b=r.rects['.board-frame'],t=r.rects['.topbar'],end=r.rects['.input-caption']
     for(const s of ['.topbar','.game-meta','.tools','.number-panel']) check(Math.abs(r.rects[s].left-b.left)<1&&Math.abs(r.rects[s].right-b.right)<1,`${width}x${height} ${s} shares board column`)
-    if(height>480){check(b.width>=(width-12)*.9,`${width}x${height} board occupies >=90% usablewidth`);check(r.keys.every(k=>k.height>=44),`${width}x${height} keys >=44px`)}
+    if(height>480){check(b.width>=(width-28)*.9,`${width}x${height} board occupies >=90% usablewidth`);check(r.keys.every(k=>k.height>=44),`${width}x${height} keys >=44px`)}
     const gap=r.rects['.number-panel'].top-r.rects['.tools'].bottom
     check(gap>=8&&gap<=16,`${width}x${height} coherent8–16px tool/key gap (${gap})`)
     check(Math.abs((t.top+end.bottom)/2-height/2)<=12,`${width}x${height} complete group vertically balanced`)
-    check(b.left>=6&&b.right<=width-6,`${width}x${height} shared minimum side safety`)
+    check(b.left>=14&&b.right<=width-14,`${width}x${height} shared minimum side safety`)
     await geometry(p,`coherent phone ${width}x${height}`)
     reports.push(r)
     if(process.env.SCREENSHOT_DIR){fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.SCREENSHOT_DIR,`phone-${width}x${height}.png`)})}
@@ -1326,16 +1393,16 @@ async function stableFeedbackKeypadRegressions(p) {
     if (height > width && height >= 440) {
       const edges = await p.locator('.topbar,.game-meta,.tools').evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()))
       const board = await p.locator('.board-frame').boundingBox()
-      check(edges.every((r) => Math.abs(r.left - board.x) <= .6 && Math.abs(r.right - board.x - board.width) <= .6) && board.x >= 6,
+      check(edges.every((r) => Math.abs(r.left - board.x) <= .6 && Math.abs(r.right - board.x - board.width) <= .6) && board.x >= 14,
         `${width}x${height} phone content shares the safe board column`)
       const group = await p.locator('.game-shell').boundingBox()
       check(Math.abs(group.y + group.height/2 - height/2) <= 12, `${width}x${height} complete phone group is balanced`)
     }
     if (width >= 440) {
       const edges = await p.locator('.topbar,.board-frame,.number-panel').evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()))
-      check(Math.abs(edges[0].left - 6) <= .6 && Math.abs(width - edges[0].right - 6) <= .6 &&
-        Math.abs(edges[1].left - 6) <= .6 && Math.abs(width - edges[2].right - 6) <= .6,
-        `${width}x${height} landscape game columns and header retain meaningful 6px outer gutters`)
+      check(Math.abs(edges[0].left - 14) <= .6 && Math.abs(width - edges[0].right - 14) <= .6 &&
+        Math.abs(edges[1].left - 14) <= .6 && Math.abs(width - edges[2].right - 14) <= .6,
+        `${width}x${height} landscape game columns and header retain meaningful 14px outer gutters`)
       const centers = await p.locator('.board-pane,.control-pane').evaluateAll((nodes) => nodes.map((n) => {
         const r = n.getBoundingClientRect(); return r.top + r.height / 2
       }))
@@ -1552,6 +1619,13 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    await difficultyAndBrandRegressions(p, url)
+    await tactileKeyRegressions(p)
+    for (const height of [320, 470]) {
+      await p.setViewportSize({width: 280, height})
+      await p.waitForTimeout(100)
+      await geometry(p, `narrow height-limited gutters 280x${height}`)
+    }
     await coherentPhoneRegressions(p)
     if(process.env.PHONE_ONLY){console.log("coherent phone checks passed");return}
     await interactionComfortRegressions(p, url)
@@ -1896,7 +1970,7 @@ async function viewportRegressions(p) {
             'review hint appears once; teaching steps contain different clues',
             'four corner selection rings follow board curvature at three sizes',
             'bilingual inline hints never cover board; both close actions restore controls',
-            'tool icons + 6px outer gutters + centered board + stable bilingual feedback',
+            'tool icons + 14px outer gutters + centered board + stable bilingual feedback',
             'adaptive thumb keypad rows, target bounds, bottom reach and all 9 note/undo clicks',
             'resize + refresh persist',
             'paginated bilingual rules',

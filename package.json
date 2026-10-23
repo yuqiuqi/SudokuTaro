@@ -1,6 +1,6 @@
 {
   "name": "SudokuTaro",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "license": "CC-BY-NC-ND-4.0",
   "private": true,
   "description": "数独 — Taro 4 + React，仅 H5（浏览器）",
