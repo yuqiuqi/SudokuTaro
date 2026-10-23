@@ -12,7 +12,7 @@ progress:
   percent: 100
 ---
 
-# Project State — SudokuTaro
+# Project State — 方寸数独
 
 **Updated:** 2026-04-23
 

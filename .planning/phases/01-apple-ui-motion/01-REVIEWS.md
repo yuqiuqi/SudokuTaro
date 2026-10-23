@@ -19,7 +19,7 @@ plans_reviewed:
 # Plan Review: Phase 1 — Apple-style UI & Motion
 
 ## Summary
-The proposed implementation plans (01-01 through 01-03) provide a high-quality, systematic approach to evolving the SudokuTaro UI towards a modern Apple-inspired aesthetic. The strategy of establishing a "Single Source of Truth" via dual-track tokens (TypeScript and SCSS) is robust and ensures long-term maintainability. The phased rollout—starting with the design system, moving to structural styling, and concluding with motion—follows best practices for minimizing regression risks while delivering high visual impact.
+The proposed implementation plans (01-01 through 01-03) provide a high-quality, systematic approach to evolving the Fangcun Sudoku UI towards a modern Apple-inspired aesthetic. The strategy of establishing a "Single Source of Truth" via dual-track tokens (TypeScript and SCSS) is robust and ensures long-term maintainability. The phased rollout—starting with the design system, moving to structural styling, and concluding with motion—follows best practices for minimizing regression risks while delivering high visual impact.
 
 ## Strengths
 - **Single Source of Truth (SSOT)**: The synchronization between `theme.ts` and `_ui-tokens.scss` is well-designed, allowing both styles and logic (like vibration settings or Canvas-based components in Phase 2) to reference the same design intent.

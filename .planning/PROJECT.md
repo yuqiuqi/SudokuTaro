@@ -1,4 +1,4 @@
-# SudokuTaro
+# 方寸数独
 
 ## Current Milestone: v2.0 Liquid Glass · iOS 26 全量动画与交互精打
 
@@ -15,7 +15,7 @@
 
 ## What This Is
 
-SudokuTaro 是基于 **Taro 4 + React + TypeScript** 的数独游戏，**仅构建 H5**（浏览器）。当前里程碑聚焦：以 **Apple iOS 26 Liquid Glass** 设计语言为真源，深度打磨所有组件的动画、交互与材质质感。
+方寸数独 是基于 **Taro 4 + React + TypeScript** 的数独游戏，**仅构建 H5**（浏览器）。当前里程碑聚焦：以 **Apple iOS 26 Liquid Glass** 设计语言为真源，深度打磨所有组件的动画、交互与材质质感。
 
 ## Core Value
 

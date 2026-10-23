@@ -1,4 +1,4 @@
-# Requirements: SudokuTaro
+# Requirements: 方寸数独
 
 **Defined:** 2026-04-22  
 **v2.0 Added:** 2026-04-23  

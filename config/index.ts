@@ -4,7 +4,7 @@ import {defineConfig, type UserConfigExport} from '@tarojs/cli'
 const isGitHubPagesBuild = process.env.GITHUB_PAGES === 'true'
 
 export default defineConfig({
-  projectName: 'SudokuTaro',
+  projectName: 'fangcun-sudoku',
   date: '2026-4-5',
   designWidth: 750,
   deviceRatio: {

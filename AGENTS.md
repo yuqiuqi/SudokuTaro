@@ -1,4 +1,4 @@
-# SudokuTaro 开发约定
+# 方寸数独开发约定
 
 开始工作前阅读 `CONTEXT.md`；响应式设计与测试说明见 `docs/RESPONSIVE_DESIGN.md`。
 

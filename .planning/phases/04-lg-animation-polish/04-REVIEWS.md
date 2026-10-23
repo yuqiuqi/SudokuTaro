@@ -18,7 +18,7 @@ The strategy correctly identifies the most common H5 pitfalls (modal exit flashe
 
 ### 1. Summary
 
-Phase 4 is a high-ambition UI/UX overhaul that transitions SudokuTaro from a "functional H5 app" to a "premium-feel digital product." By leveraging modern CSS features and a robust five-state interaction model, the plan aims to replicate the physical "weight" and "rebound" of iOS 26. The technical choices are "bleeding-edge" but include necessary fallbacks, ensuring the app remains performant on mobile browsers despite the heavy use of glass effects and spring physics.
+Phase 4 is a high-ambition UI/UX overhaul that transitions Fangcun Sudoku from a "functional H5 app" to a "premium-feel digital product." By leveraging modern CSS features and a robust five-state interaction model, the plan aims to replicate the physical "weight" and "rebound" of iOS 26. The technical choices are "bleeding-edge" but include necessary fallbacks, ensuring the app remains performant on mobile browsers despite the heavy use of glass effects and spring physics.
 
 ### 2. Strengths
 
