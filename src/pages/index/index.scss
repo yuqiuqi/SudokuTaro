@@ -200,8 +200,8 @@
   background: linear-gradient(145deg, #fff, #f5f7fc);
   // Shallow bevels keep the grid recessed without making givens look clickable.
   box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.95), inset -0.6px -0.6px 0 rgba(125, 145, 177, 0.12);
-  border-right: 0.5px solid var(--line);
-  border-bottom: 0.5px solid var(--line);
+  border-right: 0.5px solid var(--board-line);
+  border-bottom: 0.5px solid var(--board-line);
   transition:
     background-color 120ms ease,
     box-shadow 120ms ease;
@@ -212,10 +212,10 @@
     border-bottom: 0;
   }
   &.box-right {
-    border-right: 1px solid var(--line-box);
+    border-right: 1px solid var(--board-line-box);
   }
   &.box-bottom {
-    border-bottom: 1px solid var(--line-box);
+    border-bottom: 1px solid var(--board-line-box);
   }
   &.is-related,
   &.is-hint-unit {
@@ -300,7 +300,7 @@
 .tools {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 3px;
+  gap: 7px;
   padding: 4px;
   border-radius: 18px;
   height: 44px;
@@ -1185,11 +1185,190 @@
   grid-template-columns: 1fr;
 }
 
+// The new-game entry shares the existing header row and its height budget.
+.new-game-short { display: none; }
+.sudoku-app .topbar .new-game-button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--white);
+  white-space: nowrap;
+}
+.phone-layout.height-limited,
+.layout-fold-horizontal {
+  .new-game-label { display: none; }
+  .new-game-short { display: inline; }
+  .brand { font-size: 15px; white-space: nowrap; }
+  .topbar nav { gap: 2px; }
+  .topbar .text-button { padding-inline: 4px; font-size: 9px; }
+}
+@media (max-width: 360px) {
+  .new-game-label { display: none; }
+  .new-game-short { display: inline; }
+  .topbar .brand { font-size: 15px; white-space: nowrap; }
+  .topbar nav { gap: 2px; }
+  .topbar .text-button { padding-inline: 4px; font-size: 9px; }
+}
+
+// Keep every language option a real 44px target, including compact results.
+.sudoku-app .dialog .dialog-top {
+  min-height: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.sudoku-app .dialog .dialog-top .close-button { min-height: 44px; }
+.vibration-support-copy {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 6px 0 !important;
+}
+
+.tutorial-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin: 18px 0 22px;
+  .dialog-copy { margin: 0 !important; align-self: stretch; }
+}
+.rules-diagram {
+  width: 144px;
+  height: 144px;
+  flex: 0 0 auto;
+}
+.rules-grid {
+  display: grid;
+  grid-template: repeat(9, minmax(0, 1fr)) / repeat(9, minmax(0, 1fr));
+  border: 1px solid var(--board-line-box);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--white);
+  span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 0.5px solid var(--board-line);
+    border-bottom: 0.5px solid var(--board-line);
+    font-size: 11px;
+    color: var(--ink);
+  }
+  span:nth-child(9n) { border-right: 0; }
+  span:nth-last-child(-n + 9) { border-bottom: 0; }
+  .box-right { border-right: 1px solid var(--board-line-box); }
+  .box-bottom { border-bottom: 1px solid var(--board-line-box); }
+  .is-highlight { background: var(--wash); color: var(--accent); font-weight: 700; }
+}
+.rules-example {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 14px;
+  padding: 10px;
+  background: var(--wash);
+  color: var(--key-ink);
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.3;
+  .game-icon { width: 18px; height: 18px; flex-basis: 18px; }
+}
+.example-cells, .example-labels, .example-tools, .example-hint-steps, .example-keys {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.example-cells span, .example-keys span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 23px;
+}
+.example-cells .example-selected {
+  color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.example-labels { gap: 12px; font-size: 10px; }
+.example-tools span { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.example-notes { font-size: 20px; color: var(--muted); }
+.example-hint-steps { justify-content: space-between; gap: 3px; }
+.example-keys span { width: 30px; height: 30px; color: var(--accent); font-size: 19px; }
+.example-keys .example-disabled { color: var(--muted); opacity: 0.45; }
+.example-saved { display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+.phone-layout .tools { gap: 8px; }
+.phone-layout.height-limited .tools { gap: 5px; }
+.phone-layout.height-limited .tools [type='button'] { gap: 2px; font-size: 10px; }
+.phone-layout.height-limited .tools .game-icon { width: 12px; height: 12px; flex-basis: 12px; }
+// Four vertically stacked buttons retain the established 144px height budget.
+.layout-wide.height-limited .tools { gap: 4px; }
+
+@container (max-height: 550px) {
+  .tutorial-body { gap: 12px; margin: 12px 0; }
+  .rules-diagram { width: 108px; height: 108px; }
+  .rules-grid span { font-size: 9px; }
+  .rules-example { gap: 6px; padding: 8px; font-size: 10px; }
+  .example-labels { font-size: 9px; gap: 8px; }
+  .example-cells span { width: 28px; height: 28px; font-size: 20px; }
+  .example-notes { font-size: 17px; }
+  .example-tools { gap: 6px; }
+  .example-hint-steps { font-size: 9px; }
+}
+@container (max-height: 390px) {
+  .sudoku-app .dialog-rules .eyebrow { display: block; font-size: 10px; margin-bottom: 4px; }
+  .sudoku-app .dialog-rules h1 { font-size: 18px; line-height: 1.25; }
+  .tutorial-body { flex-direction: row; gap: 10px; margin: 8px 0; }
+  .tutorial-body .dialog-copy { font-size: 12px; line-height: 1.4; }
+  .rules-diagram { width: 81px; height: 81px; }
+  .rules-grid span { font-size: 8px; }
+  .rules-example { padding: 5px; gap: 4px; font-size: 8px; }
+  .rules-example .game-icon { width: 12px; height: 12px; flex-basis: 12px; }
+  .example-cells, .example-labels, .example-tools, .example-keys { gap: 4px; }
+  .example-cells span, .example-keys span { width: 23px; height: 23px; font-size: 16px; }
+  .example-labels { font-size: 8px; }
+  .example-tools span { gap: 3px; }
+  .example-hint-steps { font-size: 8px; }
+  .example-notes { font-size: 15px; }
+  .sudoku-app .dialog-settings .settings-line { min-height: 30px; }
+  .vibration-support-copy { font-size: 11px; margin: 4px 0 !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sudoku-app .number-key {
     transition: none;
   }
   .sudoku-app .number-key:not(:disabled):active {
     transform: none;
+  }
+}
+
+// Share one row for the two settings summaries on the shortest landscape screens.
+@container (max-height: 330px) and (min-width: 400px) {
+  .sudoku-app .dialog-settings {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 16px;
+    .dialog-top { grid-column: 1 / -1; grid-row: 1; }
+    h1 { grid-column: 1 / -1; grid-row: 2; }
+    .settings-vibration { grid-column: 1; grid-row: 3; }
+    .settings-record { grid-column: 2; grid-row: 3; }
+    .vibration-support-copy { grid-column: 1 / -1; grid-row: 4; }
+    .dialog-copy { grid-column: 1 / -1; grid-row: 5; margin-block: 4px !important; }
+    .full-width { grid-column: 1 / -1; grid-row: 6; }
+  }
+}
+
+// Put guide progress in the spare header space, keeping the full diagram and copy.
+@container (max-height: 260px) and (min-width: 400px) {
+  .sudoku-app .dialog-rules {
+    position: relative;
+    .dialog-top { margin-bottom: 0; }
+    .eyebrow { position: absolute; top: 24px; right: 56px; margin: 0; line-height: 12px; }
+    .tutorial-body { margin-block: 3px; }
   }
 }

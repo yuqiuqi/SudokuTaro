@@ -1,5 +1,7 @@
 import type {CSSProperties} from 'react'
+import type {Language} from '../../utils/gameplay'
 import {GameIcon} from './GameIcon'
+import {LanguageSwitch} from './LanguageSwitch'
 import './VictoryResult.scss'
 
 type Props = {
@@ -10,7 +12,7 @@ type Props = {
   moves: number
   usedNotes: boolean
   newBest: boolean
-  onLanguage: () => void
+  onLanguage: (language: Language) => void
   onClose: () => void
   onViewBoard: () => void
   onPlayAgain: () => void
@@ -45,13 +47,7 @@ export function VictoryResult(p: Props) {
       </aside>
       <div className="victory-content">
         <div className="dialog-top">
-          <button
-            type="button"
-            className="text-button language-button"
-            onClick={p.onLanguage}
-          >
-            中文 / EN
-          </button>
+          <LanguageSwitch lang={p.en ? 'en' : 'zh'} onChange={p.onLanguage} />
           <button
             type="button"
             className="text-button close-button"
