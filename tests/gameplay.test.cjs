@@ -220,3 +220,61 @@ test('hint steps offer one review message or three different teaching clues', ()
     }
   }
 })
+
+// Input legality follows the current board, including legal guesses, rather than the solution.
+test('available digits exclude row, column and box values but retain digits in unrelated regions', () => {
+  const game = fixture()
+  game.initial = Array.from({length: 9}, () => Array(9).fill(0))
+  game.board = g.copy(game.initial)
+  game.board[0][8] = 1 // row only
+  game.board[8][0] = 2 // column only
+  game.board[1][1] = 3 // box only
+  game.board[4][4] = 4 // unrelated region
+  const before = JSON.stringify(game)
+  assert.deepEqual(g.availableDigits(game, 0), [4, 5, 6, 7, 8, 9])
+  assert.deepEqual(g.availableDigits(game, 0, true), [4, 5, 6, 7, 8, 9])
+  assert.equal(JSON.stringify(game), before, 'candidate computation does not mutate the save')
+  game.solution = game.solution.map((row) => row.map((value) => 10 - value))
+  assert.deepEqual(g.availableDigits(game, 0), [4, 5, 6, 7, 8, 9])
+})
+test('available digits handle selection, readonly cells and filled editable cells', () => {
+  const game = fixture()
+  assert.deepEqual(g.availableDigits(game, null), [1, 2, 3, 4, 5, 6, 7, 8, 9])
+  assert.deepEqual(g.availableDigits(game, 0), [])
+  assert.deepEqual(g.availableDigits({...game, won: true}, 2), [])
+  assert.deepEqual(g.availableDigits({...game, won: true}, null), [])
+  assert.deepEqual(g.availableDigits(game, 2), [1, 2, 4])
+  const filled = g.move(game, 2, 4, false).game
+  assert.deepEqual(g.availableDigits(filled, 2), [1, 2, 4], 'exclude the editable cell itself')
+  assert.deepEqual(g.availableDigits(filled, 2, true), [])
+})
+test('digits recompute after changing values, erasing and undoing, including older saves', () => {
+  const original = fixture()
+  assert.ok(g.isSavedGame(original), 'older 30-clue saves remain supported')
+  assert.deepEqual(g.availableDigits(JSON.parse(JSON.stringify(original)), 2), [1, 2, 4])
+  original.initial = Array.from({length: 9}, () => Array(9).fill(0))
+  original.board = g.copy(original.initial)
+  const filled = g.move(original, 2, 4, false).game
+  assert.ok(!g.availableDigits(filled, 3).includes(4))
+  const changed = g.move(filled, 2, 1, false).game
+  assert.ok(g.availableDigits(changed, 3).includes(4))
+  assert.ok(!g.availableDigits(changed, 3).includes(1))
+  assert.deepEqual(g.availableDigits(g.undoMove(changed), 3), g.availableDigits(filled, 3))
+  const erased = g.move(changed, 2, 0, false).game
+  assert.deepEqual(g.availableDigits(erased, 3), g.availableDigits(original, 3))
+  assert.deepEqual(g.availableDigits(g.undoMove(erased), 3), g.availableDigits(changed, 3))
+})
+test('notes reject illegal additions without altering board, history or existing notes', () => {
+  const game = fixture()
+  game.notes[2] = [1, 2, 4]
+  const before = JSON.stringify(game)
+  const rejected = g.move(game, 2, 5, true)
+  assert.equal(rejected.game, game)
+  assert.equal(JSON.stringify(game), before)
+  const legal = g.move(game, 2, 1, true).game
+  assert.deepEqual(legal.notes[2], [2, 4])
+  assert.deepEqual(g.undoMove(legal).notes, game.notes)
+  const legacy = {...game, notes: game.notes.map((notes, i) => i === 2 ? [5] : notes)}
+  assert.ok(g.isSavedGame(legacy), 'legacy notes do not invalidate otherwise valid progress')
+  assert.deepEqual(g.move(legacy, 2, 5, true).game.notes[2], [], 'legacy invalid notes can still be removed')
+})

@@ -368,6 +368,15 @@
   background: var(--wash);
   box-shadow: inset 0 0 0 1.5px var(--accent), var(--key-shadow);
 }
+.sudoku-app .number-key:disabled {
+  opacity: 1;
+  color: #929bab;
+  background: #e0e4eb;
+  border-color: rgba(161, 179, 204, 0.2);
+  box-shadow: none;
+  text-shadow: none;
+  transform: none;
+}
 .sudoku-app .number-key:not(:disabled):active {
   transform: translateY(1px);
   box-shadow: var(--key-pressed-shadow);

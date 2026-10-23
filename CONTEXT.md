@@ -5,7 +5,7 @@
 
 ---
 
-## 当前实现（v1.2.2 · 实体棋盘与凸起键帽）
+## 当前实现（v1.2.3 · 可用数字与提示入口）
 
 - 产品显示名为「方寸数独」，HTML／页面标题与可见品牌保持一致。技术包名、仓库名、Pages URL 与存档 key 继续使用原标识。新局实际给定数为简单 36–40／中等 31–35／困难 26–30，最多两次生成后使用唯一解模板兜底；只约束线索数量，不构成专业逻辑技巧评级。旧存档不按新范围淘汰。
 - 本节覆盖下方历史中的旧界面、输入和道具描述。当前真源为 `src/pages/index/index.tsx`、`index.scss`、`useGameLayout.ts`、`src/utils/gameplay.ts` 与 `src/styles/_glass-tokens.scss`。Figma 文件 `AhWwkAjjXti2imJAbhgrTY` 的 V2 根节点 `20:545` 为视觉基准；H5 使用实际 CSS px，关闭 `h5.postcss.pxtransform`，不要恢复 rpx 缩放。
@@ -13,8 +13,10 @@
 - 棋盘采用平整正视的实体材质：4px 底沿、接触阴影、统一左上高光；格面浅倒角与数字轻浮雕保留数字可读性。工具键采用静态浅浮起质感；数字键以 2px 基座呈现凸起键帽，按下使用 `translateY(1px)`，减少动态效果时取消位移与过渡。极窄横屏按实际可用宽度同时预算棋盘与控制区，保留左右留白；不要把最窄控制区回退应用到全部宽屏。材质不改变共享主列、给定格只读、同数辅助、反馈／提示占位及胜利流程；未新增依赖。
 - 尺寸预算取 parent 的真实安全可用高度，避免自然内容高度反馈；模式分类采用独立稳定的 20px／安全区基准。错误、提示开关及换层不改变棋盘预算；提示通过不可访问的自然尺寸副本预留各层全文空间，active 文案唯一可访问。横屏与折叠分区保留专用回退。
 - 棋盘为原生按钮，initial 给定格原生 `disabled` 并恢复 `opacity:1`，保留可读数值／标签，不可点击、修改或进入焦点；choose／fill 也防御题面。方向键仅在原行／列内搜索可编辑格，跳过给定数，无目标保留原格，并同步 `focus({preventScroll:true})`。同数、行列宫与提示辅助高亮保留，不等于独占 `is-selected` 框。Taro 会改写 button 标签选择器，原生按钮样式用 `[type="button"]`；不要恢复隐藏 Input 或 ScrollView。
+- 可编辑格选中后，数字键按当前行／列／宫已有数字禁用并以颜色区分，排除当前格自身，不读取 solution 过滤。换格、填数、擦除、撤销后重算；笔记不能新增冲突候选。未选格时保留先选格反馈；禁用按钮不触发点击，实体键盘的非法输入仍由填数逻辑拒绝，并显示稳定冲突反馈。
+- 分层提示当前免费；`src/utils/hintAccess.ts` 预留未来广告接入，默认没有 provider，广告可用前不显示广告说明或观看入口。只有已就绪的 provider 才能进入观看确认，完整观看并收到 rewarded 才发放提示；取消、失败不增加提示次数，并防护重复点击和迟到回调。没有接入真实广告 SDK，不模拟广告或奖励；接口细节以源码为准。
 - 保留候选数、完整撤销、唯一解、中英文分层提示／规则、保存与纪录；撤销／擦除免费，`gameEconomy.ts` 是历史保留模块。胜利流程仍为 `wave → seams → null`：960ms 单格包络、90ms 对角延迟，总 2400ms，随后 650ms 单次青柠缝隙光，两段由真实 animationend 衔接。减少动态效果、Escape、菜单／新局取消及刷新不重复记胜场不变。
-- 本轮方寸数独版本的类型检查、13 项逻辑测试、根路径生产构建／完整浏览器回归及 Pages 子路径构建／完整浏览器回归均已通过。独立 AI 首轮根路径截图视觉审阅无 P0／P1／P2 必改项；静态审阅不替代交互验证。实际验证与范围见 [v1.2.2 说明](docs/releases/v1.2.2.md)；远端构建／部署与正式发布以 [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions) 和 [GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases) 为准。此前发布证据见 [v1.2.1](docs/releases/v1.2.1.md) 与 [v1.2.0](docs/releases/v1.2.0.md)。
+- v1.2.3 类型检查、26 项逻辑测试、根路径／Pages 生产构建与完整浏览器回归均通过，两轮运行时错误为空；本地生产部署验证器预检通过，不等于线上验证。八组手机几何两路径一致，与 v1.2.2 一致；README 两图来自最终 Pages 真实界面。独立 AI 代码与最终两图视觉审查无未解决 P0／P1／P2。默认免费提示 UI 已做浏览器回归；未来 provider-ready 广告确认弹窗的焦点与交互、真实 SDK 和真机未测，奖励控制器由逻辑测试与接线代码审阅验证。实际证据与限制见 [v1.2.3 说明](docs/releases/v1.2.3.md)，远端结果以 [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions)、[GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases) 和 [PR 记录](https://github.com/yuqiuqi/SudokuTaro/pulls) 为准。此前发布证据见 [v1.2.2](docs/releases/v1.2.2.md)、[v1.2.1](docs/releases/v1.2.1.md) 与 [v1.2.0](docs/releases/v1.2.0.md)。
 - 代码修改后按 `AGENTS.md` 完成类型检查、逻辑测试、构建与浏览器回归；Pages 需配对子路径构建与测试，仅文档修改检查差异。浏览器 CSS 尺寸／分区模拟不等同小米 17 移动 Edge、iOS Safari、屏幕阅读器或安全区／折叠硬件实测。现行测量与回归见 `docs/RESPONSIVE_DESIGN.md`。
 
 ## 1. 项目卡片
