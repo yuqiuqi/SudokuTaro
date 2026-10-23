@@ -2,6 +2,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import type {CSSProperties} from 'react'
 import type {Difficulty} from '../../utils/sudokuEngine'
 import {
+  availableDigits,
   cellLocation,
   completedUnits,
   createGame,
@@ -17,6 +18,11 @@ import {
   type Hint,
   type Language,
 } from '../../utils/gameplay'
+import {
+  createHintAdRequest,
+  getRewardedHintProvider,
+  type RewardedHintProvider,
+} from '../../utils/hintAccess'
 import {GameIcon} from './GameIcon'
 import {useGameLayout} from './useGameLayout'
 import {VictoryResult, VictorySeams, VictorySparkles} from './VictoryResult'
@@ -25,7 +31,7 @@ import './index.scss'
 const STORAGE = 'sudokutaro:glass:v1',
   RECORDS = 'sudokutaro:records:v1'
 type Records = {wins: number; best: Partial<Record<Difficulty, number>>}
-type Modal = 'rules' | 'settings' | 'new' | 'won' | null
+type Modal = 'rules' | 'settings' | 'new' | 'won' | 'hint-access' | null
 const time = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 function restore(): Game {
@@ -121,7 +127,17 @@ export default function IndexPage() {
       return false
     }
   })
-  const [modal, setModal] = useState<Modal>(null)
+  const [modal, updateModal] = useState<Modal>(null)
+  const [hintAccessBusy, setHintAccessBusy] = useState(false)
+  const hintAccessRequest = useRef(createHintAdRequest()),
+    hintAccessProvider = useRef<RewardedHintProvider | null>(null)
+  const setModal = useCallback((next: Modal | ((current: Modal) => Modal)) => {
+    // Dismissed or replaced dialogs cannot award a late SDK callback.
+    hintAccessRequest.current.cancel()
+    hintAccessProvider.current = null
+    setHintAccessBusy(false)
+    updateModal(next)
+  }, [])
   const [ruleStep, setRuleStep] = useState(0)
   const [hint, setHint] = useState<{value: Hint; stage: number} | null>(null)
   const [conflicts, setConflicts] = useState<number[]>([])
@@ -194,6 +210,9 @@ export default function IndexPage() {
     return () => clearTimeout(id)
   }, [message])
   useEffect(() => () => clearTimeout(conflictTimer.current), [])
+  useEffect(() => () => {
+    hintAccessRequest.current.cancel()
+  }, [])
   useEffect(() => {
     if (!game.won || winRecorded.current) return
     winRecorded.current = true
@@ -313,13 +332,40 @@ export default function IndexPage() {
   const showHint = () => {
     clearTimeout(conflictTimer.current)
     setMessage('')
-    if (game.won) return
-    const h = findHint(game)
+    const current = gameRef.current
+    if (current.won) return
+    const h = findHint(current)
     if (!h) return
-    if (!game.initial[Math.floor(h.index / 9)][h.index % 9]) setSelected(h.index)
+    if (!current.initial[Math.floor(h.index / 9)][h.index % 9]) setSelected(h.index)
     setHint({value: h, stage: 0})
     setConflicts([])
     setGame((g) => ({...g, hints: g.hints + 1}))
+  }
+  const requestHint = () => {
+    if (gameRef.current.won) return
+    const provider = getRewardedHintProvider()
+    let ready = false
+    try {
+      ready = provider?.isReady() === true
+    } catch {
+      /* Keep free hints available when the provider cannot check readiness. */
+    }
+    if (!ready || !provider) {
+      showHint()
+      return
+    }
+    setModal('hint-access')
+    hintAccessProvider.current = provider
+  }
+  const watchHint = async () => {
+    const provider = hintAccessProvider.current
+    if (!provider || hintAccessRequest.current.pending) return
+    // Guard synchronously, before React updates the disabled watch button.
+    setHintAccessBusy(true)
+    const rewarded = await hintAccessRequest.current.run(provider)
+    if (rewarded === null) return
+    setModal(null)
+    if (rewarded) showHint()
   }
   const newGame = (d: Difficulty) => {
     clearTimeout(conflictTimer.current)
@@ -408,6 +454,7 @@ export default function IndexPage() {
     () => new Set(selectedNotes),
     [selectedNotes],
   )
+  const legalDigits = availableDigits(game, selected, noteMode)
   const changeLanguage = () => setLang((l) => (l === 'zh' ? 'en' : 'zh'))
 
   const renderedCells = useMemo(
@@ -725,7 +772,7 @@ export default function IndexPage() {
                   <button
                     type="button"
                     ref={hintTrigger}
-                    onClick={showHint}
+                    onClick={requestHint}
                     disabled={game.won}
                   >
                     <GameIcon name="hint" />
@@ -748,7 +795,7 @@ export default function IndexPage() {
                           : say(`填写 ${n}`, `Enter ${n}`)
                       }
                       aria-pressed={noteMode && activeCandidates.has(n)}
-                      disabled={game.won}
+                      disabled={!legalDigits.includes(n)}
                       onClick={() => fill(n)}
                     >
                       {n}
@@ -888,6 +935,24 @@ export default function IndexPage() {
                 >
                   {say('选择难度 / 开始新局', 'Choose difficulty / New game')}
                 </button>
+              </>
+            )}
+            {modal === 'hint-access' && (
+              <>
+                <h1 id="dialog-title">{say('获取本次提示', 'Get a hint')}</h1>
+                <p className="dialog-copy">
+                  {say('完整观看一段广告后，获得本次提示', 'Watch a complete ad to get this hint.')}
+                </p>
+                <div className="dialog-actions">
+                  <button type="button" className="secondary-button" onClick={() => setModal(null)}>
+                    {say('取消', 'Cancel')}
+                  </button>
+                  <button type="button" className="primary-button" disabled={hintAccessBusy} onClick={watchHint}>
+                    {hintAccessBusy
+                      ? say('正在观看广告…', 'Ad in progress…')
+                      : say('观看广告获取提示', 'Watch ad for a hint')}
+                  </button>
+                </div>
               </>
             )}
             {modal === 'new' && (

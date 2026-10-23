@@ -80,6 +80,24 @@ async function loadTestFonts(p, url) {
     await p.evaluate(() => document.fonts.ready)
   }
 }
+async function withEmptyBoard(p, run) {
+  const saved = await p.evaluate((KEY) => localStorage.getItem(KEY), KEY)
+  await p.evaluate(({game, KEY}) => {
+    const empty = Array.from({length: 9}, () => Array(9).fill(0))
+    localStorage.setItem(KEY, JSON.stringify({...game, board: empty, initial: empty}))
+  }, {game, KEY})
+  await p.reload()
+  await p.waitForSelector('[data-cell="80"]')
+  await loadTestFonts(p, p.url())
+  await p.locator('[data-cell="2"]').click()
+  try { await run() } finally {
+    await p.evaluate(({KEY, saved}) => localStorage.setItem(KEY, saved), {KEY, saved})
+    await p.reload()
+    await p.waitForSelector('[data-cell="80"]')
+    await loadTestFonts(p, p.url())
+    await p.locator('[data-cell="2"]').click()
+  }
+}
 async function geometry(p, label) {
   const result = await p.evaluate(() => {
     const w = innerWidth,
@@ -955,7 +973,7 @@ async function inlineHintRegressions(p) {
         'localized metadata fits',
       )
       await p.locator('[data-cell="2"]').click()
-      await p.locator('[data-number="5"]').click()
+      await p.keyboard.press('5')
       const feedbackFits = await p.locator('.feedback').evaluate((n) => {
         const r = n.getBoundingClientRect(),
           b = document.querySelector('.board-frame').getBoundingClientRect()
@@ -997,7 +1015,7 @@ async function inlineHintRegressions(p) {
   await p.setViewportSize({width: 390, height: 720})
   await p.waitForTimeout(80)
   await p.locator('[data-cell="2"]').click()
-  await p.locator('[data-number="5"]').click()
+  await p.keyboard.press('5')
   const feedback = await p.locator('.feedback').evaluate((n) => {
     const r = n.getBoundingClientRect(),
       b = document.querySelector('.board-frame').getBoundingClientRect()
@@ -1051,6 +1069,51 @@ async function difficultyAndBrandRegressions(p, url) {
   await p.goto(url)
   await p.waitForSelector('[data-cell="80"]')
   await loadTestFonts(p, url)
+}
+
+async function legalDigitRegressions(p) {
+  await p.setViewportSize({width: 390, height: 720})
+  await p.locator('[data-cell="2"]').click()
+  const enabled = () => p.locator('.number-key').evaluateAll((keys) => keys.filter((key) => !key.disabled).map((key) => Number(key.dataset.number)))
+  assert.deepEqual(await enabled(), [1, 2, 4], 'row, column and box disable all used digits')
+  const styles = await p.locator('[data-number="1"], [data-number="5"]').evaluateAll((keys) => keys.map((key) => {
+    const style = getComputedStyle(key)
+    return [style.color, style.backgroundColor]
+  }))
+  assert.notDeepEqual(styles[0], styles[1], 'disabled digits have a visibly distinct color')
+  const before = await p.locator('[data-cell="2"]').innerText()
+  await p.locator('[data-number="5"]').evaluate((key) => key.click())
+  assert.equal(await p.locator('[data-cell="2"]').innerText(), before, 'native click ignores a disabled digit')
+  await p.locator('[data-number="4"]').focus()
+  await p.keyboard.press('Tab')
+  assert.equal(await p.evaluate(() => document.activeElement?.dataset.number || null), null, 'Tab skips all disabled digits after 4')
+  await p.locator('[data-cell="3"]').click()
+  assert.deepEqual(await enabled(), [2, 6], 'changing the selected cell recomputes available keys')
+  await p.locator('[data-cell="2"]').click()
+  await p.locator('[data-number="4"]').click()
+  assert.deepEqual(await enabled(), [1, 2, 4], 'a player entry does not block its own digit')
+  await p.getByRole('button', {name: '笔记', exact: true}).click()
+  assert.deepEqual(await enabled(), [], 'filled cells cannot receive notes')
+  await p.getByRole('button', {name: '笔记', exact: true}).click()
+  await p.locator('[data-cell="3"]').click()
+  assert.equal(await p.locator('[data-number="4"]').isDisabled(), true)
+  await p.getByRole('button', {name: '撤销', exact: true}).click()
+  await p.locator('[data-cell="2"]').click()
+  assert.deepEqual(await enabled(), [1, 2, 4], 'undo restores availability')
+  await p.getByRole('button', {name: '笔记', exact: true}).click()
+  await p.keyboard.press('5')
+  assert.equal((await p.locator('[data-cell="2"] .cell-notes').innerText()).replace(/\s/g, ''), '124', 'physical keys cannot add an illegal note')
+  await p.getByRole('button', {name: '笔记', exact: true}).click()
+  await p.locator('[data-cell="2"]').click()
+  await p.keyboard.press('5')
+  assert.equal(await p.locator('[data-cell="2"] .cell-digit').count(), 0)
+  assert.ok((await p.locator('.feedback').innerText()).length > 0, 'physical input retains conflict feedback')
+  await p.locator('[data-cell="2"]').click()
+  await p.getByRole('button', {name: '提示', exact: true}).click()
+  assert.equal(await p.locator('.hint-card').count(), 1, 'unconfigured ad provider opens free hints immediately')
+  assert.equal(await p.locator('.dialog').count(), 0, 'free hints do not require an ad confirmation')
+  assert.equal(await p.getByText(/观看广告|Watch ad|Ad in progress|完整观看/).count(), 0, 'free mode hides ad wording and controls')
+  await p.getByRole('button', {name: '关闭提示', exact: true}).click()
 }
 
 // Pressing a key changes only its depth: no shrink, no board or page movement.
@@ -1232,7 +1295,7 @@ async function interactionComfortRegressions(p, url) {
       await geometry(p, label)
       if(width===844 || (width===480&&height===240) || (width===280&&height===320) || visible===400) {
         const errorBefore=await rects()
-        await p.locator('[data-cell="2"]').click();await p.locator('[data-number="5"]').click()
+        await p.locator('[data-cell="2"]').click();await p.keyboard.press('5')
         const errorDuring=await rects()
         check(errorDuring['.input-caption'].height===42 && (await p.locator('.feedback').innerText()).length>0,`${label} realconflict restores fixed42pxfeedbackslot`)
         compare(errorBefore,errorDuring,['.board-frame','.game-meta','.tools','.number-panel','.input-caption'],`${label} posthint conflict`)
@@ -1354,7 +1417,7 @@ async function stableFeedbackKeypadRegressions(p) {
     for (const en of [false, true]) {
       const before = await snapshot()
       if (!en) await capture(`${width}x${height}-before`)
-      await p.locator('[data-number="5"]').click()
+      await p.keyboard.press('5')
       await p.waitForTimeout(100)
       const during = await snapshot()
       compare(before, during, `${width}x${height}/${en ? 'en' : 'zh'} conflict`)
@@ -1408,17 +1471,25 @@ async function stableFeedbackKeypadRegressions(p) {
       }))
       check(Math.abs(centers[0] - centers[1]) <= 1, `${width}x${height} landscape controls center within the board/play row`)
     }
-    // Real clicks on all nine keys after every resize must toggle notes and remain undoable.
-    await p.getByRole('button', {name: '笔记', exact: true}).click()
-    for (let n = 1; n <= 9; n++) {
-      const key = p.locator(`[data-number="${n}"]`)
-      const pressed = await key.getAttribute('aria-pressed')
-      await key.click()
-      assert.notEqual(await key.getAttribute('aria-pressed'), pressed, `${width}x${height} note ${n} real hit target`)
-      await p.getByRole('button', {name: '撤销', exact: true}).click()
-      assert.equal(await key.getAttribute('aria-pressed'), pressed, `undo note ${n}`)
-    }
-    await p.getByRole('button', {name: '笔记', exact: true}).click()
+    // All nine digits are clicked on a legal fixture; disabled keys are never skipped.
+    await withEmptyBoard(p, async () => {
+      await p.getByRole('button', {name: '笔记', exact: true}).click()
+      for (let n = 1; n <= 9; n++) {
+        const key = p.locator(`[data-number="${n}"]`)
+        const pressed = await key.getAttribute('aria-pressed')
+        await key.click()
+        assert.notEqual(await key.getAttribute('aria-pressed'), pressed, `${width}x${height} note ${n} real hit target`)
+        await p.getByRole('button', {name: '撤销', exact: true}).click()
+        assert.equal(await key.getAttribute('aria-pressed'), pressed, `undo note ${n}`)
+      }
+      await p.getByRole('button', {name: '笔记', exact: true}).click()
+      for (let n = 1; n <= 9; n++) {
+        await p.locator(`[data-number="${n}"]`).click()
+        assert.equal(await p.locator('[data-cell="2"] .cell-digit').innerText(), String(n), `${width}x${height} digit ${n} real hit target`)
+        await p.getByRole('button', {name: '撤销', exact: true}).click()
+        assert.equal(await p.locator('[data-cell="2"] .cell-digit').count(), 0)
+      }
+    })
   }
   // Reserve the same real feedback capacity in both fold arrangements and when
   // the browser toolbar compresses visualViewport without resizing the layout viewport.
@@ -1437,7 +1508,7 @@ async function stableFeedbackKeypadRegressions(p) {
     for (const en of [false, true]) {
       await p.locator('[data-cell="2"]').click()
       const before = await snapshot()
-      await p.locator('[data-number="5"]').click()
+      await p.keyboard.press('5')
       await p.waitForTimeout(80)
       compare(before, await snapshot(), `${mode}/${en ? 'en' : 'zh'} conflict`)
       const fits = await p.locator('.feedback').evaluate((n) => {
@@ -1480,20 +1551,22 @@ async function viewportRegressions(p) {
     await p.waitForTimeout(80)
     await check(`low landscape ${width}x${height}`, async () => {
       await geometry(p, 'low landscape')
-      await p.locator('[data-cell="2"]').click()
-      await p.getByRole('button', {name: '笔记', exact: true}).click()
-      for (const n of ['7', '8', '9'])
-        await p.locator(`[data-number="${n}"]`).click()
-      assert.equal(
-        (await p.locator('[data-cell="2"] .cell-notes').innerText()).replace(
-          /\s/g,
-          '',
-        ),
-        '124789',
-      )
-      for (let i = 0; i < 3; i++)
-        await p.getByRole('button', {name: '撤销', exact: true}).click()
-      await p.getByRole('button', {name: '笔记', exact: true}).click()
+      await withEmptyBoard(p, async () => {
+        await p.locator('[data-cell="2"]').click()
+        await p.getByRole('button', {name: '笔记', exact: true}).click()
+        for (const n of ['7', '8', '9'])
+          await p.locator(`[data-number="${n}"]`).click()
+        assert.equal(
+          (await p.locator('[data-cell="2"] .cell-notes').innerText()).replace(
+            /\s/g,
+            '',
+          ),
+          '124789',
+        )
+        for (let i = 0; i < 3; i++)
+          await p.getByRole('button', {name: '撤销', exact: true}).click()
+        await p.getByRole('button', {name: '笔记', exact: true}).click()
+      })
     })
   }
   await p.setViewportSize({width: 390, height: 720})
@@ -1620,6 +1693,7 @@ async function viewportRegressions(p) {
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
     await difficultyAndBrandRegressions(p, url)
+    await legalDigitRegressions(p)
     await tactileKeyRegressions(p)
     for (const height of [320, 470]) {
       await p.setViewportSize({width: 280, height})
@@ -1696,7 +1770,7 @@ async function viewportRegressions(p) {
       '124',
     )
     await p.getByRole('button', {name: '笔记', exact: true}).click()
-    await p.locator('[data-number="5"]').click()
+    await p.keyboard.press('5')
     assert.equal(await p.locator('[data-cell="2"] .cell-digit').count(), 0)
     assert.ok((await p.locator('.is-conflict').count()) >= 2)
     await p.locator('[data-number="4"]').click()

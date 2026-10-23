@@ -41,6 +41,27 @@ export function peers(a: number, b: number): boolean {
       Math.floor((a % 9) / 3) === Math.floor((b % 9) / 3))
   )
 }
+/** Legal input follows the visible board, never the stored solution. */
+export function availableDigits(
+  game: Game,
+  index: number | null,
+  noteMode = false,
+): number[] {
+  if (game.won) return []
+  if (index === null) return [...DIGITS]
+  const row = Math.floor(index / 9),
+    column = index % 9
+  if (game.initial[row][column] || (noteMode && game.board[row][column]))
+    return []
+  const occupied = new Set(
+    game.board.flatMap((values, r) =>
+      values.filter((_, c) =>
+        r * 9 + c !== index && peers(index, r * 9 + c),
+      ),
+    ),
+  )
+  return DIGITS.filter((digit) => !occupied.has(digit))
+}
 export function candidates(board: number[][], index: number): number[] {
   return board[Math.floor(index / 9)][index % 9]
     ? []
@@ -109,6 +130,11 @@ export function move(
     notes = copy(game.notes)
   if (noteMode && value > 0) {
     if (board[r][c]) return {game, conflicts: []}
+    if (
+      !notes[index].includes(value) &&
+      !availableDigits(game, index, true).includes(value)
+    )
+      return {game, conflicts: []}
     notes[index] = notes[index].includes(value)
       ? notes[index].filter((n) => n !== value)
       : [...notes[index], value].sort()
