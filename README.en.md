@@ -10,35 +10,35 @@ A small space for focused reasoning. Built with [Taro 4](https://taro.zone/), Re
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-7.0.2-3178c6?logo=typescript&logoColor=white)
 
-## v1.2.5 · Bilingual documentation and consistent branding
-
-The Chinese and English READMEs now link to each other. Product labels use **方寸数独 · Fangcun Sudoku**, while existing links and saved progress remain compatible. See [repository safeguards](docs/REPOSITORY_SECURITY.md) for the proposed protection settings and permission limits, and the [v1.2.5 notes](docs/releases/v1.2.5.md) for this update.
-
-## v1.2.4 · Illustrated guidance and clearer controls
+## v1.3.0 · Independent challenges, another glow, and guided steps
 
 [Play online](https://yuqiuqi.github.io/SudokuTaro/)
 
-New to Sudoku? Start with seven pages of illustrated guidance in Chinese and English: learn about rows, columns, and 3×3 boxes, then explore entering numbers, notes, erasing, undo, and free step-by-step hints. Full 9×9 diagrams explain each rule, including black given numbers, blue player entries, and gray disabled number keys.
+Easy still greys out and disables keys that conflict with the selected cell's row, column, or box. Medium and Hard keep all 1–9 keys available and allow manually recorded candidates, including incorrect ones. Available does not mean correct: conflicting answers are still rejected with feedback and never enter the board. Filled cells cannot receive notes, givens remain read-only, and completed games cannot be edited.
 
-A prominent “New game” entry at the top lets you choose a difficulty before starting; closing the dialog continues your current game. Every dialog offers explicit “中文 / English” choices. Softer grid lines and spacing between the four tool buttons make the controls easier to recognize and tap.
+After completing a puzzle, choose “See the glow” on the results card or completed board to enjoy the rainbow 3D wave and lime seam light again, then return to results. This leaves the board, time, wins, and saves unchanged and does not repeat the victory vibration. With reduced motion enabled, the entry is disabled with a visible explanation.
 
-Vibration depends on browser support. iOS Safari does not support the Vibration API, so the settings explain why vibration is unavailable and disable the switch; H5 alone cannot enable haptic feedback in these browsers. Devices that support the API can still use vibration according to the saved preference.
+The first three of seven bilingual tutorial pages offer five steps for rows, columns, and 3×3 boxes: identify the unit, observe eight digits, find the missing 9, select the center cell, then enter and check it. Each lesson starts still. Choose steps 1–5 manually or play a finite demonstration that advances every 1600 ms and stops at the last step. Changing pages, closing the tutorial, hiding the page, or enabling reduced motion stops automatic playback. The other four lessons continue to cover input, tools, free hints, and saving.
 
-| 393×720 · Main game | 393×720 · Language and vibration settings |
-|---|---|
-| ![New game entry and spaced tool buttons](docs/screenshots/guide-phone-393x720.png) | ![Explicit language choices and an explanation of unavailable vibration](docs/screenshots/guide-settings-393x720.png) |
+The top “New game” button loses its white inner edge while retaining its layout, focus ring, and difficulty selection before replacing the current puzzle. Every dialog still offers explicit Chinese/English choices. Vibration still depends on Vibration API support, with a disabled switch and explanation when unavailable.
 
-These screenshots were captured in Chromium over loopback from the v1.2.4 production build with the Pages subpath: the main screen shows an actual newly generated Medium puzzle with 32 givens; the settings screenshot simulates the absence of the Vibration API and is not evidence of testing on a physical iOS device. Type checking, 26 logic tests, and the full browser regression suite for both root-path and Pages builds passed for v1.2.4. See the [v1.2.4 release notes](docs/releases/v1.2.4.md) for changes and verification scope, and [Responsive Design](docs/RESPONSIVE_DESIGN.md) for layout rules. Refer to [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions), [GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases), and [pull requests](https://github.com/yuqiuqi/SudokuTaro/pulls) for remote build, deployment, and official release status.
+Type checking, all 34 logic tests, the paired root-path and Pages subpath production builds, and both full browser regressions passed, with no runtime errors. An additional geometry diagnostic covered 800 tutorial/result states across ten viewports, both languages, and both motion preferences, with no failures. Both builds retain the warning for their approximately 282KiB entries exceeding the suggested 244KiB. The five screenshots come from the paired Pages production build in loopback Chromium; see the [v1.3.0 notes](docs/releases/v1.3.0.md). Historical screenshots and their provenance remain in the [v1.2.4 notes](docs/releases/v1.2.4.md) and do not illustrate the new features. See [Responsive Design](docs/RESPONSIVE_DESIGN.md) for layout rules. Refer to [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions), [GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases), and [pull requests](https://github.com/yuqiuqi/SudokuTaro/pulls) for remote build, deployment, and official release status.
+
+| Easy: conflicting keys disabled | Medium: all nine keys available | Tutorial: manual step 5 |
+|---|---|---|
+| ![Easy mode](docs/screenshots/challenge-easy-393x720.png) | ![Medium mode](docs/screenshots/challenge-medium-393x720.png) | ![Box lesson step 5](docs/screenshots/challenge-demo-393x720.png) |
+
+[568×240 English tutorial scan frame](docs/screenshots/challenge-demo-568x240-en.png) · [Results and the glow entry](docs/screenshots/challenge-victory-393x720.png). The new puzzles actually generated 39/34 givens. The landscape scan is paused at a real 450ms frame; results use a controlled near-complete save, finished through actual input and the original victory animation. These are browser captures, with no physical-device testing.
 
 ## Features
 
 - **Interface and responsive layout:** misty blue and pale cyan glows, a solid board, a glass tool tray, and raised number keys. The layout adapts to the browser's actual available width and height on phones, in landscape, and in split-screen regions; rotation and split-screen changes preserve progress.
-- **Input:** select an editable cell and tap the always-visible 1–9 keys without opening the system keyboard. Conflicting number keys are disabled and distinguished by color; attempting input without a selected cell still prompts you to select one first. Physical keyboards support number keys, arrow keys, Delete/Backspace, N to toggle notes, and Escape to close dialogs. Conflicting input from a physical keyboard is rejected with feedback.
-- **Notes and undo:** record multiple candidates in each cell. Entering a number clears related candidates; undo restores numbers and notes. Erase and undo are free, with no stamina limit.
+- **Input:** select an editable cell and tap the always-visible 1–9 keys without opening the system keyboard. Easy disables and distinguishes conflicting number keys by color; Medium and Hard keep all nine keys available; attempting input without a selected cell still prompts you to select one first. Physical keyboards support number keys, arrow keys, Delete/Backspace, N to toggle notes, and Escape to close dialogs. Conflicting input from a physical keyboard is rejected with feedback.
+- **Notes and undo:** record multiple candidates in empty editable cells. Easy filters conflicting candidates; Medium and Hard leave that judgment to the player. Entering a number clears related candidates; undo restores numbers and notes. Erase and undo are free, with no stamina limit.
 - **Free step-by-step hints:** locate the relevant area → consider eliminations → read the reasoning. Full explanations appear outside the board, controls stay in place, and players enter the answer themselves.
-- **Getting started and new games:** seven illustrated tutorial pages in Chinese and English. The top new-game entry asks for a difficulty before starting; canceling preserves the current game. Each dialog lets you select Chinese or English directly.
+- **Getting started and new games:** seven illustrated tutorial pages in Chinese and English, with manual five-step and finite automatic demonstrations in the first three lessons. The top new-game entry asks for a difficulty before starting; canceling preserves the current game. Each dialog lets you select Chinese or English directly.
 - **Rules and puzzle generation:** new puzzles strictly use 36–40 givens for Easy, 31–35 for Medium, and 26–30 for Hard, with a unique-solution check. Existing saves are unchanged. Grouping puzzles by clue count is not a professional rating of the logical techniques required.
-- **Completion:** an approximately 2.4-second rainbow 3D wave → approximately 650 ms of lime light along the grid seams → results and personal records. Supports reduced motion, skipping the animation, admiring the board, and playing again; refreshing does not count a win twice.
+- **Completion:** an approximately 2.4-second rainbow 3D wave → approximately 650 ms of lime light along the grid seams → results and personal records. Supports reduced motion, skipping the animation, admiring the board, seeing the glow again, and playing again; neither refreshing nor enjoying the glow again counts another win.
 - **Saving:** progress, records, language, and vibration preferences are saved in the current browser; play remains available when storage is unavailable. Browsers without the Vibration API show a disabled switch with an explanation; a saved vibration preference cannot enable unsupported functionality.
 
 ## Technology stack

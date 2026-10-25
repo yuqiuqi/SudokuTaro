@@ -1190,6 +1190,7 @@
 .sudoku-app .topbar .new-game-button {
   background: var(--accent);
   border-color: var(--accent);
+  box-shadow: 0 3px 8px rgba(72, 111, 170, 0.2);
   color: var(--white);
   white-space: nowrap;
 }
@@ -1370,5 +1371,14 @@
     .dialog-top { margin-bottom: 0; }
     .eyebrow { position: absolute; top: 24px; right: 56px; margin: 0; line-height: 12px; }
     .tutorial-body { margin-block: 3px; }
+  }
+}
+
+// Let long lessons use the full width below their illustration on narrow short screens.
+@container (max-height: 390px) and (max-width: 399px) {
+  .sudoku-app .dialog-rules .tutorial-body-static {
+    display: flow-root;
+    .rules-example { float: left; margin: 0 10px 4px 0; }
+    .dialog-copy { margin: 0 !important; line-height: 1.3; }
   }
 }

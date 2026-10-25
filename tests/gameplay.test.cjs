@@ -278,3 +278,60 @@ test('notes reject illegal additions without altering board, history or existing
   assert.ok(g.isSavedGame(legacy), 'legacy notes do not invalidate otherwise valid progress')
   assert.deepEqual(g.move(legacy, 2, 5, true).game.notes[2], [], 'legacy invalid notes can still be removed')
 })
+
+for (const difficulty of ['medium', 'hard']) {
+  test(`${difficulty} keeps all nine manual choices independent of clues and solution`, () => {
+    const game = {...fixture(), difficulty}
+    const before = JSON.stringify(game)
+    for (const noteMode of [false, true])
+      assert.deepEqual(g.availableDigits(game, 2, noteMode), g.DIGITS)
+    game.solution = game.solution.map(row => row.map(value => 10 - value))
+    assert.deepEqual(g.availableDigits(game, 2), g.DIGITS)
+    game.solution = JSON.parse(before).solution
+    assert.equal(JSON.stringify(game), before)
+  })
+  test(`${difficulty} allows conflicting manual candidates to toggle, erase and undo without changing the board`, () => {
+    const game = {...fixture(), difficulty}
+    const added = g.move(game, 2, 5, true)
+    assert.deepEqual(added.conflicts, [])
+    assert.deepEqual(added.game.notes[2], [5], '5 conflicts with a clue but remains a manual candidate')
+    assert.deepEqual(added.game.board, game.board)
+    assert.equal(added.game.moves, game.moves)
+    assert.ok(added.game.usedNotes)
+    assert.ok(g.isSavedGame(added.game), 'manual candidates survive the existing save format')
+    const removed = g.move(added.game, 2, 5, true).game
+    assert.deepEqual(removed.notes[2], [])
+    assert.deepEqual(g.undoMove(removed).notes, added.game.notes)
+    const erased = g.move(added.game, 2, 0, false).game
+    assert.deepEqual(erased.notes[2], [])
+    assert.deepEqual(g.undoMove(erased).notes, added.game.notes)
+    assert.deepEqual(g.undoMove(added.game).notes, game.notes)
+  })
+  test(`${difficulty} rejects conflicting normal placement while preserving manual candidates and history`, () => {
+    const base = {...fixture(), difficulty}
+    const game = {...base, notes: base.notes.map((ns, i) => i === 2 ? [5] : ns)}
+    const before = JSON.stringify(game)
+    const result = g.move(game, 2, 5, false)
+    assert.equal(result.game, game)
+    assert.ok(result.conflicts.includes(0) && result.conflicts.includes(2))
+    assert.equal(JSON.stringify(game), before)
+  })
+  test(`${difficulty} retains readonly, filled-note and won guards before nine-choice assistance`, () => {
+    const game = {...fixture(), difficulty}
+    assert.deepEqual(g.availableDigits(game, null), g.DIGITS)
+    assert.deepEqual(g.availableDigits(game, 0), [])
+    assert.deepEqual(g.availableDigits(game, 0, true), [])
+    assert.equal(g.move(game, 0, 5, true).game, game)
+    const filled = g.move(game, 2, 4, false).game
+    assert.deepEqual(g.availableDigits(filled, 2), g.DIGITS)
+    assert.deepEqual(g.availableDigits(filled, 2, true), [])
+    assert.equal(g.move(filled, 2, 5, true).game, filled)
+    const won = {...game, won: true}
+    for (const selection of [null, 2]) {
+      assert.deepEqual(g.availableDigits(won, selection), [])
+      assert.deepEqual(g.availableDigits(won, selection, true), [])
+    }
+    assert.equal(g.move(won, 2, 5, true).game, won)
+    assert.equal(g.move(won, 2, 4, false).game, won)
+  })
+}
