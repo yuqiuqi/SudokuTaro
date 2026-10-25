@@ -41,7 +41,7 @@ export function peers(a: number, b: number): boolean {
       Math.floor((a % 9) / 3) === Math.floor((b % 9) / 3))
   )
 }
-/** Legal input follows the visible board, never the stored solution. */
+/** Easy assists with visible constraints; advanced games leave candidates to the player. */
 export function availableDigits(
   game: Game,
   index: number | null,
@@ -53,6 +53,7 @@ export function availableDigits(
     column = index % 9
   if (game.initial[row][column] || (noteMode && game.board[row][column]))
     return []
+  if (game.difficulty !== 'easy') return [...DIGITS]
   const occupied = new Set(
     game.board.flatMap((values, r) =>
       values.filter((_, c) =>

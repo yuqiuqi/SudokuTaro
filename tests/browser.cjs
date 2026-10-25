@@ -84,13 +84,13 @@ async function languageOptions(p, en, normal = false) {
     const buttons = [...group.querySelectorAll('button')]
     return buttons.map((button) => {
       const mark = button.querySelector('.language-switch__check')
-      return {pressed: button.getAttribute('aria-pressed'), height: button.getBoundingClientRect().height,
+      return {pressed: button.getAttribute('aria-pressed'), height: button.getBoundingClientRect().height, minHeight: parseFloat(getComputedStyle(button).minHeight),
         border: getComputedStyle(button).borderStyle, mark: mark && getComputedStyle(mark).visibility !== 'hidden' && getComputedStyle(mark).display !== 'none' && Number(getComputedStyle(mark).opacity) > 0 && !!(mark.textContent.trim() || mark.querySelector('svg')?.getBoundingClientRect().width)}
     })
   })
   assert.equal(state.length, 2)
   assert.ok(state.find(option => option.pressed === 'true').mark, 'current language has a visible non-color check mark')
-  assert.ok(state.every(option => option.height >= 44), 'language options have 44px targets at every tested size')
+  assert.ok(state.every(option => option.height + 0.01 >= 44 && option.minHeight >= 44), 'language options have 44px targets and a 44px CSS minimum at every tested size (0.01px geometry tolerance)')
   const before = await p.locator('.dialog').innerText()
   await target.click()
   assert.equal(await p.locator('.dialog').innerText(), before, 'choosing current language is a no-op')
@@ -133,6 +133,27 @@ async function walkRules(p, en, label) {
       const highlighted = cells.filter(cell => cell.active)
       assert.equal(highlighted.length, 9)
       const rows = new Set(highlighted.map(cell => cell.row)), columns = new Set(highlighted.map(cell => cell.column))
+      const demo = p.locator('.rules-demo')
+      assert.equal(await demo.getAttribute('data-demo-step'), '1', 'each guide unit starts stationary')
+      assert.equal(await demo.getAttribute('data-demo-playing'), 'false')
+      assert.equal(await demo.locator('button[data-demo-step-button]').count(), 5)
+      for (let demoStep = 1; demoStep <= 5; demoStep++) {
+        const button = demo.locator(`[data-demo-step-button="${demoStep}"]`)
+        await button.click()
+        assert.equal(await demo.getAttribute('data-demo-step'), String(demoStep))
+        assert.equal(await button.getAttribute('aria-pressed'), 'true')
+        assert.equal(await demo.getAttribute('data-demo-playing'), 'false')
+        const values = await diagram.locator('.is-highlight').allTextContents()
+        const digits = values.map(value => Number(value.trim())).filter(Boolean).sort((a,b) => a-b)
+        assert.deepEqual(digits, demoStep === 5 ? [1,2,3,4,5,6,7,8,9] : [1,2,3,4,5,6,7,8], `${kind} step ${demoStep} shows a valid unit with central missing 9`)
+        assert.equal((await diagram.locator('[data-row="4"][data-column="4"]').innerText()).trim(), demoStep === 5 ? '9' : '')
+        await dialogFits(p, `${label} ${kind} demo ${demoStep}`)
+        assert.ok(await demo.locator('.demo-caption-active').evaluate(node => {
+          const r=node.getBoundingClientRect(), dialog=node.closest('.dialog').getBoundingClientRect()
+          return node.scrollHeight<=node.clientHeight+1 && node.scrollWidth<=node.clientWidth+1 && r.width>0 && r.height>0 && r.top>=dialog.top && r.bottom<=dialog.bottom && r.left>=dialog.left && r.right<=dialog.right
+        }), `${label} ${kind} step ${demoStep} full explanation remains visible`)
+
+      }
       if (kind === 'row') {assert.equal(rows.size, 1);assert.equal(columns.size, 9)}
       if (kind === 'column') {assert.equal(rows.size, 9);assert.equal(columns.size, 1)}
       if (kind === 'box') {
@@ -161,7 +182,7 @@ async function vibrationCapabilityRegressions(browser, url) {
         window.vibrationCalls = []
         Object.defineProperty(navigator,'vibrate',{configurable:true,value:supported ? (pattern) => {window.vibrationCalls.push(pattern);return true} : undefined})
         if (!sessionStorage.getItem('vibration-seeded')) {
-          localStorage.setItem(KEY,JSON.stringify(game))
+          localStorage.setItem(KEY,JSON.stringify({...game, difficulty: 'easy'}))
           localStorage.setItem('sudokutaro:language','zh')
           localStorage.setItem('sudokutaro:vibration',supported?'false':'true')
           sessionStorage.setItem('vibration-seeded','1')
@@ -1316,7 +1337,289 @@ async function difficultyAndBrandRegressions(p, url) {
   await loadTestFonts(p, url)
 }
 
+async function encoreRegressions(p, url) {
+  const saved = await p.evaluate(KEY => localStorage.getItem(KEY), KEY)
+  const records = await p.evaluate(() => localStorage.getItem('sudokutaro:records:v1'))
+  const finishWave = async () => {
+    await p.evaluate(() => document.querySelector('.sudoku-board').getAnimations({subtree:true}).forEach(animation => animation.finish()))
+    await p.waitForSelector('.victory-seams')
+  }
+  const finishReplay = async () => {
+    await finishWave()
+    await p.evaluate(() => document.querySelector('.victory-seams').getAnimations().forEach(animation => animation.finish()))
+    await p.waitForSelector('.dialog-won')
+  }
+  const snapshot = () => p.evaluate(KEY => ({game:JSON.parse(localStorage.getItem(KEY)),records:JSON.parse(localStorage.getItem('sudokutaro:records:v1')),vibrations:window.encoreVibrations || 0}),KEY)
+  try {
+    await p.evaluate(({game,KEY}) => {
+      const board=game.solution.map(row=>[...row]);board[0][2]=0
+      localStorage.setItem(KEY,JSON.stringify({...game,board,initial:board}))
+      localStorage.removeItem('sudokutaro:records:v1')
+    },{game,KEY})
+    await p.reload(); await p.waitForSelector('[data-cell="80"]'); await loadTestFonts(p,url)
+    await p.evaluate(() => {window.encoreVibrations=0;window.originalVibrate=navigator.vibrate;Object.defineProperty(navigator,'vibrate',{configurable:true,value:()=>{window.encoreVibrations++;return true}})})
+    await p.locator('[data-cell="2"]').click(); await p.locator('[data-number="4"]').click()
+    await p.waitForSelector('.dialog-won')
+    const before=await snapshot()
+    assert.equal(before.records.wins,1)
+    const encore=p.locator('.dialog-won [data-victory-encore]')
+    assert.equal(await encore.innerText(),'再赏流光')
+    await encore.evaluate(button=>{button.click();button.click()})
+    await p.waitForSelector('.is-celebrating')
+    assert.equal(await p.locator('.dialog-won').count(),0)
+    assert.ok(await p.locator('.completed-controls [data-victory-encore]').isDisabled(),'replay disables its completed-board entry')
+    await rainbowWaveRegressions(p,false,false)
+    assert.deepEqual(await snapshot(),before,'double click replays the original wave without score, time, save or vibration changes')
+    await p.getByRole('button',{name:'欣赏棋盘',exact:true}).click()
+    await p.locator('.completed-controls [data-victory-encore]').click()
+    await p.waitForSelector('.is-celebrating'); await finishReplay()
+    assert.deepEqual(await snapshot(),before,'completed-board entry can replay a second time without mutation')
+    await setLanguage(p,true)
+    assert.equal(await p.locator('.dialog-won [data-victory-encore]').innerText(),'See the glow')
+    await setLanguage(p,false)
+    for(const phase of ['wave','seams']) {
+      for(const action of ['Escape','settings','reload','reduced']) {
+        if(await p.locator('.dialog-won').count()) await p.locator('.dialog-won [data-victory-encore]').click()
+        else await p.locator('.completed-controls [data-victory-encore]').click()
+        await p.waitForSelector('.is-celebrating')
+        if(phase==='seams') {
+          await finishWave()
+          await p.evaluate(() => {window.staleEncoreSeam=document.querySelector('.victory-seams')})
+        }
+        if(action==='Escape') await p.keyboard.press('Escape')
+        if(action==='settings') {
+          await p.getByRole('button',{name:'设置',exact:true}).click()
+          await p.getByRole('button',{name:'关闭',exact:true}).click()
+        }
+        if(action==='reload') {await p.reload();await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,url)}
+        if(action==='reduced') {
+          await p.emulateMedia({reducedMotion:'reduce'})
+          await p.waitForSelector('.dialog-won')
+          const entry=p.locator('.dialog-won [data-victory-encore]')
+          assert.ok(await entry.isDisabled())
+          const describedby=await entry.getAttribute('aria-describedby')
+          assert.ok(describedby,'disabled reduced-motion replay explains why accessibly')
+          assert.ok(await p.locator(`[id="${describedby}"]`).isVisible())
+          assert.ok((await p.locator(`[id="${describedby}"]`).innerText()).length>0)
+          await p.getByRole('button',{name:'欣赏棋盘',exact:true}).click()
+          const completed=p.locator('.completed-controls [data-victory-encore]')
+          assert.ok(await completed.isDisabled())
+          const completedReason=await completed.getAttribute('aria-describedby')
+          assert.ok(completedReason && await p.locator(`[id="${completedReason}"]`).isVisible(),'completed-board disabled reason is visible')
+          await p.getByRole('button',{name:'查看成绩',exact:true}).click()
+          await p.emulateMedia({reducedMotion:'no-preference'})
+        }
+        if(phase==='seams' && action!=='reload') await p.evaluate(() => window.staleEncoreSeam?.dispatchEvent(new AnimationEvent('animationend',{bubbles:true,animationName:'victory-seam-light'})))
+        await p.waitForTimeout(3200)
+        assert.equal(await p.locator('.is-celebrating,.victory-seams').count(),0,`${phase} ${action} clears replay`)
+        assert.equal(await p.locator('.dialog-won').count(),action==='reduced'?1:0,`${phase} ${action} has no late results`)
+        const after=await snapshot()
+        assert.deepEqual(after.game,before.game,`${action} preserves completed game`)
+        assert.deepEqual(after.records,before.records,`${action} never adds another record`)
+      }
+    }
+    if(await p.locator('.dialog-won').count()) await p.getByRole('button',{name:'欣赏棋盘',exact:true}).click()
+    await p.locator('.completed-controls [data-victory-encore]').click()
+    await p.waitForSelector('.is-celebrating')
+    await p.getByRole('button',{name:'再挑战一局',exact:true}).click()
+    await p.waitForTimeout(3200)
+    assert.equal(await p.locator('.dialog-won,.is-celebrating,[data-victory-encore]').count(),0,'new game cancels replay with no delayed result')
+    assert.equal((await p.evaluate(()=>JSON.parse(localStorage.getItem('sudokutaro:records:v1')))).wins,1)
+  } finally {
+    await p.emulateMedia({reducedMotion:'no-preference'})
+    await p.evaluate(({KEY,saved,records})=>{localStorage.setItem(KEY,saved);if(records===null)localStorage.removeItem('sudokutaro:records:v1');else localStorage.setItem('sudokutaro:records:v1',records);localStorage.setItem('sudokutaro:language','zh')},{KEY,saved,records})
+    await p.reload();await p.waitForSelector('[data-cell="80"]');await loadTestFonts(p,url)
+  }
+}
+
+async function advancedDigitRegressions(p) {
+  const saved = await p.evaluate(KEY => localStorage.getItem(KEY), KEY)
+  const read = () => p.evaluate(KEY => JSON.parse(localStorage.getItem(KEY)), KEY)
+  const enabled = () => p.locator('.number-key').evaluateAll(keys => keys.filter(key => !key.disabled).map(key => Number(key.dataset.number)))
+  try {
+    for (const difficulty of ['medium', 'hard']) {
+      await p.evaluate(({game, KEY, difficulty}) => localStorage.setItem(KEY, JSON.stringify({...game, difficulty})), {game, KEY, difficulty})
+      await p.reload(); await p.waitForSelector('[data-cell="80"]'); await loadTestFonts(p, p.url())
+      await p.locator('[data-cell="2"]').click()
+      assert.deepEqual(await enabled(), [1,2,3,4,5,6,7,8,9], `${difficulty} leaves all nine choices enabled`)
+      const style = await p.locator('[data-number="1"], [data-number="5"]').evaluateAll(keys => keys.map(key => [getComputedStyle(key).color,getComputedStyle(key).backgroundColor]))
+      assert.deepEqual(style[0], style[1], 'advanced digits have equal available appearance')
+      await p.locator('[data-number="5"]').click()
+      assert.equal((await read()).board[0][2], 0, 'enabled conflicting digit still rejects normal placement')
+      assert.ok(await p.locator('.is-conflict').count() >= 2)
+      await p.getByRole('button', {name:'笔记', exact:true}).click()
+      await p.locator('[data-number="5"]').click()
+      assert.deepEqual((await read()).notes[2], [1,2,4,5], 'manual conflicting candidate is recorded')
+      await p.keyboard.press('5')
+      assert.deepEqual((await read()).notes[2], [1,2,4], 'physical input toggles the candidate off')
+      await p.getByRole('button', {name:'撤销', exact:true}).click()
+      assert.deepEqual((await read()).notes[2], [1,2,4,5])
+      await p.reload(); await p.waitForSelector('[data-cell="80"]'); await loadTestFonts(p, p.url())
+      assert.equal((await read()).difficulty, difficulty)
+      assert.deepEqual((await read()).notes[2], [1,2,4,5], 'candidate and difficulty survive refresh')
+      await p.locator('[data-cell="2"]').click()
+      await p.getByRole('button', {name:'擦除', exact:true}).click()
+      assert.deepEqual((await read()).notes[2], [])
+      await p.getByRole('button', {name:'撤销', exact:true}).click()
+      assert.deepEqual((await read()).notes[2], [1,2,4,5])
+      await p.locator('[data-number="4"]').click()
+      assert.equal((await read()).board[0][2], 4)
+      await p.getByRole('button', {name:'笔记', exact:true}).click()
+      assert.deepEqual(await enabled(), [], 'filled cells remain unavailable for notes')
+      assert.ok(await p.locator('[data-cell="0"]').isDisabled(), 'givens remain readonly')
+    }
+  } finally {
+    await p.evaluate(({KEY,saved}) => localStorage.setItem(KEY,saved),{KEY,saved})
+    await p.reload(); await p.waitForSelector('[data-cell="80"]'); await loadTestFonts(p,p.url())
+  }
+}
+
+async function captureDemoScan(p) {
+  await p.evaluate(() => {
+    window.demoScanEvidence = null
+    window.demoScanObserver?.disconnect()
+    const demo=document.querySelector('.rules-demo')
+    window.demoScanObserver=new MutationObserver(() => {
+      if(demo.dataset.demoStep!=='2') return
+      const diagram=demo.querySelector('.rules-diagram')
+      window.demoScanEvidence={kind:diagram.dataset.kind,cells:[...diagram.querySelectorAll('.is-highlight')].filter(cell=>cell.textContent.trim()).map(cell => {
+        const scans=cell.getAnimations({subtree:true}).filter(animation=>animation.animationName==='demo-scan')
+        scans.forEach(animation=>animation.pause())
+        return {row:Number(cell.dataset.row),column:Number(cell.dataset.column),scans:scans.map(animation=>{
+          const {delay,duration,iterations}=animation.effect.getTiming()
+          return {delay,duration,iterations}
+        })}
+      })}
+      window.demoScanObserver.disconnect()
+    })
+    window.demoScanObserver.observe(demo,{attributes:true,childList:true,subtree:true})
+  })
+}
+async function assertDemoScan(p) {
+  await p.waitForFunction(() => window.demoScanEvidence !== null)
+  const evidence=await p.evaluate(() => window.demoScanEvidence)
+  assert.equal(evidence.cells.length,8,'scan teaches the eight existing digits without the empty center')
+  const cells=[...evidence.cells].sort((a,b)=>evidence.kind==='column'?a.row-b.row:evidence.kind==='row'?a.column-b.column:(a.row-b.row)*9+a.column-b.column)
+  let previousDelay=-1
+  for(const cell of cells) {
+    assert.equal(cell.scans.length,1,`${evidence.kind} (${cell.row},${cell.column}) has one actual scan animation`)
+    const {delay,duration,iterations}=cell.scans[0]
+    assert.ok(delay>previousDelay,`${evidence.kind} scan advances through cells in reading order`)
+    assert.equal(iterations,1,'unit scans once')
+    assert.ok(duration>0 && delay+duration<=1600,'the entire scan finishes within one demonstration step')
+    previousDelay=delay
+  }
+}
+
+async function captureDemoEntry(p) {
+  await p.evaluate(() => {
+    window.demoEntryEvidence = null
+    window.demoEntryObserver?.disconnect()
+    const demo = document.querySelector('.rules-demo')
+    window.demoEntryObserver = new MutationObserver(() => {
+      if (demo.dataset.demoStep !== '5') return
+      const cell = demo.querySelector('[data-row="4"][data-column="4"]')
+      const animations = cell.getAnimations()
+      animations.forEach(animation => {
+        animation.pause()
+        animation.currentTime = Number(animation.effect.getTiming().duration) / 2
+      })
+      const style = getComputedStyle(cell)
+      window.demoEntryEvidence = {names:animations.map(animation => animation.animationName), opacity:Number(style.opacity), scale:new DOMMatrixReadOnly(style.transform).a}
+      window.demoEntryObserver.disconnect()
+    })
+    window.demoEntryObserver.observe(demo, {attributes:true, childList:true, subtree:true})
+  })
+}
+async function assertDemoEntry(p, label) {
+  await p.waitForFunction(() => window.demoEntryEvidence !== null)
+  const evidence = await p.evaluate(() => window.demoEntryEvidence)
+  assert.ok(evidence.names.includes('demo-enter'), `${label} fills the final digit with an actual animation: ${JSON.stringify(evidence)}`)
+  assert.ok(evidence.opacity > 0 && evidence.opacity < 1 && evidence.scale > .85 && evidence.scale < 1, `${label} has a visible intermediate entry frame`)
+}
+
+async function demoLifecycleRegressions(p) {
+  const snapshot = await p.evaluate(KEY => JSON.parse(localStorage.getItem(KEY)), KEY)
+  await p.getByRole('button',{name:'规则',exact:true}).click()
+  for (let unit=0; unit<3; unit++) {
+    const demo=p.locator('.rules-demo'), toggle=p.locator('[data-demo-toggle]')
+    await captureDemoScan(p)
+    await p.locator('[data-demo-step-button="2"]').click()
+    await assertDemoScan(p)
+    await p.locator('[data-demo-step-button="4"]').click()
+    await captureDemoEntry(p)
+    await p.locator('[data-demo-step-button="5"]').click()
+    await assertDemoEntry(p, `unit ${unit} manual fifth step`)
+    await p.locator('[data-demo-step-button="1"]').click()
+    await captureDemoEntry(p)
+    await toggle.click()
+    assert.equal(await demo.getAttribute('data-demo-playing'),'true')
+    await p.waitForFunction(() => document.querySelector('.rules-demo')?.dataset.demoStep === '5', null, {timeout:8500})
+    await assertDemoEntry(p, `unit ${unit} automatic fifth step`)
+    assert.equal(await demo.getAttribute('data-demo-playing'),'false','finite auto play stops at step five')
+    await p.waitForTimeout(1750)
+    assert.equal(await demo.getAttribute('data-demo-step'),'5','auto play never loops')
+    await toggle.click()
+    await p.locator('[data-demo-step-button="3"]').click()
+    await p.waitForTimeout(1750)
+    assert.equal(await demo.getAttribute('data-demo-step'),'3','manual selection stops the automatic timer')
+    await setLanguage(p,true)
+    assert.equal(await demo.getAttribute('data-demo-step'),'3','language switch preserves current demonstration step')
+    await setLanguage(p,false)
+    assert.equal(await demo.getAttribute('data-demo-step'),'3')
+    await toggle.click(); await toggle.click()
+    const paused=await demo.getAttribute('data-demo-step')
+    await p.waitForTimeout(1750)
+    assert.equal(await demo.getAttribute('data-demo-step'),paused,'pause button stops the timer')
+    await toggle.click()
+    await p.evaluate(() => {Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))})
+    await p.waitForFunction(() => document.querySelector('.rules-demo')?.dataset.demoPlaying === 'false', null, {timeout:1000})
+    const hiddenStep=await demo.getAttribute('data-demo-step')
+    await p.waitForTimeout(1750)
+    assert.equal(await demo.getAttribute('data-demo-step'),hiddenStep,'hidden document stops the demonstration timer')
+    await p.evaluate(() => {delete document.hidden;document.dispatchEvent(new Event('visibilitychange'))})
+    await p.waitForTimeout(1750)
+    assert.equal(await demo.getAttribute('data-demo-step'),hiddenStep,'restoring visible page does not resume playback')
+    await toggle.click(); await p.emulateMedia({reducedMotion:'reduce'})
+    await p.waitForFunction(() => document.querySelector('.rules-demo')?.dataset.demoPlaying === 'false')
+    await p.locator('[data-demo-step-button="2"]').click()
+    assert.equal(await demo.locator('.rules-diagram').evaluate(node => node.getAnimations({subtree:true}).filter(animation=>animation.animationName==='demo-scan').length),0,'reduced motion shows the unit without scanning')
+    await p.locator('[data-demo-step-button="5"]').click()
+    assert.equal(await demo.locator('[data-row="4"][data-column="4"]').evaluate(node => node.getAnimations().length),0,'reduced motion fills the digit without an entry animation')
+    await p.locator('[data-demo-step-button="4"]').click()
+    assert.equal(await demo.getAttribute('data-demo-step'),'4','reduced motion permits manual steps')
+    assert.ok(await toggle.isDisabled(),'reduced motion disables automatic playback')
+    const descriptionId=await toggle.getAttribute('aria-describedby')
+    assert.ok(descriptionId,'disabled demo auto button explains reduced motion accessibly')
+    assert.ok(await p.locator(`[id="${descriptionId}"]`).isVisible())
+    assert.ok((await p.locator(`[id="${descriptionId}"]`).innerText()).length>0)
+    await p.emulateMedia({reducedMotion:'no-preference'})
+    await p.waitForTimeout(1750)
+    assert.equal(await demo.getAttribute('data-demo-step'),'4','restoring animation preference never auto resumes')
+    await toggle.click()
+    await p.getByRole('button',{name:'继续',exact:true}).click()
+    if(unit<2) {
+      await p.waitForTimeout(1750)
+      assert.equal(await p.locator('.rules-demo').getAttribute('data-demo-step'),'1','page switch clears previous timer')
+    }
+  }
+  await p.getByRole('button',{name:'关闭',exact:true}).click()
+  await p.getByRole('button',{name:'规则',exact:true}).click()
+  await p.locator('[data-demo-toggle]').click()
+  await p.getByRole('button',{name:'关闭',exact:true}).click()
+  await p.waitForTimeout(1750)
+  await p.getByRole('button',{name:'规则',exact:true}).click()
+  assert.equal(await p.locator('.rules-demo').getAttribute('data-demo-step'),'1','closing and reopening starts a fresh demo')
+  await p.getByRole('button',{name:'关闭',exact:true}).click()
+  const after=await p.evaluate(KEY => JSON.parse(localStorage.getItem(KEY)),KEY)
+  for(const field of ['board','initial','notes','history','moves','hints','difficulty','won']) assert.deepEqual(after[field],snapshot[field],`demo does not modify game ${field}`)
+}
+
 async function legalDigitRegressions(p) {
+  const saved = await p.evaluate(KEY => localStorage.getItem(KEY), KEY)
+  await p.evaluate(({game, KEY}) => localStorage.setItem(KEY, JSON.stringify({...game, difficulty: 'easy'})), {game, KEY})
+  await p.reload(); await p.waitForSelector('[data-cell="80"]'); await loadTestFonts(p, p.url())
+  try {
   await p.setViewportSize({width: 390, height: 720})
   await p.locator('[data-cell="2"]').click()
   const enabled = () => p.locator('.number-key').evaluateAll((keys) => keys.filter((key) => !key.disabled).map((key) => Number(key.dataset.number)))
@@ -1359,6 +1662,10 @@ async function legalDigitRegressions(p) {
   assert.equal(await p.locator('.dialog').count(), 0, 'free hints do not require an ad confirmation')
   assert.equal(await p.getByText(/观看广告|Watch ad|Ad in progress|完整观看/).count(), 0, 'free mode hides ad wording and controls')
   await p.getByRole('button', {name: '关闭提示', exact: true}).click()
+  } finally {
+    await p.evaluate(({KEY, saved}) => localStorage.setItem(KEY, saved), {KEY, saved})
+    await p.reload(); await p.waitForSelector('[data-cell="80"]'); await loadTestFonts(p, p.url())
+  }
 }
 
 // Pressing a key changes only its depth: no shrink, no board or page movement.
@@ -1839,6 +2146,7 @@ async function viewportRegressions(p) {
     [568, 240, 240],
     [480, 240, 240],
     [568, 320, 320],
+    [280, 320, 320],
     [320, 480, 480],
     [390, 720, 400],
   ]) {
@@ -1945,6 +2253,8 @@ async function viewportRegressions(p) {
     await guideLanguageRegressions(p, url)
     await difficultyAndBrandRegressions(p, url)
     await legalDigitRegressions(p)
+    await advancedDigitRegressions(p)
+    await demoLifecycleRegressions(p)
     await tactileKeyRegressions(p)
     for (const height of [320, 470]) {
       await p.setViewportSize({width: 280, height})
@@ -1958,6 +2268,7 @@ async function viewportRegressions(p) {
     await stableFeedbackKeypadRegressions(p)
     if (process.env.LAYOUT_ONLY) { console.log('stable feedback / thumb keypad checks passed'); return }
     await victoryFeedbackRegressions(p, url)
+    await encoreRegressions(p, url)
     await singleReviewHintRegression(p, url)
     await cornerHighlightRegression(p)
     await inlineHintRegressions(p)

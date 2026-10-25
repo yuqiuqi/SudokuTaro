@@ -28,6 +28,7 @@ import {GameIcon} from './GameIcon'
 import {LanguageSwitch} from './LanguageSwitch'
 import {RulesDiagram} from './RulesDiagram'
 import {useGameLayout} from './useGameLayout'
+import {useReducedMotion} from './useReducedMotion'
 import {VictoryResult, VictorySeams, VictorySparkles} from './VictoryResult'
 import './index.scss'
 
@@ -111,7 +112,11 @@ export default function IndexPage() {
   const [records, setRecords] = useState<Records>(readRecords)
   const [newBest, setNewBest] = useState(false)
   const [celebration, setCelebration] = useState<'wave' | 'seams' | null>(null)
+  const celebrationRef = useRef(celebration)
+  celebrationRef.current = celebration
   const celebrating = celebration !== null
+  const reducedMotion = useReducedMotion()
+  const canEnjoyLight = game.won && !celebrating && !reducedMotion
   const gameRef = useRef(game),
     hintRef = useRef(hint),
     winRecorded = useRef(game.won)
@@ -193,15 +198,17 @@ export default function IndexPage() {
     setHint(null)
     setMessage('')
     if (vibrationSupported && vibration) navigator.vibrate([18, 45, 28])
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) setModal('won')
+    if (reducedMotion) setModal('won')
     else setCelebration('wave')
     try {
       localStorage.setItem(RECORDS, JSON.stringify(next))
     } catch {
       /* Keep the in-session achievement. */
     }
-  }, [game.won, game.seconds, game.difficulty, records, vibration, vibrationSupported])
+  }, [game.won, game.seconds, game.difficulty, records, vibration, vibrationSupported, reducedMotion])
   const finishCelebration = useCallback(() => {
+    if (!celebrationRef.current) return
+    celebrationRef.current = null
     setCelebration(null)
     setModal((current) => (current === null ? 'won' : current))
   }, [])
@@ -212,14 +219,8 @@ export default function IndexPage() {
       setCelebration(null)
       return
     }
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)')
-    const onPreference = () => {
-      if (reduced.matches) finishCelebration()
-    }
-    reduced.addEventListener?.('change', onPreference)
-    onPreference()
-    return () => reduced.removeEventListener?.('change', onPreference)
-  }, [celebrating, modal, finishCelebration])
+    if (reducedMotion) finishCelebration()
+  }, [celebrating, modal, reducedMotion, finishCelebration])
   useEffect(() => {
     if (game.won && !modal && !celebrating)
       resultsTrigger.current?.focus({preventScroll: true})
@@ -227,6 +228,13 @@ export default function IndexPage() {
   const showVictory = () => {
     setCelebration(null)
     setModal('won')
+  }
+
+  const enjoyLight = () => {
+    if (!canEnjoyLight || celebrationRef.current) return
+    celebrationRef.current = 'wave'
+    setModal(null)
+    setCelebration('wave')
   }
 
   const choose = useCallback((index: number) => {
@@ -422,6 +430,7 @@ export default function IndexPage() {
   )
   const legalDigits = availableDigits(game, selected, noteMode)
   const lesson = tutorial[lang][ruleStep]
+  const lessonIsDemo = ['row', 'column', 'box'].includes(lesson.diagram)
   const lastLesson = ruleStep === tutorial[lang].length - 1
 
   const renderedCells = useMemo(
@@ -580,16 +589,18 @@ export default function IndexPage() {
                   // CSS owns the 960ms envelope + 16 × 90ms diagonal stagger.
                   // Wait for actual completion, including in throttled tabs.
                   if (
-                    celebration === 'wave' &&
+                    celebrationRef.current === 'wave' &&
                     event.animationName === 'victory-wave' &&
                     (event.target as HTMLElement).dataset.cell === '80'
-                  )
+                  ) {
+                    celebrationRef.current = 'seams'
                     setCelebration('seams')
+                  }
                 }}
               >
                 {renderedCells}
                 {celebration === 'seams' && (
-                  <VictorySeams onEnd={finishCelebration} />
+                  <VictorySeams onEnd={() => {if (celebrationRef.current === 'seams') finishCelebration()}} />
                 )}
               </div>
               {celebration === 'wave' && <VictorySparkles />}
@@ -612,7 +623,7 @@ export default function IndexPage() {
               <div className="completed-controls glass-panel">
                 <GameIcon name="check" />
                 <h2>{say('这一局，由你完成', 'Puzzle complete')}</h2>
-                <p>{say('留一刻，欣赏你的答案。', 'Enjoy your solution.')}</p>
+                <p id="completed-glow-reason">{reducedMotion ? say('减少动态效果已开启，流光已停用。', 'Reduce Motion is on; lightshow is off.') : say('留一刻，欣赏你的答案。', 'Enjoy your solution.')}</p>
                 <div className="victory-actions">
                   <button
                     type="button"
@@ -621,6 +632,16 @@ export default function IndexPage() {
                     onClick={showVictory}
                   >
                     {say('查看成绩', 'View results')}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    data-victory-encore
+                    disabled={!canEnjoyLight}
+                    aria-describedby={reducedMotion ? 'completed-glow-reason' : undefined}
+                    onClick={enjoyLight}
+                  >
+                    {say('再赏流光', 'See the glow')}
                   </button>
                   <button
                     type="button"
@@ -830,9 +851,9 @@ export default function IndexPage() {
                   {say('学会数独', 'LEARN SUDOKU')} · <span className="rules-progress">{ruleStep + 1} / {tutorial[lang].length}</span>
                 </div>
                 <h1 id="dialog-title">{lesson.title}</h1>
-                <div className="tutorial-body">
-                  <RulesDiagram kind={lesson.diagram} lang={lang} />
-                  <p className="dialog-copy">{lesson.body}</p>
+                <div className={`tutorial-body ${lessonIsDemo ? '' : 'tutorial-body-static'}`}>
+                  <RulesDiagram key={lesson.diagram} kind={lesson.diagram} lang={lang} body={lesson.body} />
+                  {!lessonIsDemo && <p className="dialog-copy">{lesson.body}</p>}
                 </div>
                 <div className="dialog-actions">
                   <button
@@ -970,6 +991,9 @@ export default function IndexPage() {
                 onLanguage={setLang}
                 onClose={() => setModal(null)}
                 onViewBoard={() => setModal(null)}
+                onEnjoyLight={enjoyLight}
+                canEnjoyLight={canEnjoyLight}
+                reducedMotion={reducedMotion}
                 onPlayAgain={() => newGame(game.difficulty)}
               />
             )}

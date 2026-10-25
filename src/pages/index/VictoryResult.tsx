@@ -16,6 +16,9 @@ type Props = {
   onClose: () => void
   onViewBoard: () => void
   onPlayAgain: () => void
+  onEnjoyLight: () => void
+  canEnjoyLight: boolean
+  reducedMotion: boolean
 }
 
 export function VictoryResult(p: Props) {
@@ -62,8 +65,8 @@ export function VictoryResult(p: Props) {
             <GameIcon name="check" />
           </div>
           <div className="victory-heading">
-            <span className="victory-eyebrow">
-              {text('数独完成', 'PUZZLE COMPLETE')}
+            <span className="victory-eyebrow" id="result-glow-reason">
+              {p.reducedMotion ? text('减少动态效果已开启', 'REDUCED MOTION ON') : text('数独完成', 'PUZZLE COMPLETE')}
             </span>
             <h1 id="dialog-title">
               {text('漂亮，解开了！', 'Beautifully solved!')}
@@ -119,6 +122,16 @@ export function VictoryResult(p: Props) {
             onClick={p.onViewBoard}
           >
             {text('欣赏棋盘', 'Admire board')}
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            data-victory-encore
+            disabled={!p.canEnjoyLight}
+            aria-describedby={p.reducedMotion ? 'result-glow-reason' : undefined}
+            onClick={p.onEnjoyLight}
+          >
+            {text('再赏流光', 'See the glow')}
           </button>
           <button
             type="button"
