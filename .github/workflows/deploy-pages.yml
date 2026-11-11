@@ -33,6 +33,12 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
         run: npm run build:h5
+      - name: Install browser for matching Pages regression
+        run: npx playwright install --with-deps chromium
+      - name: Verify Pages layout and interactions
+        env:
+          PAGES_BUILD: 'true'
+        run: npm run test:browser
       - name: Save preview for PR review
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4

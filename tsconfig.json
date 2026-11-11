@@ -18,11 +18,19 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "resolveJsonModule": true,
-    "typeRoots": ["node_modules/@types"],
+    "typeRoots": [
+      "node_modules/@types"
+    ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
-  "include": ["./src", "./config", "./types"],
+  "include": [
+    "./src",
+    "./types",
+    "./vite.config.ts"
+  ],
   "compileOnSave": false
 }

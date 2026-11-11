@@ -14,6 +14,7 @@ export type Language = 'zh' | 'en'
 export type Notes = number[][]
 export type Snapshot = {board: number[][]; notes: Notes}
 export type Game = Snapshot & {
+  sessionId?: string
   initial: number[][]
   solution: number[][]
   difficulty: Difficulty
@@ -104,6 +105,7 @@ export function createGame(difficulty: Difficulty = 'medium'): Game {
   const {solution, board} = puzzle || createFallbackPuzzle(difficulty)
   const initial = copy(board)
   return {
+    sessionId: createSessionId(),
     solution,
     board,
     initial,
@@ -291,4 +293,9 @@ export function isSavedGame(value: unknown): value is Game {
     g.celebrated.every((n) => Number.isInteger(n) && n >= 0 && n < 27) &&
     g.won === (completedUnits(g.board).length === 27)
   )
+}
+
+/** Identity belongs to a game, never to an animation or result dialog. */
+export function createSessionId(): string {
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `game-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 }

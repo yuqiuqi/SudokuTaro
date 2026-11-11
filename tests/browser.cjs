@@ -52,6 +52,11 @@ const type = (file) =>
 const server = http.createServer((req, res) => {
   let url = decodeURIComponent(req.url.split('?')[0])
   let base = ROOT
+  if (url === '/__test-fixture.html' || url === '/SudokuTaro/__test-fixture.html') {
+    res.writeHead(200, {'Content-Type':'text/html', 'Cache-Control':'no-store'})
+    res.end('<!doctype html><title>Test storage setup</title>')
+    return
+  }
   if (url.startsWith('/test-fonts/') && process.env.TEST_FONT_DIR) {
     base = process.env.TEST_FONT_DIR
     url = url.slice('/test-fonts'.length)
@@ -105,6 +110,11 @@ async function walkRules(p, en, label) {
   await p.getByRole('button', {name: en ? 'Back to game' : '回到游戏', exact: true}).click()
   assert.equal(await p.locator('.dialog-rules').count(), 0, 'first guide page can return to game')
   await p.getByRole('button', {name: en ? 'Rules' : '规则', exact: true}).click()
+  // Measure final layout after the real entrance animation. Fractional parent
+  // translations can round two touching child edges differently mid-frame.
+  await p.locator('.dialog-rules').evaluate(async n => {
+    await Promise.all(n.getAnimations().map(animation => animation.finished.catch(() => {})))
+  })
   assert.deepEqual(await progress(), [1, total])
   const seen = new Set()
   for (let step = 1; step <= total; step++) {
@@ -112,15 +122,15 @@ async function walkRules(p, en, label) {
     await dialogFits(p, `${label} page ${step}/${total}`)
     const guideHeader = await p.locator('.dialog-rules').evaluate(n => {
       const box=s=>n.querySelector(s).getBoundingClientRect();const progress=box('.eyebrow'),language=box('.language-switch'),card=n.getBoundingClientRect();
-      return {inside:progress.left>=card.left&&progress.right<=card.right&&progress.top>=card.top&&progress.bottom<=card.bottom,
+      return {progress:progress.toJSON(),language:language.toJSON(),card:card.toJSON(),inside:progress.left>=card.left&&progress.right<=card.right&&progress.top>=card.top&&progress.bottom<=card.bottom,
         separate:progress.right<=language.left||progress.left>=language.right||progress.bottom<=language.top||progress.top>=language.bottom}
     })
-    assert.ok(guideHeader.inside&&guideHeader.separate, `${label} progress is visible without covering language choices`)
+    assert.ok(guideHeader.inside&&guideHeader.separate, `${label} page ${step}/${total} progress is visible without covering language choices: ${JSON.stringify(guideHeader)}`)
     const content = await p.locator('.dialog-rules').evaluate((dialog) => {
       const title = dialog.querySelector('h1'), body = dialog.querySelector('.dialog-copy')
-      return {title: title.textContent, body: body.textContent, fits: [title, body].every(n => n.scrollWidth <= n.clientWidth + 1 && n.scrollHeight <= n.clientHeight + 1)}
+      return {title: title.textContent, body: body.textContent, fits: [title, body].every(n => n.scrollWidth <= n.clientWidth + 1 && n.scrollHeight <= n.clientHeight + 1),parts:[title,body].map(n=>({tag:n.tagName,scrollWidth:n.scrollWidth,clientWidth:n.clientWidth,scrollHeight:n.scrollHeight,clientHeight:n.clientHeight,font:getComputedStyle(n).font,lineHeight:getComputedStyle(n).lineHeight,rect:n.getBoundingClientRect().toJSON()}))}
     })
-    assert.ok(content.fits && content.title.length > 0 && content.body.length >= 20, `${label} full readable teaching content`)
+    assert.ok(content.fits && content.title.length > 0 && content.body.length >= 20, `${label} full readable teaching content: ${JSON.stringify(content)}`)
     assert.equal(/[\u3400-\u9fff]/.test(content.body.replace(/中文/g, '')), !en, 'teaching prose uses selected language; English may name the Chinese option')
     assert.ok(!seen.has(content.title), 'each guide page has a distinct teaching topic')
     seen.add(content.title)
@@ -346,21 +356,30 @@ async function loadTestFonts(p, url) {
   }
 }
 async function withEmptyBoard(p, run) {
+  const returnURL = p.url()
+  const setupURL = new URL('__test-fixture.html', returnURL).href
   const saved = await p.evaluate((KEY) => localStorage.getItem(KEY), KEY)
+  // Unmount the live session before writing a fixture. A pending React save
+  // must never race this test-only replacement or its restoration.
+  await p.goto(setupURL)
   await p.evaluate(({game, KEY}) => {
     const empty = Array.from({length: 9}, () => Array(9).fill(0))
     localStorage.setItem(KEY, JSON.stringify({...game, board: empty, initial: empty}))
   }, {game, KEY})
-  await p.reload()
+  await p.goto(returnURL)
   await p.waitForSelector('[data-cell="80"]')
   await loadTestFonts(p, p.url())
   await p.locator('[data-cell="2"]').click()
   try { await run() } finally {
+    await p.goto(setupURL)
     await p.evaluate(({KEY, saved}) => localStorage.setItem(KEY, saved), {KEY, saved})
-    await p.reload()
+    await p.goto(returnURL)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, p.url())
     await p.locator('[data-cell="2"]').click()
+    const restored = await p.evaluate(KEY => JSON.parse(localStorage.getItem(KEY)), KEY)
+    assert.deepEqual(restored.initial, JSON.parse(saved).initial, 'temporary fixture restores the original givens')
+    assert.deepEqual(restored.board, JSON.parse(saved).board, 'temporary fixture restores the original board')
   }
 }
 async function geometry(p, label) {
@@ -557,6 +576,8 @@ async function rainbowWaveRegressions(p, capture = false, holdLast = true) {
 }
 // Only unfilled grid strokes may emit light; a paused pulse must hold results.
 async function limeSeamRegressions(p, capture, hold) {
+  assert.equal(await p.locator('.has-unit-feedback,.has-ink-feedback').count(),0,
+    'the victory sequence owns feedback exclusively, even when wave animation time is advanced')
   const timing = await p.evaluate(() => {
     const layer = document.querySelector('.victory-seams')
     window.seamAnimation = layer.getAnimations().find((a) => a.animationName === 'victory-seam-light')
@@ -2248,10 +2269,24 @@ async function viewportRegressions(p) {
     await p.goto(url)
     await p.waitForSelector('[data-cell="80"]')
     await loadTestFonts(p, url)
+    if (process.env.COURTYARD_ONLY) {
+      await require('./courtyard.browser.cjs')(p, url, game)
+      assert.deepEqual(errors, [])
+      console.log('Courtyard interaction checks passed; runtimeErrors=[]')
+      return
+    }
+    if (process.env.WORLD_ONLY) {
+      await require('./courtyard-world.browser.cjs')(p, url, game)
+      assert.deepEqual(errors, [])
+      console.log('Courtyard world and life checks passed; runtimeErrors=[]')
+      return
+    }
     await vibrationCapabilityRegressions(browser, url)
     await toolGapRegressions(p)
     await guideLanguageRegressions(p, url)
     await difficultyAndBrandRegressions(p, url)
+    await require('./courtyard.browser.cjs')(p, url, game)
+    await require('./courtyard-world.browser.cjs')(p, url, game)
     await legalDigitRegressions(p)
     await advancedDigitRegressions(p)
     await demoLifecycleRegressions(p)

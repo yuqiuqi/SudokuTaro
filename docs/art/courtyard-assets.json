@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "candidate": "2.0.0-unreleased",
+  "observed_date": "2026-11-11",
+  "license_file": "LICENSE",
+  "image_generation_tool_used": false,
+  "external_assets": [],
+  "remote_fonts": [],
+  "living_artist_reference": null,
+  "notes": [
+    "Source byte sizes describe text files, not rendered SVG transfer sizes, final bundle contribution or performance.",
+    "Source bytes refreshed against the final 61-file frozen living-world candidate on 2026-11-11; complete local root/Pages verification passed. Final user review and exact-head remote checks remain pending.",
+    "AI-assisted original work is recorded without claiming image generation, third-party ownership clearance or user approval."
+  ],
+  "scene": {
+    "path": "src/features/courtyard/CourtyardScene.tsx",
+    "view_box": "0 0 600 320",
+    "stage_index": "0..7; latest unlocked chapter, not win count",
+    "chapter_tokens": [
+      "doorLight",
+      "mint",
+      "window",
+      "chairs",
+      "mendedCloth",
+      "windChime",
+      "doorNote",
+      "windowLight"
+    ],
+    "text": "Localized Chinese/English accessible SVG title/description via lang prop; chapter narrative and door-note text remain DOM, not baked into SVG.",
+    "animation": "9s lamp, 8s chime, 600ms once-only restoration; hidden/reduced handling",
+    "world": "Player-selected day/dusk/rain, ambient/still and available-object inspection/favorite; local preference, not real calendar.",
+    "life": "12 further new wins after the main arc; six groups of two SVG details derived from earned note count; finite collection."
+  },
+  "assets": [
+    {
+      "id": "svg-scene-CourtyardScene",
+      "kind": "svg-scene",
+      "path": "src/features/courtyard/CourtyardScene.tsx",
+      "source_bytes": 22974,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Original inline SVG with eight chapter-driven states; no external images, fonts or baked text.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    },
+    {
+      "id": "story-chapters",
+      "kind": "story",
+      "path": "src/features/courtyard/chapters.ts",
+      "source_bytes": 11036,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Original complete eight-chapter Chinese and English narrative.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    },
+    {
+      "id": "scene-ui-CourtyardStory",
+      "kind": "scene-ui",
+      "path": "src/features/courtyard/CourtyardStory.scss",
+      "source_bytes": 5242,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Original scene reader and paper UI styles.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    },
+    {
+      "id": "game-ui-index",
+      "kind": "game-ui",
+      "path": "src/pages/index/index.scss",
+      "source_bytes": 38835,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Existing project styles redesigned with warm ceramic and green materials and local feedback.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    },
+    {
+      "id": "tokens-_glass-tokens",
+      "kind": "tokens",
+      "path": "src/styles/_glass-tokens.scss",
+      "source_bytes": 719,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Project semantic palette/material tokens adapted for the courtyard candidate.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    },
+    {
+      "id": "tokens-_apple-ui-tokens",
+      "kind": "tokens",
+      "path": "src/styles/_apple-ui-tokens.scss",
+      "source_bytes": 3496,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Project UI and motion tokens adapted for the courtyard candidate.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    },
+    {
+      "id": "life-narrative",
+      "kind": "life-narrative",
+      "path": "src/features/courtyard/lifeNotes.ts",
+      "source_bytes": 8155,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Twelve complete original bilingual life notes, bounded post-main collection.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    },
+    {
+      "id": "life-scene",
+      "kind": "life-scene",
+      "path": "src/features/courtyard/CourtyardLifeDetails.tsx",
+      "source_bytes": 5388,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Six groups of two derived daily-life SVG detail stages, no external assets.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    },
+    {
+      "id": "object-content",
+      "kind": "object-content",
+      "path": "src/features/courtyard/objects.ts",
+      "source_bytes": 3356,
+      "provenance": "original project work, AI-assisted authoring and editing",
+      "details": "Original bilingual restored-object names and observations.",
+      "license": "CC-BY-NC-ND-4.0",
+      "review_status": "candidate_pending_final_user_review"
+    }
+  ],
+  "evidence": {
+    "metadata": "docs/screenshots/courtyard-capture-metadata.json",
+    "review_entry": "docs/reviews/COURTYARD_V2_CANDIDATE.md",
+    "source_snapshot_sha256": "3a69ed62e0d2a6993f10d8c9a708bdcc8d5e41dab926802100bf253ce13eb3dd",
+    "screenshots": 13,
+    "continuous_video": "docs/screenshots/courtyard-demo.mp4",
+    "video_seconds": 10.92,
+    "real_device": false
+  }
+}

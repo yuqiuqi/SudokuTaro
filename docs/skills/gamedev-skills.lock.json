@@ -1,0 +1,406 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/gamedev-skills/awesome-gamedev-agent-skills",
+  "revision": "dcf3bbbb83f365632402c086bf595048aa24aaa8",
+  "license": "Apache-2.0",
+  "installation_method": "manual flattened complete directories plus router; no npm lifecycle hook",
+  "observed_environment": {
+    "date": "2026-11-11",
+    "location": "/home/agent/.agents/skills",
+    "skill_directories": 78,
+    "byte_identity": "all upstream files compared with installed files in the current cloud environment"
+  },
+  "portable_installation": false,
+  "skills": [
+    {
+      "name": "ai-behavior-trees-utility-ai",
+      "source_path": "skills/disciplines/ai-behavior-trees-utility-ai",
+      "skill_sha256": "8e1c78eac2748e30037c752b7a69e5abb46d8ce654d26b78291895674378677b"
+    },
+    {
+      "name": "audio-design",
+      "source_path": "skills/disciplines/audio-design",
+      "skill_sha256": "c2fa2d294ad8021c364cb8a114da5e3f50aae7521cf4d428307296035888df84"
+    },
+    {
+      "name": "camera-systems",
+      "source_path": "skills/disciplines/camera-systems",
+      "skill_sha256": "419dc9912b1ab007b17df615fc2347158255b63f93000b43b4c4ed1b5605d01e"
+    },
+    {
+      "name": "create-game-assets",
+      "source_path": "skills/disciplines/create-game-assets",
+      "skill_sha256": "36cd246a434fefe1e36feff066597a6268d9f63364bee387ee65a22f03838b5d"
+    },
+    {
+      "name": "dialogue-systems",
+      "source_path": "skills/disciplines/dialogue-systems",
+      "skill_sha256": "b5c5d569861199b36977e7d59ac951eef7e6f0c225b61b3fb46a9acd17325533"
+    },
+    {
+      "name": "game-ai",
+      "source_path": "skills/disciplines/game-ai",
+      "skill_sha256": "5c193ac1debc8ec9ed8f44be7a05d12d817ac390e1fa82018bcae4f2ff53fbd8"
+    },
+    {
+      "name": "game-feel",
+      "source_path": "skills/disciplines/game-feel",
+      "skill_sha256": "48971c7ad1fbb39069cb165f0e45f88c13776585870d69d5de8a04bbe0988e28"
+    },
+    {
+      "name": "game-ui-ux",
+      "source_path": "skills/disciplines/game-ui-ux",
+      "skill_sha256": "accd64692faed4656661a2d6977f20ed505134c1ab5f1732de1798c90071ce5c"
+    },
+    {
+      "name": "input-systems",
+      "source_path": "skills/disciplines/input-systems",
+      "skill_sha256": "19b997005ee43be3aacdc6cc39457a770bffc5697a09b6c617e821984a74be74"
+    },
+    {
+      "name": "level-design",
+      "source_path": "skills/disciplines/level-design",
+      "skill_sha256": "f4966c9ede9d267aeeb0b7d5229df5b946b56210f05483fcfa7034ec99421a1a"
+    },
+    {
+      "name": "performance-optimization",
+      "source_path": "skills/disciplines/performance-optimization",
+      "skill_sha256": "287161d2ed49670a051271c8fade5a7265fda5109d39c218c02598dca7983e2a"
+    },
+    {
+      "name": "physics-tuning",
+      "source_path": "skills/disciplines/physics-tuning",
+      "skill_sha256": "3e0f3d9ad049e552235cb98612381c82361fff582391c4d5584438309a14c35f"
+    },
+    {
+      "name": "procedural-gen",
+      "source_path": "skills/disciplines/procedural-gen",
+      "skill_sha256": "4bd422eff2c28dbb12e0edf7ef68f3e98bcbbdf4d430815ba6da2d0692630cc4"
+    },
+    {
+      "name": "save-systems",
+      "source_path": "skills/disciplines/save-systems",
+      "skill_sha256": "17a7e580cdb8ee2fe654fe1b2d9ba3066c57ef1ea6a8cd9cc69141ebaea16224"
+    },
+    {
+      "name": "shader-programming",
+      "source_path": "skills/disciplines/shader-programming",
+      "skill_sha256": "f0f31992cc22d2152a189f4bc2472bf4dd970d08d6c7a40a481047691ed0cb9c"
+    },
+    {
+      "name": "ebitengine-game",
+      "source_path": "skills/ebitengine/ebitengine-game",
+      "skill_sha256": "4a0538670587bea6976be87b1b7b02051e5be81a291add67a68d86c12e0f2e21"
+    },
+    {
+      "name": "card-game",
+      "source_path": "skills/genres/card-game",
+      "skill_sha256": "cc9b25b66e7100fe0e3d31703d8d54aed383d69a7eedf5f63b3ab9e632ee0b2a"
+    },
+    {
+      "name": "fps-shooter",
+      "source_path": "skills/genres/fps-shooter",
+      "skill_sha256": "86aadd96a3bb8817087846cac895691c28872d99ac5c80f746b95457e60d4072"
+    },
+    {
+      "name": "platformer",
+      "source_path": "skills/genres/platformer",
+      "skill_sha256": "4a6f3887d6e3f8ed03fc3aec3d3a76aeb859b72ed7a4b70f4e83cc706e6a2e15"
+    },
+    {
+      "name": "puzzle",
+      "source_path": "skills/genres/puzzle",
+      "skill_sha256": "3f8d3031042af66633e97a4a3172c36914f9c5dde145179fecab047f907c2518"
+    },
+    {
+      "name": "roguelike",
+      "source_path": "skills/genres/roguelike",
+      "skill_sha256": "d842c30ef0ee9bb8477c9545f557bfbe8f43d7d02b6bdf922db6db0f38c37b0c"
+    },
+    {
+      "name": "rpg",
+      "source_path": "skills/genres/rpg",
+      "skill_sha256": "023d5305787c1c56b1e2be31aa9a2e4be48aac7e3d828198d4745fd1fabcb807"
+    },
+    {
+      "name": "survival-crafting",
+      "source_path": "skills/genres/survival-crafting",
+      "skill_sha256": "8eaf5290a82da5d5f8513b2bc145a8831bd6b2f80628cdc940fe4435695816dc"
+    },
+    {
+      "name": "tower-defense",
+      "source_path": "skills/genres/tower-defense",
+      "skill_sha256": "5b918ecfc6ed1c797fc1570c5f41c84a816d218589e867723f10af493bcc365c"
+    },
+    {
+      "name": "visual-novel",
+      "source_path": "skills/genres/visual-novel",
+      "skill_sha256": "57f703ceaa5f9b3d2741415c1854d1fb00db2d0a92fc1757a279a3b089888086"
+    },
+    {
+      "name": "godot-2d-movement",
+      "source_path": "skills/godot/godot-2d-movement",
+      "skill_sha256": "ea396576540acb85f0ca2050a96cfa6399a03668971bb320ef612e52a32c8f0a"
+    },
+    {
+      "name": "godot-3d-essentials",
+      "source_path": "skills/godot/godot-3d-essentials",
+      "skill_sha256": "6164f02300775b7db62a79ca9f65f8dc2232efa64268fb330621cf898bbec73d"
+    },
+    {
+      "name": "godot-animation",
+      "source_path": "skills/godot/godot-animation",
+      "skill_sha256": "924eba14c119e7b08a53a77be3949def5d226c69db3b38de7d351285dfbb5bb8"
+    },
+    {
+      "name": "godot-audio",
+      "source_path": "skills/godot/godot-audio",
+      "skill_sha256": "9ed39d72403eef39e2cbedb1015262ee8413f4f71c91734ba25f82eece839b5b"
+    },
+    {
+      "name": "godot-csharp",
+      "source_path": "skills/godot/godot-csharp",
+      "skill_sha256": "5e938190143a1e7a86e08d15b76b6991775325a435b88e6aadad38c9819bdbb7"
+    },
+    {
+      "name": "godot-export",
+      "source_path": "skills/godot/godot-export",
+      "skill_sha256": "473552185df50d5ab4a2ef874f47e08ffd7f6f552e191a7a5922c288b29800a6"
+    },
+    {
+      "name": "godot-gdscript",
+      "source_path": "skills/godot/godot-gdscript",
+      "skill_sha256": "9039fb6de0980495fbc77fb87aae22256d92e7b5cca558b9e318b53dbf557459"
+    },
+    {
+      "name": "godot-gdscript-headless-testing",
+      "source_path": "skills/godot/godot-gdscript-headless-testing",
+      "skill_sha256": "980ecf1815cb179bc92749e419e3d5c87cc998413c57ed87035e34dc45e87034"
+    },
+    {
+      "name": "godot-multiplayer",
+      "source_path": "skills/godot/godot-multiplayer",
+      "skill_sha256": "353319ed255916977fa21de4888496b404f400ee63b823db3ff743f5023b9cb6"
+    },
+    {
+      "name": "godot-nodes-scenes",
+      "source_path": "skills/godot/godot-nodes-scenes",
+      "skill_sha256": "0c9384e5db7314fdbc90477faf7557315ff77e9fef24ba5a478b1f8f4d0d31e0"
+    },
+    {
+      "name": "godot-physics",
+      "source_path": "skills/godot/godot-physics",
+      "skill_sha256": "e318719b45091bc2731eb2ebd256027f23f7f50a39b06eb7047608cf8426b297"
+    },
+    {
+      "name": "godot-resources",
+      "source_path": "skills/godot/godot-resources",
+      "skill_sha256": "1c89eb8eaef4ac889c21640822d454d41a9017e4ca205d4044b73d5fd017aa13"
+    },
+    {
+      "name": "godot-shaders",
+      "source_path": "skills/godot/godot-shaders",
+      "skill_sha256": "e96ac075c0d85f14af8de2a3f92bc4f0389a9bb9e9ac32bc1519f2aa4679d6be"
+    },
+    {
+      "name": "godot-signals-groups",
+      "source_path": "skills/godot/godot-signals-groups",
+      "skill_sha256": "eccc8d79a708eff3ff2b1f108baaf8bf3bf3c39e73e396973ea605a6a1190784"
+    },
+    {
+      "name": "godot-tilemap",
+      "source_path": "skills/godot/godot-tilemap",
+      "skill_sha256": "c92a7103c764963a4d065a637941bb537f2409e54277d05aa05ea2bf8fc75971"
+    },
+    {
+      "name": "godot-ui-control",
+      "source_path": "skills/godot/godot-ui-control",
+      "skill_sha256": "0b2cc92d670cc2274f6579748a1703ec6a2bf70dc3d2875985deea1018f05bdc"
+    },
+    {
+      "name": "bevy-ecs",
+      "source_path": "skills/other-engines/bevy-ecs",
+      "skill_sha256": "a1bd86a8c26a1399cb63cf408400db2ff861675b4dedc8a7c2ba7e47b9faa9f7"
+    },
+    {
+      "name": "defold-core",
+      "source_path": "skills/other-engines/defold-core",
+      "skill_sha256": "339b91b141406ee256527ccc27f692d191bb62f235f9e08d6ea1d2b4b66b2b9d"
+    },
+    {
+      "name": "love2d-core",
+      "source_path": "skills/other-engines/love2d-core",
+      "skill_sha256": "a5d585c884e2bdcea2f37822e45bba31964ee27130b972a3d1f8be68a5cd8d8a"
+    },
+    {
+      "name": "pygame-core",
+      "source_path": "skills/other-engines/pygame-core",
+      "skill_sha256": "61fa5550b8989b985721af6fcc33c630297a2da81c52e1164244ccbc89e073b3"
+    },
+    {
+      "name": "roblox-characters",
+      "source_path": "skills/other-engines/roblox-characters",
+      "skill_sha256": "e5ca39a32a1fd83ba887d7c52a1f02775bc7278847ecf1c66844daec325537e0"
+    },
+    {
+      "name": "roblox-datastores",
+      "source_path": "skills/other-engines/roblox-datastores",
+      "skill_sha256": "d9db87b0ac7af02813e2fcae76fa68231d8a877b2a42ced7160bcb7ab9ea8ed2"
+    },
+    {
+      "name": "roblox-luau",
+      "source_path": "skills/other-engines/roblox-luau",
+      "skill_sha256": "3b9310d54cd5d4b390e79e97157c6224ceb7676a5087352928ad84f8ea8218cb"
+    },
+    {
+      "name": "roblox-networking",
+      "source_path": "skills/other-engines/roblox-networking",
+      "skill_sha256": "4ceb603d88d8e26303c7efc33ead1241f6eba88f5c5039636ec95e31d60ed1db"
+    },
+    {
+      "name": "roblox-physics",
+      "source_path": "skills/other-engines/roblox-physics",
+      "skill_sha256": "93b8879bb9a7b631cfa7a3d0ed8c8dd4ef7b839d89b93365ed637bd98f7c18fa"
+    },
+    {
+      "name": "roblox-simulator-economy",
+      "source_path": "skills/other-engines/roblox-simulator-economy",
+      "skill_sha256": "e6b5431ca22cf452f50c2ac2d7db93df390defacd04790509159ede978ffcd4d"
+    },
+    {
+      "name": "roblox-studio-workflow",
+      "source_path": "skills/other-engines/roblox-studio-workflow",
+      "skill_sha256": "d49e1a1e075eba99c89c85f0a576605d970569e027059b3288eaea6e11782042"
+    },
+    {
+      "name": "roblox-ui",
+      "source_path": "skills/other-engines/roblox-ui",
+      "skill_sha256": "f3875cccdb75523c0cc90c55f911d5b267ad9f6566bd5d552b565c329e8ab71c"
+    },
+    {
+      "name": "unity-animation",
+      "source_path": "skills/unity/unity-animation",
+      "skill_sha256": "5d5a45462c606b1f9d435711cc2491d30a6b499b2d40d2ae1323de14ce77dc44"
+    },
+    {
+      "name": "unity-build-pipeline",
+      "source_path": "skills/unity/unity-build-pipeline",
+      "skill_sha256": "96975bb7573a6a8b6672fac1ea8090178631d6c7dda4c455cb80e4205acefe9d"
+    },
+    {
+      "name": "unity-csharp-scripting",
+      "source_path": "skills/unity/unity-csharp-scripting",
+      "skill_sha256": "f257b16054d7859a46d756f9212106dc55417f7b9743481e140cd9dbb84a400e"
+    },
+    {
+      "name": "unity-input-system",
+      "source_path": "skills/unity/unity-input-system",
+      "skill_sha256": "e8ed83bbdb8e9c7cb21022005fd2fd6088465240373742111977a47a07b577d1"
+    },
+    {
+      "name": "unity-navmesh",
+      "source_path": "skills/unity/unity-navmesh",
+      "skill_sha256": "38e5e27602ae12a54452205f0ba8b789d70e34b19f6bbfe5395cd7ddafc5d65c"
+    },
+    {
+      "name": "unity-physics",
+      "source_path": "skills/unity/unity-physics",
+      "skill_sha256": "9bdf714987d6596756c52fade88cdc3f4276865042d7065fba6b1601d6f02e6f"
+    },
+    {
+      "name": "unity-scriptableobjects",
+      "source_path": "skills/unity/unity-scriptableobjects",
+      "skill_sha256": "72d1e13c6a6878f525e531da3f1cdea86215623c309226c790aa8f3ffb93e8f0"
+    },
+    {
+      "name": "unity-tilemap-2d",
+      "source_path": "skills/unity/unity-tilemap-2d",
+      "skill_sha256": "443785c00dc42338f88251b9210e1ad0308afeb0377c5297ae37f7edc97af137"
+    },
+    {
+      "name": "unreal-behavior-trees",
+      "source_path": "skills/unreal/unreal-behavior-trees",
+      "skill_sha256": "f7e7d8afc54d4c2577d2fb5db887a4ab610fda6e9cc483a6cadef3fe3915138c"
+    },
+    {
+      "name": "unreal-blueprints",
+      "source_path": "skills/unreal/unreal-blueprints",
+      "skill_sha256": "f8a6a8b8ddc6a7df2493035733c29ef42ee0ed4f321a3b6935bcb3f5aef12f98"
+    },
+    {
+      "name": "unreal-cpp-gameplay",
+      "source_path": "skills/unreal/unreal-cpp-gameplay",
+      "skill_sha256": "f2acfd6ae0b17b1613e79418e77bec3d524aad7711115c62d48e1aefe5ef7f09"
+    },
+    {
+      "name": "unreal-enhanced-input",
+      "source_path": "skills/unreal/unreal-enhanced-input",
+      "skill_sha256": "3d33571a1b0170ed2c01776c0039f3d3f980319c20f36d16fe6cdc1e26815dfb"
+    },
+    {
+      "name": "unreal-niagara",
+      "source_path": "skills/unreal/unreal-niagara",
+      "skill_sha256": "d99f9810049526e509a4fef010495c52efd43782a8ca4879a52d1fabf8b85c5e"
+    },
+    {
+      "name": "unreal-packaging",
+      "source_path": "skills/unreal/unreal-packaging",
+      "skill_sha256": "adb8fd8cec1d095c88c15083334718263b92f7d39746937516d82b7cda9011fa"
+    },
+    {
+      "name": "phaser-arcade-physics",
+      "source_path": "skills/web-engines/phaser-arcade-physics",
+      "skill_sha256": "2e9780da9067323f5e06fcf4d1c90df03814bbbead7dffbb4fb9d5db0e63a7f7"
+    },
+    {
+      "name": "phaser-core",
+      "source_path": "skills/web-engines/phaser-core",
+      "skill_sha256": "0df9ed5e32bdb576375730c21917dc80a02f54e8bb95c17521208f92d2baad0f"
+    },
+    {
+      "name": "pixijs-rendering",
+      "source_path": "skills/web-engines/pixijs-rendering",
+      "skill_sha256": "da832dcbaa5a281af15d784c8dff87e52c44556355cb92cf03d46016885a3e9d"
+    },
+    {
+      "name": "threejs-gltf-loading",
+      "source_path": "skills/web-engines/threejs-gltf-loading",
+      "skill_sha256": "6ead2c9e21cff45ebf244f16bc1b815771f95f14d6479f5aae21d4ee3702a3f6"
+    },
+    {
+      "name": "threejs-materials-lighting",
+      "source_path": "skills/web-engines/threejs-materials-lighting",
+      "skill_sha256": "51451f53c44b9bb3ee87b8f12fcc0d8c8f5b44d9426686cec4090636d7580784"
+    },
+    {
+      "name": "threejs-scene-setup",
+      "source_path": "skills/web-engines/threejs-scene-setup",
+      "skill_sha256": "4f229f27bc84eba0ba9197a775245cf8ddc1ba9959798d6caf9a9f59b4706c17"
+    },
+    {
+      "name": "game-jam",
+      "source_path": "skills/workflows/game-jam",
+      "skill_sha256": "bf166b82872f5a9d04e61d01d8efa3159a7d1291af22010c8d0e002467b98655"
+    },
+    {
+      "name": "itch-publish",
+      "source_path": "skills/workflows/itch-publish",
+      "skill_sha256": "87f43efa3c6e6e57d84822321d98405833f7cb41ebffd40648f00a619396be9b"
+    },
+    {
+      "name": "prototype-fast",
+      "source_path": "skills/workflows/prototype-fast",
+      "skill_sha256": "02491395c621833d2252f7a33a96aa11f26eb48523fea167c68272fb3c785ba1"
+    },
+    {
+      "name": "steam-publish",
+      "source_path": "skills/workflows/steam-publish",
+      "skill_sha256": "60fe1f5591c73aa37dc4114937ea6bacd053403b009e00c7a1a11ae5fc605dc0"
+    },
+    {
+      "name": "router",
+      "source_path": "router",
+      "skill_sha256": "c3693d3d700d76ebe5b5a1aaf39d711faa83256aae0c12452d51e31a0944774f"
+    }
+  ]
+}
