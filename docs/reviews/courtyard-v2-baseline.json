@@ -1,0 +1,38 @@
+{
+  "source": "/workspace/sudokutaro-tools/redesign-work/baseline-dist",
+  "environment": "Same cloud host, localhost production files, system Chromium,393x720,reduce motion; not a real mobile-device measurement",
+  "method": "Three fresh browser contexts; readiness includes automation wait; input is programmatic selection followed by two animation frames, an observation proxy not hardware input latency",
+  "js": {
+    "files": 4,
+    "rawBytes": 341052,
+    "gzipBytes": 114278
+  },
+  "css": {
+    "files": 2,
+    "rawBytes": 45430,
+    "gzipBytes": 9062
+  },
+  "runs": [
+    {
+      "readyMs": 667,
+      "inputNextTwoFramesP50": 33.300000071525574,
+      "inputNextTwoFramesP95": 33.60000002384186,
+      "heapUsedBytes": 6169448,
+      "runtimeErrors": []
+    },
+    {
+      "readyMs": 433,
+      "inputNextTwoFramesP50": 33.299999952316284,
+      "inputNextTwoFramesP95": 34.5,
+      "heapUsedBytes": 6015564,
+      "runtimeErrors": []
+    },
+    {
+      "readyMs": 413,
+      "inputNextTwoFramesP50": 33.300000071525574,
+      "inputNextTwoFramesP95": 33.40000009536743,
+      "heapUsedBytes": 6150224,
+      "runtimeErrors": []
+    }
+  ]
+}

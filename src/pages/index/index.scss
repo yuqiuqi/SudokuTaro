@@ -161,10 +161,10 @@
   flex-shrink: 0;
   padding: 8px;
   border-radius: 24px;
-  background: linear-gradient(145deg, #ffffff, #e0e8f3);
+  background: linear-gradient(145deg, #ffffff, #e1e2d2);
   // Solid lower edge, contact shadow, then ambient shadow: a level physical slab.
   box-shadow:
-    0 4px 0 #aab9cf,
+    0 4px 0 #aeb79d,
     0 5px 5px rgba(51, 74, 110, 0.22),
     0 14px 24px -6px rgba(51, 74, 110, 0.2),
     inset 1px 1px 1px #fff,
@@ -185,7 +185,9 @@
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--panel-border);
   border-radius: var(--grid-radius);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.95), -1px -1px 2px rgba(71, 91, 124, 0.16);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95),
+    -1px -1px 2px rgba(71, 91, 124, 0.16);
   overflow: hidden;
 }
 .sudoku-app .sudoku-cell {
@@ -197,9 +199,11 @@
   align-items: center;
   justify-content: center;
   border-radius: 0;
-  background: linear-gradient(145deg, #fff, #f5f7fc);
+  background: linear-gradient(145deg, #fff, #f5f3e9);
   // Shallow bevels keep the grid recessed without making givens look clickable.
-  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.95), inset -0.6px -0.6px 0 rgba(125, 145, 177, 0.12);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.95),
+    inset -0.6px -0.6px 0 rgba(125, 145, 177, 0.12);
   border-right: 0.5px solid var(--board-line);
   border-bottom: 0.5px solid var(--board-line);
   transition:
@@ -219,7 +223,7 @@
   }
   &.is-related,
   &.is-hint-unit {
-    background: rgba(237, 241, 255, 0.8);
+    background: rgba(231, 235, 223, 0.8);
   }
   &.is-same {
     background: var(--key-bg);
@@ -320,8 +324,14 @@
   font-size: 12px;
   font-weight: 500;
   min-width: 0;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(230, 237, 248, 0.8));
-  box-shadow: 0 1px 0 rgba(151, 170, 197, 0.45), inset 1px 1px 0 rgba(255, 255, 255, 0.95);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.96),
+    rgba(230, 233, 216, 0.8)
+  );
+  box-shadow:
+    0 1px 0 rgba(151, 170, 197, 0.45),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.95);
 }
 .sudoku-app .tools .is-active {
   color: var(--accent);
@@ -347,7 +357,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #fff, #e8eef9);
+  background: linear-gradient(145deg, #fff, #e7eadc);
   box-shadow: var(--key-shadow);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
   color: var(--key-ink);
@@ -366,12 +376,14 @@
 .sudoku-app .number-key.is-noted {
   color: var(--accent);
   background: var(--wash);
-  box-shadow: inset 0 0 0 1.5px var(--accent), var(--key-shadow);
+  box-shadow:
+    inset 0 0 0 1.5px var(--accent),
+    var(--key-shadow);
 }
 .sudoku-app .number-key:disabled {
   opacity: 1;
   color: #929bab;
-  background: #e0e4eb;
+  background: #e3e5d9;
   border-color: rgba(161, 179, 204, 0.2);
   box-shadow: none;
   text-shadow: none;
@@ -786,30 +798,101 @@
     height: 52px;
     flex: 0 0 52px;
   }
-  .brand { font-size: 20px; }
-  .topbar nav { gap: 4px; }
-  .topbar .text-button { min-height: 32px; padding: 4px 7px; font-size: 10px; }
-  .game-meta { grid-column: 1 / -1; height: 18px; gap: 4px; margin: 0; }
-  .game-meta .difficulty-button { min-height: 24px; font-size: 10px; }
-  .metrics { font-size: 10px; gap: 8px; }
-  .play-layout { gap: 8px; }
-  .board-pane { gap: 0; }
-  .control-pane { height: 200px; flex: 0 0 200px; gap: 6px; }
-  .game-controls { height: 166px; gap: 10px; grid-template-rows: 46px 110px; }
-  .tools { height: 46px; padding: 0; }
-  .number-panel { width: 100%; height: 110px; padding: 6px; gap: 6px; }
-  .hint-card { height: 166px; flex: 0 0 166px; }
-  .hint-card .dialog-actions { margin-top: auto; }
-  .input-caption { height: 28px; flex: 0 0 28px; }
-  .selection-caption { font-size: 10px; line-height: 14px; }
+  .brand {
+    font-size: 20px;
+  }
+  .topbar nav {
+    gap: 4px;
+  }
+  .topbar .text-button {
+    min-height: 32px;
+    padding: 4px 7px;
+    font-size: 10px;
+  }
+  .game-meta {
+    grid-column: 1 / -1;
+    height: 18px;
+    gap: 4px;
+    margin: 0;
+  }
+  .game-meta .difficulty-button {
+    min-height: 24px;
+    font-size: 10px;
+  }
+  .metrics {
+    font-size: 10px;
+    gap: 8px;
+  }
+  .play-layout {
+    gap: 8px;
+  }
+  .board-pane {
+    gap: 0;
+  }
+  .control-pane {
+    height: 200px;
+    flex: 0 0 200px;
+    gap: 6px;
+  }
+  .game-controls {
+    height: 166px;
+    gap: 10px;
+    grid-template-rows: 46px 110px;
+  }
+  .tools {
+    height: 46px;
+    padding: 0;
+  }
+  .number-panel {
+    width: 100%;
+    height: 110px;
+    padding: 6px;
+    gap: 6px;
+  }
+  .hint-card {
+    height: 166px;
+    flex: 0 0 166px;
+  }
+  .hint-card .dialog-actions {
+    margin-top: auto;
+  }
+  .input-caption {
+    height: 28px;
+    flex: 0 0 28px;
+  }
+  .selection-caption {
+    font-size: 10px;
+    line-height: 14px;
+  }
   &.height-limited {
-    .control-pane { height: 188px; flex-basis: 188px; gap: 6px; }
-    .brand { font-size: 17px; }
-    .metrics { font-size: 9px; gap: 5px; }
-    .game-controls { height: 154px; grid-template-rows: 36px 110px; gap: 8px; }
-    .tools { height: 36px; }
-    .number-panel { height: 110px; gap: 6px; }
-    .hint-card { height: 154px; flex-basis: 154px; }
+    .control-pane {
+      height: 188px;
+      flex-basis: 188px;
+      gap: 6px;
+    }
+    .brand {
+      font-size: 17px;
+    }
+    .metrics {
+      font-size: 9px;
+      gap: 5px;
+    }
+    .game-controls {
+      height: 154px;
+      grid-template-rows: 36px 110px;
+      gap: 8px;
+    }
+    .tools {
+      height: 36px;
+    }
+    .number-panel {
+      height: 110px;
+      gap: 6px;
+    }
+    .hint-card {
+      height: 154px;
+      flex-basis: 154px;
+    }
   }
 }
 .layout-fold-horizontal {
@@ -1186,7 +1269,9 @@
 }
 
 // The new-game entry shares the existing header row and its height budget.
-.new-game-short { display: none; }
+.new-game-short {
+  display: none;
+}
 .sudoku-app .topbar .new-game-button {
   background: var(--accent);
   border-color: var(--accent);
@@ -1196,18 +1281,42 @@
 }
 .phone-layout.height-limited,
 .layout-fold-horizontal {
-  .new-game-label { display: none; }
-  .new-game-short { display: inline; }
-  .brand { font-size: 15px; white-space: nowrap; }
-  .topbar nav { gap: 2px; }
-  .topbar .text-button { padding-inline: 4px; font-size: 9px; }
+  .new-game-label {
+    display: none;
+  }
+  .new-game-short {
+    display: inline;
+  }
+  .brand {
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .topbar nav {
+    gap: 2px;
+  }
+  .topbar .text-button {
+    padding-inline: 4px;
+    font-size: 9px;
+  }
 }
 @media (max-width: 360px) {
-  .new-game-label { display: none; }
-  .new-game-short { display: inline; }
-  .topbar .brand { font-size: 15px; white-space: nowrap; }
-  .topbar nav { gap: 2px; }
-  .topbar .text-button { padding-inline: 4px; font-size: 9px; }
+  .new-game-label {
+    display: none;
+  }
+  .new-game-short {
+    display: inline;
+  }
+  .topbar .brand {
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .topbar nav {
+    gap: 2px;
+  }
+  .topbar .text-button {
+    padding-inline: 4px;
+    font-size: 9px;
+  }
 }
 
 // Keep every language option a real 44px target, including compact results.
@@ -1216,7 +1325,9 @@
   height: 44px;
   flex-shrink: 0;
 }
-.sudoku-app .dialog .dialog-top .close-button { min-height: 44px; }
+.sudoku-app .dialog .dialog-top .close-button {
+  min-height: 44px;
+}
 .vibration-support-copy {
   color: var(--muted);
   font-size: 12px;
@@ -1230,7 +1341,10 @@
   align-items: center;
   gap: 16px;
   margin: 18px 0 22px;
-  .dialog-copy { margin: 0 !important; align-self: stretch; }
+  .dialog-copy {
+    margin: 0 !important;
+    align-self: stretch;
+  }
 }
 .rules-diagram {
   width: 144px;
@@ -1253,11 +1367,23 @@
     font-size: 11px;
     color: var(--ink);
   }
-  span:nth-child(9n) { border-right: 0; }
-  span:nth-last-child(-n + 9) { border-bottom: 0; }
-  .box-right { border-right: 1px solid var(--board-line-box); }
-  .box-bottom { border-bottom: 1px solid var(--board-line-box); }
-  .is-highlight { background: var(--wash); color: var(--accent); font-weight: 700; }
+  span:nth-child(9n) {
+    border-right: 0;
+  }
+  span:nth-last-child(-n + 9) {
+    border-bottom: 0;
+  }
+  .box-right {
+    border-right: 1px solid var(--board-line-box);
+  }
+  .box-bottom {
+    border-bottom: 1px solid var(--board-line-box);
+  }
+  .is-highlight {
+    background: var(--wash);
+    color: var(--accent);
+    font-weight: 700;
+  }
 }
 .rules-example {
   display: flex;
@@ -1271,15 +1397,24 @@
   text-align: center;
   font-size: 11px;
   line-height: 1.3;
-  .game-icon { width: 18px; height: 18px; flex-basis: 18px; }
+  .game-icon {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+  }
 }
-.example-cells, .example-labels, .example-tools, .example-hint-steps, .example-keys {
+.example-cells,
+.example-labels,
+.example-tools,
+.example-hint-steps,
+.example-keys {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
-.example-cells span, .example-keys span {
+.example-cells span,
+.example-keys span {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1294,49 +1429,164 @@
   color: var(--accent);
   box-shadow: inset 0 0 0 2px var(--accent);
 }
-.example-labels { gap: 12px; font-size: 10px; }
-.example-tools span { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.example-notes { font-size: 20px; color: var(--muted); }
-.example-hint-steps { justify-content: space-between; gap: 3px; }
-.example-keys span { width: 30px; height: 30px; color: var(--accent); font-size: 19px; }
-.example-keys .example-disabled { color: var(--muted); opacity: 0.45; }
-.example-saved { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.example-labels {
+  gap: 12px;
+  font-size: 10px;
+}
+.example-tools span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.example-notes {
+  font-size: 20px;
+  color: var(--muted);
+}
+.example-hint-steps {
+  justify-content: space-between;
+  gap: 3px;
+}
+.example-keys span {
+  width: 30px;
+  height: 30px;
+  color: var(--accent);
+  font-size: 19px;
+}
+.example-keys .example-disabled {
+  color: var(--muted);
+  opacity: 0.45;
+}
+.example-saved {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
 
-.phone-layout .tools { gap: 8px; }
-.phone-layout.height-limited .tools { gap: 5px; }
-.phone-layout.height-limited .tools [type='button'] { gap: 2px; font-size: 10px; }
-.phone-layout.height-limited .tools .game-icon { width: 12px; height: 12px; flex-basis: 12px; }
+.phone-layout .tools {
+  gap: 8px;
+}
+.phone-layout.height-limited .tools {
+  gap: 5px;
+}
+.phone-layout.height-limited .tools [type='button'] {
+  gap: 2px;
+  font-size: 10px;
+}
+.phone-layout.height-limited .tools .game-icon {
+  width: 12px;
+  height: 12px;
+  flex-basis: 12px;
+}
 // Four vertically stacked buttons retain the established 144px height budget.
-.layout-wide.height-limited .tools { gap: 4px; }
+.layout-wide.height-limited .tools {
+  gap: 4px;
+}
 
 @container (max-height: 550px) {
-  .tutorial-body { gap: 12px; margin: 12px 0; }
-  .rules-diagram { width: 108px; height: 108px; }
-  .rules-grid span { font-size: 9px; }
-  .rules-example { gap: 6px; padding: 8px; font-size: 10px; }
-  .example-labels { font-size: 9px; gap: 8px; }
-  .example-cells span { width: 28px; height: 28px; font-size: 20px; }
-  .example-notes { font-size: 17px; }
-  .example-tools { gap: 6px; }
-  .example-hint-steps { font-size: 9px; }
+  .tutorial-body {
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .rules-diagram {
+    width: 108px;
+    height: 108px;
+  }
+  .rules-grid span {
+    font-size: 9px;
+  }
+  .rules-example {
+    gap: 6px;
+    padding: 8px;
+    font-size: 10px;
+  }
+  .example-labels {
+    font-size: 9px;
+    gap: 8px;
+  }
+  .example-cells span {
+    width: 28px;
+    height: 28px;
+    font-size: 20px;
+  }
+  .example-notes {
+    font-size: 17px;
+  }
+  .example-tools {
+    gap: 6px;
+  }
+  .example-hint-steps {
+    font-size: 9px;
+  }
 }
 @container (max-height: 390px) {
-  .sudoku-app .dialog-rules .eyebrow { display: block; font-size: 10px; margin-bottom: 4px; }
-  .sudoku-app .dialog-rules h1 { font-size: 18px; line-height: 1.25; }
-  .tutorial-body { flex-direction: row; gap: 10px; margin: 8px 0; }
-  .tutorial-body .dialog-copy { font-size: 12px; line-height: 1.4; }
-  .rules-diagram { width: 81px; height: 81px; }
-  .rules-grid span { font-size: 8px; }
-  .rules-example { padding: 5px; gap: 4px; font-size: 8px; }
-  .rules-example .game-icon { width: 12px; height: 12px; flex-basis: 12px; }
-  .example-cells, .example-labels, .example-tools, .example-keys { gap: 4px; }
-  .example-cells span, .example-keys span { width: 23px; height: 23px; font-size: 16px; }
-  .example-labels { font-size: 8px; }
-  .example-tools span { gap: 3px; }
-  .example-hint-steps { font-size: 8px; }
-  .example-notes { font-size: 15px; }
-  .sudoku-app .dialog-settings .settings-line { min-height: 30px; }
-  .vibration-support-copy { font-size: 11px; margin: 4px 0 !important; }
+  .sudoku-app .dialog-rules .eyebrow {
+    display: block;
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+  .sudoku-app .dialog-rules h1 {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+  .tutorial-body {
+    flex-direction: row;
+    gap: 10px;
+    margin: 8px 0;
+  }
+  .tutorial-body .dialog-copy {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .rules-diagram {
+    width: 81px;
+    height: 81px;
+  }
+  .rules-grid span {
+    font-size: 8px;
+  }
+  .rules-example {
+    padding: 5px;
+    gap: 4px;
+    font-size: 8px;
+  }
+  .rules-example .game-icon {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
+  }
+  .example-cells,
+  .example-labels,
+  .example-tools,
+  .example-keys {
+    gap: 4px;
+  }
+  .example-cells span,
+  .example-keys span {
+    width: 23px;
+    height: 23px;
+    font-size: 16px;
+  }
+  .example-labels {
+    font-size: 8px;
+  }
+  .example-tools span {
+    gap: 3px;
+  }
+  .example-hint-steps {
+    font-size: 8px;
+  }
+  .example-notes {
+    font-size: 15px;
+  }
+  .sudoku-app .dialog-settings .settings-line {
+    min-height: 30px;
+  }
+  .vibration-support-copy {
+    font-size: 11px;
+    margin: 4px 0 !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1354,13 +1604,35 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: 16px;
-    .dialog-top { grid-column: 1 / -1; grid-row: 1; }
-    h1 { grid-column: 1 / -1; grid-row: 2; }
-    .settings-vibration { grid-column: 1; grid-row: 3; }
-    .settings-record { grid-column: 2; grid-row: 3; }
-    .vibration-support-copy { grid-column: 1 / -1; grid-row: 4; }
-    .dialog-copy { grid-column: 1 / -1; grid-row: 5; margin-block: 4px !important; }
-    .full-width { grid-column: 1 / -1; grid-row: 6; }
+    .dialog-top {
+      grid-column: 1 / -1;
+      grid-row: 1;
+    }
+    h1 {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    .settings-vibration {
+      grid-column: 1;
+      grid-row: 3;
+    }
+    .settings-record {
+      grid-column: 2;
+      grid-row: 3;
+    }
+    .vibration-support-copy {
+      grid-column: 1 / -1;
+      grid-row: 4;
+    }
+    .dialog-copy {
+      grid-column: 1 / -1;
+      grid-row: 5;
+      margin-block: 4px !important;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+      grid-row: 6;
+    }
   }
 }
 
@@ -1368,9 +1640,19 @@
 @container (max-height: 260px) and (min-width: 400px) {
   .sudoku-app .dialog-rules {
     position: relative;
-    .dialog-top { margin-bottom: 0; }
-    .eyebrow { position: absolute; top: 24px; right: 56px; margin: 0; line-height: 12px; }
-    .tutorial-body { margin-block: 3px; }
+    .dialog-top {
+      margin-bottom: 0;
+    }
+    .eyebrow {
+      position: absolute;
+      top: 24px;
+      right: 56px;
+      margin: 0;
+      line-height: 12px;
+    }
+    .tutorial-body {
+      margin-block: 3px;
+    }
   }
 }
 
@@ -1378,7 +1660,276 @@
 @container (max-height: 390px) and (max-width: 399px) {
   .sudoku-app .dialog-rules .tutorial-body-static {
     display: flow-root;
-    .rules-example { float: left; margin: 0 10px 4px 0; }
-    .dialog-copy { margin: 0 !important; line-height: 1.3; }
+    .rules-example {
+      float: left;
+      margin: 0 10px 4px 0;
+    }
+    .dialog-copy {
+      margin: 0 !important;
+      line-height: 1.3;
+    }
+  }
+}
+
+// The courtyard edition uses solid porcelain and paper instead of frosted glass.
+.sudoku-app::before {
+  background:
+    radial-gradient(ellipse at 12% 5%, #fffaf0 0, transparent 55%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(105, 88, 53, 0.018) 0 1px,
+      transparent 1px 4px
+    );
+}
+.sudoku-app .glass-panel,
+.sudoku-app .topbar .text-button:not(.new-game-button) {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--glass);
+}
+.sudoku-app .board-frame {
+  background: linear-gradient(140deg, #fffdf5, #dfdfce);
+  border-color: #c9cebc;
+  box-shadow:
+    0 4px 0 #afb7a0,
+    0 6px 7px rgba(58, 67, 39, 0.16),
+    0 15px 26px -8px rgba(58, 67, 39, 0.18),
+    inset 1px 1px 1px #fffef8;
+  border-radius: 18px;
+}
+.sudoku-app .sudoku-cell {
+  background: linear-gradient(145deg, #fffef9, #f3f2e9);
+  box-shadow: inset 0.7px 0.7px 0 #fffefb;
+}
+.sudoku-app .sudoku-cell.is-related {
+  background: #eef0e4;
+}
+.sudoku-app .sudoku-cell.is-same {
+  background: #e3e9d7;
+}
+.sudoku-app .sudoku-cell.is-selected {
+  background: #dce8d6;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.sudoku-app .sudoku-cell.is-conflict {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.sudoku-app .sudoku-cell.is-user .cell-digit {
+  color: #286851;
+}
+.sudoku-app .sudoku-cell.is-given .cell-digit {
+  color: #293c34;
+}
+.sudoku-app .tools {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.sudoku-app .tools button {
+  background: #f7f4e9;
+  border: 1px solid #d2d3bf;
+  box-shadow: 0 1px 0 #c5c9b5;
+  border-radius: 12px;
+}
+.sudoku-app .tools button.is-active {
+  background: var(--wash);
+  border-color: #7b9679;
+  color: var(--accent);
+}
+.sudoku-app .number-panel {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.sudoku-app .number-key {
+  background: linear-gradient(135deg, #fafbf1, #e2e8d8);
+  border: 1px solid #b9c5aa;
+  border-radius: 13px;
+  color: var(--key-ink);
+  box-shadow: var(--key-shadow);
+}
+.sudoku-app .number-key:disabled {
+  background: #e6e6dc;
+  color: #7e8676;
+  opacity: 0.65;
+  box-shadow: 0 1px 0 #c3c8b7;
+}
+.sudoku-app .dialog {
+  background: #faf7ef;
+  border-color: #d7cfbc;
+  box-shadow: 0 18px 70px rgba(41, 50, 33, 0.19);
+}
+.dialog-backdrop {
+  background: rgba(42, 52, 38, 0.2);
+}
+.sudoku-app .topbar .text-button {
+  border-radius: 9px;
+  box-shadow: none;
+}
+.sudoku-app .courtyard-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 32px;
+  flex-shrink: 0;
+  text-align: left;
+  line-height: 1.1;
+}
+.courtyard-entry .brand {
+  font-family: Georgia, 'Songti SC', serif;
+  font-size: 20px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+.courtyard-entry-caption {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #8a7049;
+}
+.courtyard-entry-caption i {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #a77c3e;
+}
+.phone-layout.spacious-header .topbar {
+  height: 64px;
+  flex-basis: 64px;
+  grid-template-rows: 44px 18px;
+}
+.phone-layout.spacious-header .courtyard-entry {
+  height: 44px;
+}
+.sudoku-app .story-result-link {
+  display: block;
+  margin: 12px auto 0;
+  padding: 8px 10px;
+  min-height: 36px;
+  color: #7a5b30;
+  font-size: 12px;
+  border-top: 1px solid #e2d9c4;
+}
+@keyframes porcelain-ink {
+  0% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes porcelain-unit {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+  45% {
+    box-shadow: inset 0 0 9px rgba(158, 164, 89, 0.38);
+  }
+}
+.has-ink-feedback .cell-digit {
+  animation: porcelain-ink 140ms ease-out;
+}
+.sudoku-app .has-unit-feedback {
+  animation: porcelain-unit 260ms ease-out;
+}
+@media (max-height: 550px) {
+  .courtyard-entry-caption {
+    display: none;
+  }
+  .courtyard-entry .brand {
+    font-size: 17px;
+  }
+  .sudoku-app .story-result-link {
+    min-height: 28px;
+    margin-top: 4px;
+    padding: 4px;
+    font-size: 11px;
+  }
+}
+
+// Conflict is the final semantic layer, including readonly givens and selection.
+.sudoku-app .sudoku-cell.is-conflict {
+  background: var(--danger-bg);
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+.sudoku-app .sudoku-cell.is-conflict .cell-digit {
+  color: var(--danger);
+}
+
+// Native button metrics and complete English lessons need a little more text width.
+@container (max-height: 390px) and (max-width: 399px) {
+  .sudoku-app .dialog.dialog-rules {
+    padding: 4px 8px;
+    h1 {
+      line-height: 1.4;
+    }
+    .dialog-top {
+      margin-bottom: 0;
+    }
+    .eyebrow {
+      margin-bottom: 2px;
+    }
+    .tutorial-body {
+      margin-block: 0;
+    }
+    .dialog-actions {
+      gap: 6px;
+    }
+  }
+}
+@container (max-height: 260px) and (min-width: 400px) {
+  .sudoku-app .dialog.dialog-rules {
+    padding: 4px 10px;
+    .dialog-top {
+      margin-bottom: 0;
+    }
+    .tutorial-body {
+      margin-block: 2px;
+      gap: 8px;
+    }
+    .tutorial-body .dialog-copy {
+      line-height: 1.3;
+    }
+    .dialog-actions {
+      gap: 6px;
+    }
+  }
+}
+
+// A 280px phone has a narrow reading column even at medium height. Reuse the
+// illustration's side space while preserving the normal lesson text size.
+@container (min-height: 391px) and (max-height: 550px) and (max-width: 255px) {
+  .sudoku-app .dialog.dialog-rules {
+    padding: 6px 12px;
+    .tutorial-body {
+      margin-block: 4px;
+    }
+    .tutorial-body-static {
+      display: flow-root;
+      .rules-example {
+        float: left;
+        margin: 0 8px 4px 0;
+      }
+      .dialog-copy {
+        margin: 0 !important;
+      }
+    }
+    .rules-demo {
+      gap: 4px;
+      .rules-grid {
+        width: 104px;
+        height: 104px;
+      }
+      .demo-controls [type='button'] {
+        min-height: 32px;
+      }
+    }
   }
 }

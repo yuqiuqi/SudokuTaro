@@ -33,6 +33,30 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
         run: npm run build:h5
+      - name: Install browser for matching Pages regression
+        run: npx playwright install --with-deps chromium
+      - name: Verify Pages layout and interactions
+        env:
+          PAGES_BUILD: 'true'
+        run: |
+          node <<'NODE'
+          const {spawnSync} = require('node:child_process')
+          const result = spawnSync('npm', ['run', 'test:browser'], {
+            encoding: 'utf8',
+            maxBuffer: 10 * 1024 * 1024,
+          })
+          process.stdout.write(result.stdout || '')
+          process.stderr.write(result.stderr || '')
+          if (result.status !== 0) {
+            const detail = result.stderr || result.stdout || result.error?.message || 'Browser regression exited without output.'
+            const escaped = detail.slice(-6000)
+              .replace(/%/g, '%25')
+              .replace(/\r/g, '%0D')
+              .replace(/\n/g, '%0A')
+            process.stdout.write(`\n::error title=Browser regression::${escaped}\n`)
+          }
+          process.exit(result.status ?? 1)
+          NODE
       - name: Save preview for PR review
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4

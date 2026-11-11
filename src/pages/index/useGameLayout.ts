@@ -32,7 +32,10 @@ export function useGameLayout() {
       if (!el) return
       const parent = el.parentElement!,
         padding = getComputedStyle(parent)
-      const h = parent.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom)
+      const h =
+        parent.clientHeight -
+        parseFloat(padding.paddingTop) -
+        parseFloat(padding.paddingBottom)
       const pl = parseFloat(padding.paddingLeft),
         pr = parseFloat(padding.paddingRight)
       // Classify against one safe-area-aware baseline. Mode-specific 12/20px
@@ -76,7 +79,10 @@ export function useGameLayout() {
       // Very short screens keep a readable side panel instead of narrowing the whole stack.
       // At the narrowest landscape width, retain the 90px board and both
       // outer gutters by sharing the remaining width with the control tray.
-      const controlMinimum = Math.min(h < 440 ? 150 : 210, Math.max(0, w - hinge - 90))
+      const controlMinimum = Math.min(
+        h < 440 ? 150 : 210,
+        Math.max(0, w - hinge - 90),
+      )
       // Stable chrome + caption budgets mirror the corresponding Sass modes.
       let board =
         mode === 'wide'
@@ -88,14 +94,11 @@ export function useGameLayout() {
             )
           : mode === 'short'
             ? Math.min(414, w, h - (modeHeight < 496 ? 254 : 266))
-            : Math.min(
-                414,
-                w,
-                h - 266,
-              )
-      let columns: string | undefined = mode === 'wide' && modeHeight < 496
-          ? `${Math.max(90, Math.floor(board))}px minmax(${controlMinimum}px, 300px)`
-          : undefined,
+            : Math.min(414, w, h - 266)
+      let columns: string | undefined =
+          mode === 'wide' && modeHeight < 496
+            ? `${Math.max(90, Math.floor(board))}px minmax(${controlMinimum}px, 300px)`
+            : undefined,
         rows: string | undefined,
         direction: string | undefined
       if (vertical) {
@@ -153,6 +156,7 @@ export function useGameLayout() {
     ref,
     mode: layout.mode,
     heightLimited: layout.heightLimited,
+    spaciousHeader: layout.mode === 'regular',
     style: {
       '--board-size': `${layout.board}px`,
       '--hinge-gap': `${layout.hinge}px`,

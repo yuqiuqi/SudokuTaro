@@ -1,0 +1,57 @@
+[
+  {
+    "phase": "candidate-typecheck",
+    "exitCode": 0,
+    "seconds": 0.51
+  },
+  {
+    "phase": "candidate-unit",
+    "exitCode": 0,
+    "seconds": 2.25
+  },
+  {
+    "phase": "candidate-root-build",
+    "exitCode": 0,
+    "seconds": 1.09
+  },
+  {
+    "phase": "candidate-courtyard-target",
+    "exitCode": 0,
+    "seconds": 31.26
+  },
+  {
+    "phase": "candidate-world-target",
+    "exitCode": 0,
+    "seconds": 33.38
+  },
+  {
+    "phase": "candidate-geometry",
+    "exitCode": 0,
+    "seconds": 99.11
+  },
+  {
+    "phase": "candidate-root-browser",
+    "exitCode": 0,
+    "seconds": 441.3
+  },
+  {
+    "phase": "candidate-pages-build",
+    "exitCode": 0,
+    "seconds": 1.08
+  },
+  {
+    "phase": "candidate-pages-browser",
+    "exitCode": 0,
+    "seconds": 451.73
+  },
+  {
+    "phase": "candidate-showcase",
+    "exitCode": 0,
+    "seconds": 26.51
+  },
+  {
+    "phase": "candidate-measurement",
+    "exitCode": 0,
+    "seconds": 6.54
+  }
+]

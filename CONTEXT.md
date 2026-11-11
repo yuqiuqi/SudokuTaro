@@ -5,25 +5,25 @@
 
 ---
 
-## 当前实现（v1.3.0 · 难度辅助、再赏流光与分步教学）
+## 当前实现（2.0.0 候选，2026-11-11，待用户最终审核）
 
-- v1.3.0 本轮实现与设计见 [规格](docs/superpowers/specs/2026-10-24-challenge-lightshow-tutorial-design.md)、[计划](docs/superpowers/plans/2026-10-24-challenge-lightshow-tutorial.md) 与 [更新说明](docs/releases/v1.3.0.md)。本轮类型检查、34／34 逻辑测试、根路径与 Pages 子路径配对生产构建／完整浏览器通过，两轮运行时错误均为空；另有 10 视口×双语×两种动效偏好的七课／通关卡几何诊断 800 例，失败 0（程序推进状态，不冒充用户点击）。线上验证器本地生产预检亦通过（难度／三种演示／再赏不改纪录及安全取消，运行时错误为空），不作线上证据。入口约 282KiB，仍提示超过建议 244KiB，阈值未调整；五张 `challenge-*` 截图来自本轮 Pages 生产构建的回环 Chromium：简单／中等实际生成 39／34 给定数，教程手动第 5 步，英文短横屏 CSS 扫描同一真实 450ms 暂停帧，通关由受控临近完成存档经实际填数与原动画获得；非真机或自然解完整局，来源见更新说明。准确提交的远端 PR／main／CI／部署／正式 Release 状态以 PR、Actions 与 Releases 的实际记录为准，本地结果不代表线上通过。
-- 仓库保持公开；main 保护与远端简介修改的旧 Administration 权限 403 仍未解决，本轮读取仍返回 403，不能声称已启用。配置与操作步骤见 [仓库安全说明](docs/REPOSITORY_SECURITY.md)。
-- 产品显示名为「方寸数独」，HTML／页面标题与可见品牌保持一致。技术包名和构建项目名使用 `fangcun-sudoku`；仓库名、Pages URL 与存档 key 保留兼容标识。新局实际给定数为简单 36–40／中等 31–35／困难 26–30，最多两次生成后使用唯一解模板兜底；只约束线索数量，不构成专业逻辑技巧评级。旧存档不按新范围淘汰。
-- 本节覆盖下方历史中的旧界面、输入和道具描述。当前真源为 `src/pages/index/index.tsx`、`index.scss`、`useGameLayout.ts`、`src/utils/gameplay.ts` 与 `src/styles/_glass-tokens.scss`。Figma 文件 `AhWwkAjjXti2imJAbhgrTY` 的 V2 根节点 `20:545` 为视觉基准；H5 使用实际 CSS px，关闭 `h5.postcss.pxtransform`，不要恢复 rpx 缩放。
-- 手机标题、状态、棋盘及数字面板共用 `--board-size` 主列，工具组在列内略收窄并保留间隔；左右最小留白各 14px，安全区优先，棋盘最大 414px。紧凑头部 52px，选格说明并入固定 28px 反馈行。普通手机工具真实点击高度 44px、数字 45px，统一 5/4 两排，工具到数字区 10px；完整 `game-shell` 上下 auto margin 居中。320×480 整列回退到 202px、工具高度 34px、组间距 8px，数字高度仍 45px，但宽度约 33px；小屏不能套用普通手机触控目标保证。不要恢复高屏键盘独立钉底。
-- 棋盘采用平整正视的实体材质：4px 底沿、接触阴影、统一左上高光；格面浅倒角与数字轻浮雕保留数字可读性。工具键采用静态浅浮起质感；数字键以 2px 基座呈现凸起键帽，按下使用 `translateY(1px)`，减少动态效果时取消位移与过渡。极窄横屏按实际可用宽度同时预算棋盘与控制区，保留左右留白；不要把最窄控制区回退应用到全部宽屏。材质不改变共享主列、给定格只读、同数辅助、反馈／提示占位及胜利流程；未新增依赖。
-- 尺寸预算取 parent 的真实安全可用高度，避免自然内容高度反馈；模式分类采用独立稳定的 20px／安全区基准。错误、提示开关及换层不改变棋盘预算；提示通过不可访问的自然尺寸副本预留各层全文空间，active 文案唯一可访问。横屏与折叠分区保留专用回退。
-- 棋盘为原生按钮，initial 给定格原生 `disabled` 并恢复 `opacity:1`，保留可读数值／标签，不可点击、修改或进入焦点；choose／fill 也防御题面。方向键仅在原行／列内搜索可编辑格，跳过给定数，无目标保留原格，并同步 `focus({preventScroll:true})`。同数、行列宫与提示辅助高亮保留，不等于独占 `is-selected` 框。Taro 会改写 button 标签选择器，原生按钮样式用 `[type="button"]`；不要恢复隐藏 Input 或 ScrollView。
-- 简单模式的数字键按当前行／列／宫已有数字变灰并原生禁用，排除当前格自身，不读取 solution；换格、填数、擦除、撤销后重算，笔记不新增冲突候选。中等／困难对可编辑格保留 1–9 全部可选及同等可选外观，允许手工错误候选、删除与撤销；已填格不写笔记、题面只读、胜局不再填仍保留。普通填数在全部难度继续拒绝冲突，不写入非法盘面，稳定反馈槽不变。难度取保存值，旧档不迁移；无选择仍提示先选格。
-- 分层提示当前免费；`src/utils/hintAccess.ts` 预留未来广告接入，默认没有 provider，广告可用前不显示广告说明或观看入口。只有已就绪的 provider 才能进入观看确认，完整观看并收到 rewarded 才发放提示；取消、失败不增加提示次数，并防护重复点击和迟到回调。没有接入真实广告 SDK，不模拟广告或奖励；未来 provider-ready 确认弹窗的焦点／交互未做浏览器实测，奖励控制器有逻辑测试与接线审阅，接口细节以源码为准。
-- 保留候选数、完整撤销、唯一解、中英文分层提示／规则、保存与纪录；撤销／擦除免费，`gameEconomy.ts` 是历史保留模块。胜利流程仍为 `wave → seams → null`：960ms 单格包络、90ms 对角延迟，总 2400ms，随后 650ms 单次青柠缝隙光，两段由真实 animationend 衔接。结果卡与完成棋盘均提供「再赏流光／See the glow」，复用 wave → seams → results，不改变棋盘、用时、记录或保存，不重触胜利振动。入口在演出中禁用，减少动态效果时也禁用并以可见说明和 aria-describedby 解释；偏好变化即时结束到结果。Escape、菜单／新局取消及刷新不重复记胜场仍保留。
-- 新手教程扩展为七页中英文图解：行、列、3×3 宫、填数与数字状态、笔记／擦除／撤销、免费分层提示与高亮、新局／保存／语言。教程数据位于 `src/utils/tutorial.ts`，前三课由 RulesDemo 提供真实 81 格及中央缺 9 的五步演示，默认第 1 步静止，原生 1–5 手动选择会暂停；自动每步 1600ms，到第 5 步停止，末步可重新开始。切页／关闭／新局卸载清计时器，隐藏页或减少动态效果暂停；减少动态效果仍允许手动切步。解说预留最大自然高度，其他四课保留，分页及进度由数据长度驱动；保留既有免费分层提示与未来广告控制器。
-- 上半区 topbar 提供显眼新局入口，accent 按钮用同色边框与柔和外阴影去除白色 inset，保留焦点环，复用新局弹窗，明确选择难度后生成新题并替换；关闭继续原局，不提前清档。原难度及设置入口保留。所有弹窗（含胜利）复用 `LanguageSwitch`，统一提供中文／English 两个显式选项，以选中态、勾选及 `aria-pressed` 表达当前语言；重复选择当前语言不产生切换，偏好持久化。语言项在所有尺寸真实高度均为 44px；新局入口在极小屏使用短标签，保留主头 52px／32px 的预算回退。
-- 格线改用低饱和灰蓝，宫线稍深，保留选中数字与辅助高亮的主次。四工具键有真实间隙、横向范围略收窄；普通高度保留 44px，受限横屏及竖排模式继续按可用空间适配。本轮根路径八组手机主列测量与历史数值一致；额外十视口教学／通关几何诊断的范围见适配说明，不能混为同一矩阵；普通手机实际 gap 为 8px，高度受限手机 5px，极短横屏竖排 4px。240px 高横屏教程将进度移至头部空位并收紧留白，设置摘要并排，保留语言 44px 与完整图文。
-- 振动由浏览器 Vibration API 能力决定：API 不存在时开关 disabled、有效 `aria-checked=false`，并以中英文原因及 `aria-describedby` 说明；保存偏好可保留 true，但有效状态为关闭。支持的设备继续在用户操作中调用。iOS Safari 不支持该 API（本地 caniuse-lite 的 iOS Safari 27.2 仍标记 n），仅 H5 不能补出原生触觉；未做 iOS 真机实测，无模拟触觉替代。
-- 历史 v1.2.4 类型检查、26 项逻辑测试、根路径／Pages 配对构建与完整浏览器回归均通过，两轮运行时错误为空，部署验证器本地生产预检通过；预检不作为线上证据。该版四张图来自 v1.2.4 Pages 生产构建的回环 Chromium，实际中等新局 32 个给定数，设置为无 API 模拟。v1.2.4 构建有 app 约 282KiB 超过建议 244KiB 的入口提示，未调整阈值隐藏；v1.3.0 本轮根构建入口同为约 282KiB，并保留建议 244KiB 的体积提示。验证范围见 [v1.2.4 说明](docs/releases/v1.2.4.md)。远端结果以 [GitHub Actions](https://github.com/yuqiuqi/SudokuTaro/actions)、[GitHub Releases](https://github.com/yuqiuqi/SudokuTaro/releases) 和 [PR 记录](https://github.com/yuqiuqi/SudokuTaro/pulls) 为准。已正式发布的历史证据保留在 [v1.2.3](docs/releases/v1.2.3.md)、[v1.2.2](docs/releases/v1.2.2.md)、[v1.2.1](docs/releases/v1.2.1.md) 与 [v1.2.0](docs/releases/v1.2.0.md)。
-- 代码修改后按 `AGENTS.md` 完成类型检查、逻辑测试、构建与浏览器回归；Pages 需配对子路径构建与测试，仅文档修改检查差异。浏览器 CSS 尺寸／分区模拟不等同小米 17 移动 Edge、iOS Safari、屏幕阅读器或安全区／折叠硬件实测。现行测量与回归见 `docs/RESPONSIVE_DESIGN.md`。
+- 当前分支 `feat/courtyard-redesign`，基线 `38829ab`；线上仍为既有 v1.3.0。包内 2.0.0 不是正式发布。本轮禁止合并、push main、部署、打 tag、Release；准确提交的 CI 和 AI review 不替代最终用户审核。
+- 当前为 React18.3.1 + React DOM + Vite8.3.8/plugin-react6.3.0 + TypeScript7.0.2/Sass，Node>=22.12.0。移除 Taro/Babel/Webpack 活跃入口和依赖；保留 `dev:h5`、`build:h5` 命令名、SudokuTaro 仓库／Pages URL、旧 hash 与存档 key。入口为根 `index.html`、`src/main.tsx`、`src/app.tsx`、`vite.config.ts`。
+- 规则仍在 `utils/gameplay.ts` 和 `sudokuEngine.ts`；存档边界 `platform/storage.ts`；会话/计时、纯 DOM 展示、胜利演出分别在 `features/game/`。页面仍组合菜单、输入和首次胜局事件，不声称彻底无耦合。animationend 只管演出，不记分或发章。
+- 原生81格、只读题面、简单冲突数字禁用／中高难度九键、笔记、免费擦除撤销／分层提示、七页双语教学和 wave→seams→结果／再赏保留。撤销只恢复棋盘与笔记，history 不持久化。旧存档补稳定 sessionId，旧完成局不重新计胜或解锁；旧 wins 不倒填故事。
+- 新增八篇完整中英《院子留一盏灯》与原创 SVG 八阶段旧院。首篇免费，此后每个首次新胜局至多1篇、最多7个获章 sessionID。已读和解锁分开；只玩数独关闭通知但继续积累，手动入口保留。无账号／云同步、体力／签到、广告付费门槛、真实日期活动或无限故事。庭院和阅读主动打开，正文可内部滚动；主游戏页仍不可滚动。
+- 暖瓷、纸页、墨绿与少量铜金取代旧雾蓝玻璃。普通输入140ms局部显现、首次完成单元260ms柔光；新物件600ms一次显现，门灯9s和风铃8s低幅循环。hidden/reduced停止相关动效。品牌入口常规高屏44px目标/64px头部，受限屏保留32px入口妥协；共享主列、14px留白、5/4数字键和反馈稳定预算继续保留。Vibration API 缺失时禁用并说明。
+- 本地 key：`sudokutaro:glass:v1`、`sudokutaro:records:v1`、`sudokutaro:language`、`sudokutaro:vibration`；新增 `fangcun:courtyard:v1` 与仅呈现收据 `fangcun:courtyard:revealed:v1`。JSON损坏/存储异常防御读取；存储失败当次可玩，不承诺跨 key 事务、多标签一致性或刷新后持久。
+- 技能在本云环境 `/home/agent/.agents/skills` 全量安装77项+router，固定上游 SHA `dcf3bbbb83f365632402c086bf595048aa24aaa8`、Apache-2.0，逐字节一致；不意味着其他机器已装，不通过 npm hook 自动执行第三方内容。复现及实际使用记录见 `docs/GAMEDEV_SKILLS.md`。
+- 新进展：用户新增参考 `Donchitos/Claude-Code-Game-Studios`，固定 `abc0de79d6ceb0b5d7aa693945849b3937afbe6a`、MIT。团队只读研究并采用已有项目审查、系统边界、真实运行留证和长期体验验证原则，没有安装Claude hooks/settings或全49agent。来源与Codex适配见[采用记录](docs/CLAUDE_GAME_STUDIOS_ADOPTION.md)。用户授权继续自主工作，最终合并审核不变；动态世界增量源码已冻结：新增三种氛围／静止、已修物件观察与偏爱；主线后十二新胜局开放十二笺／六组双层日常物件。聚合useCourtyardState拥有故事与life完成状态、world偏好及显现收据，applyCourtyardCompletion跨两ledger去重，一局只进入一个奖励域；不声称完整验收已过。
+- 新数据：`fangcun:courtyard:world:v1`保存氛围／静止／偏爱；`fangcun:courtyard-life:v1`保存最多12获笺session与已读；`fangcun:courtyard-life:revealed:v1`仅显现收据。已有主线key／旧游戏key保持。源码内容全文见[十二笺](docs/story/COURTYARD_LIFE_NOTES.md)，非无限故事。
+- 最终本地证据：同一61文件冻结候选typecheck、60逻辑、无warning根／Pages构建、旧庭院31.26s／新world33.38s专项、增强1176几何（含innertext）0失败99.11s、完整ROOT441.30s／PAGES451.73s均通过，runtimeErrors=[]；冻结文件未变。审核入口[COURTYARD_V2_CANDIDATE](docs/reviews/COURTYARD_V2_CANDIDATE.md)链接13PNG、连续10.92sMP4、全部fixture来源、61源快照与产物hash和原始测量JSON。此前worldless结果不再代替本轮证据。
+- 同机产物JS raw341052→243973、gzip114278→83424；CSS raw45430→54725、gzip9062→10484。候选三context就绪415/399/358ms及两帧代理p50约33.3ms；只是自动化观测，不证明真机FPS／输入延迟／启动改善或留存。无真实iOS/小米17/折叠设备、屏幕阅读器、30分钟真人soak。独立AI视觉／叙事检查13图和最终video关键帧／接触表未留P2，准确head代码review／远端CI仍待PR核验，用户最终审核pending。
+- 新动态世界[规格](docs/superpowers/specs/2026-11-11-courtyard-living-world-design.md)／[计划](docs/superpowers/plans/2026-11-11-courtyard-living-world.md)。此前旧院重设计规格/计划：`docs/superpowers/specs/2026-11-11-courtyard-redesign-design.md`、`docs/superpowers/plans/2026-11-11-courtyard-redesign.md`；架构 `docs/architecture/COURTYARD_V2.md`；适配 `docs/RESPONSIVE_DESIGN.md`；资产 `docs/art/courtyard-assets.json`。协作验证与用户审批以 `AGENTS.md` 为准。
+
+## 以下为历史背景（不是当前运行或安装指南）
+
+v1.3.0 的既有发布说明、旧截图与验证证据见 `docs/releases/v1.3.0.md`。下方保留原工程时间线、旧文件路径和工具链备忘；其中 Taro、Webpack、rpx、隐藏输入、道具消耗等不得用于判断当前源码。新会话使用上方当前实现与本轮规格；当前事实优先。
 
 ## 1. 项目卡片
 

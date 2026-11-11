@@ -1,0 +1,165 @@
+{
+  "source": "Latest candidate Pages production build, localhost Chromium",
+  "realDevice": false,
+  "pictures": [
+    {
+      "file": "courtyard-easy-393x720.png",
+      "source": "Actual UI newly generated game; selected editable cell",
+      "difficulty": "easy",
+      "givens": 39,
+      "index": 1,
+      "enabled": 2
+    },
+    {
+      "file": "courtyard-medium-393x720.png",
+      "source": "Actual UI newly generated game; selected editable cell",
+      "difficulty": "medium",
+      "givens": 34,
+      "index": 0,
+      "enabled": 9
+    },
+    {
+      "file": "courtyard-first-light-393x720.png",
+      "source": "Actual initial free courtyard, after the real one-shot reveal completed",
+      "stage": 0,
+      "scene": {
+        "stage": "0",
+        "lifeCount": "0",
+        "atmosphere": "dusk",
+        "svgNodes": 121,
+        "runningAnimations": [
+          "courtyard-lamp-breathe"
+        ]
+      }
+    },
+    {
+      "file": "courtyard-day-393x720.png",
+      "source": "Actual freely selected atmosphere in the first free courtyard",
+      "atmosphere": "day",
+      "stage": 0,
+      "scene": {
+        "stage": "0",
+        "lifeCount": "0",
+        "atmosphere": "day",
+        "svgNodes": 121,
+        "runningAnimations": []
+      }
+    },
+    {
+      "file": "courtyard-dusk-393x720.png",
+      "source": "Actual freely selected atmosphere in the first free courtyard",
+      "atmosphere": "dusk",
+      "stage": 0,
+      "scene": {
+        "stage": "0",
+        "lifeCount": "0",
+        "atmosphere": "dusk",
+        "svgNodes": 121,
+        "runningAnimations": [
+          "courtyard-lamp-breathe"
+        ]
+      }
+    },
+    {
+      "file": "courtyard-rain-393x720.png",
+      "source": "Actual freely selected atmosphere in the first free courtyard",
+      "atmosphere": "rain",
+      "stage": 0,
+      "scene": {
+        "stage": "0",
+        "lifeCount": "0",
+        "atmosphere": "rain",
+        "svgNodes": 136,
+        "runningAnimations": [
+          "courtyard-lamp-breathe",
+          "courtyard-rain"
+        ]
+      }
+    },
+    {
+      "file": "courtyard-first-page-393x720.png",
+      "source": "Actual free first chapter, real DOM text",
+      "chapter": "courtyard-01"
+    },
+    {
+      "file": "courtyard-restored-393x720.png",
+      "source": "Controlled seven-completion story fixture to inspect the final restored courtyard; not seven naturally solved games",
+      "stage": 7,
+      "scene": {
+        "stage": "7",
+        "lifeCount": "0",
+        "atmosphere": "dusk",
+        "svgNodes": 143,
+        "runningAnimations": [
+          "courtyard-lamp-breathe",
+          "courtyard-chime-sway"
+        ]
+      }
+    },
+    {
+      "file": "courtyard-reader-568x240-en.png",
+      "source": "Actual fourth chapter with English selected at 568x240; the prose is an internally scrollable reader with fixed controls",
+      "chapter": "courtyard-04"
+    },
+    {
+      "file": "courtyard-life-complete-393x720.png",
+      "source": "Controlled main-seven-credit and twelve-life-credit fixture; all six two-layer life details, not nineteen naturally solved games",
+      "stage": 7,
+      "lifeCount": 12,
+      "scene": {
+        "stage": "7",
+        "lifeCount": "12",
+        "atmosphere": "dusk",
+        "svgNodes": 173,
+        "runningAnimations": [
+          "courtyard-lamp-breathe",
+          "courtyard-chime-sway"
+        ]
+      }
+    },
+    {
+      "file": "courtyard-life-note-393x720.png",
+      "source": "Actual final bilingual-life collection note in Chinese, reached through native controls from a disclosed fixture",
+      "note": "courtyard-life-12"
+    },
+    {
+      "file": "courtyard-wave-393x720.png",
+      "source": "Actual original wave during real final-cell completion of controlled near-win fixture; one true animation frame"
+    },
+    {
+      "file": "courtyard-victory-393x720.png",
+      "source": "Actual result after original wave and lime seams from a controlled near-win fixture; not a naturally solved generated game"
+    }
+  ],
+  "video": {
+    "file": "courtyard-demo.mp4",
+    "method": "Native Chromium CDP screencast JPEG frames with original event timestamps, encoded with system FFmpeg; no cut or artificial UI; even-pixel padding for H.264",
+    "source": "Continuous browser recording; controlled near-complete saved game, main-volume-complete controlled save; actual final entry → rainbow wave → lime seams → result → first earned life detail → freely selected rain → object observation/favorite → life-note reading. No claim of natural full-game completion or real-device capture.",
+    "durationSeconds": 10.92
+  },
+  "runtimeErrors": [],
+  "sourceSnapshotSha256": "3a69ed62e0d2a6993f10d8c9a708bdcc8d5e41dab926802100bf253ce13eb3dd",
+  "frozenFiles": 61,
+  "productionArtifacts": [
+    {
+      "file": "assets/index-Bl8diDBk.js",
+      "bytes": 104132,
+      "sha256": "0b53e3e9a71892aedc811ee6a894798ec2dbca42a7b71468a1e05bc33e5d45ee"
+    },
+    {
+      "file": "assets/index-D0s8f-Ih.css",
+      "bytes": 54725,
+      "sha256": "bb3395f4a13b36268dcd5fcb3c8ffc963f35d6b09218196106d1c32e1e781d1f"
+    },
+    {
+      "file": "assets/react-vendor-BxPR9RNE.js",
+      "bytes": 139841,
+      "sha256": "b79bec1756746e6650039881a1bcfed53db380d186405bf436534cfc18e13de9"
+    },
+    {
+      "file": "index.html",
+      "bytes": 531,
+      "sha256": "71d2c934a0060e9dcc22eaa3cfd0e52b4c95885d78518f872519f3e96cb059d9"
+    }
+  ]
+}

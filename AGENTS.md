@@ -16,7 +16,7 @@
 1. 运行 `npm run typecheck`、`npm test` 和 `npm run build:h5`。
 2. 对本轮最新构建运行 `npm run test:browser`（Playwright + Chromium）。首次运行需安装浏览器：`npx playwright install --with-deps chromium`。
 3. 覆盖手机小屏、常规竖屏、横屏、宽屏、模拟折叠分区，以及 `visualViewport` 被浏览器工具栏压缩的情况。
-4. 检查全部 81 格均可见且给定数保留可读信息；仅可编辑格、数字 1～9、工具按钮和弹窗操作按钮可点击且位于实际可视区域；页面不得上下或左右滚动，也不得靠隐藏溢出来掩盖裁切。
+4. 故事阅读屏仅允许正文内部纵向滚动，头部、关闭、翻页始终可达；游戏页面仍不可滚动。检查全部 81 格均可见且给定数保留可读信息；仅可编辑格、数字 1～9、工具按钮和弹窗操作按钮可点击且位于实际可视区域；页面不得上下或左右滚动，也不得靠隐藏溢出来掩盖裁切。
 5. 检查填数、笔记、撤销、冲突反馈、分层提示、旋转与刷新后的进度，以及中英文规则、新局、设置、通关弹窗。
 6. 对本轮改动涉及的场景补充有针对性的操作验证；修复缺陷时，保留能复现原问题的回归测试。
 
@@ -35,3 +35,9 @@ GitHub Pages 构建使用 `GITHUB_PAGES=true npm run build:h5`，随后以 `PAGE
 - 行首/行末方向键应限制在当前行，避免左右移动错误换行。
 
 不得移除这些用例来绕过失败；新增适配缺陷时先复现，再补充回归用例。
+
+## 旧院重设计的最终用户审核闸门
+
+当前 `feat/courtyard-redesign` 为 2.0.0 候选，线上既有版本为 v1.3.0。用户要求团队完成可试玩、可比较、可 review 的候选 PR 后，由用户最终审核。未获得该次明确批准前，禁止合并、推送 main、部署、打标签或发布 Release；绿色 CI、AI review 或包内版本号不能代替用户批准。按需提交／推送 feature 分支和准备待审 PR 在本轮授权内。
+
+当前工具链为 React18 + Vite，旧 Taro/Figma 资料属于历史背景。新架构与保留契约见 `docs/architecture/COURTYARD_V2.md`，技能复现见 `docs/GAMEDEV_SKILLS.md`。保留全部旧回归；补故事双语、正文滚动、焦点循环与恢复、新胜局解锁、旧完成局／刷新／再赏不发章、存储失败与减少动态效果检查。庭院专项需先完成匹配的最新生产构建，再运行 `COURTYARD_ONLY=true npm run test:browser`；Pages 构建后使用 `PAGES_BUILD=true COURTYARD_ONLY=true npm run test:browser` 配对运行。`tests/courtyard.browser.cjs` 是导出的辅助模块，不能直接执行并把无操作退出当作通过证据。

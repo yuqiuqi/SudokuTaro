@@ -1,22 +1,16 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import type {CSSProperties} from 'react'
 import type {Difficulty} from '../../utils/sudokuEngine'
 import {
   availableDigits,
   cellLocation,
   completedUnits,
   createGame,
-  DIGITS,
   findHint,
   hintSteps,
-  isSavedGame,
   move,
-  peers,
   undoMove,
   UNITS,
-  type Game,
   type Hint,
-  type Language,
 } from '../../utils/gameplay'
 import {
   createHintAdRequest,
@@ -30,71 +24,44 @@ import {RulesDiagram} from './RulesDiagram'
 import {useGameLayout} from './useGameLayout'
 import {useReducedMotion} from './useReducedMotion'
 import {VictoryResult, VictorySeams, VictorySparkles} from './VictoryResult'
+import {
+  loadRecords,
+  loadLanguage,
+  loadVibration,
+  persistRecords,
+  persistLanguage,
+  persistVibration,
+  type GameRecords,
+} from '../../platform/storage'
+import {useCourtyardState} from '../../features/courtyard/useCourtyardState'
+import {CourtyardStory} from '../../features/courtyard/CourtyardStory'
+import {useGameSession} from '../../features/game/useGameSession'
+import {useVictoryFlow} from '../../features/game/useVictoryFlow'
+import {GameBoardCells} from '../../features/game/GameBoardCells'
+import {GameDigits} from '../../features/game/GameDigits'
 import './index.scss'
 
-const STORAGE = 'sudokutaro:glass:v1',
-  RECORDS = 'sudokutaro:records:v1'
-type Records = {wins: number; best: Partial<Record<Difficulty, number>>}
-type Modal = 'rules' | 'settings' | 'new' | 'won' | 'hint-access' | null
+type Modal =
+  | 'rules'
+  | 'settings'
+  | 'new'
+  | 'won'
+  | 'hint-access'
+  | 'courtyard'
+  | null
 const time = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
-function restore(): Game {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE) || 'null')
-    if (isSavedGame(saved)) return {...saved, history: []}
-  } catch {
-    /* Private browsing or old storage: start a playable game. */
-  }
-  return createGame()
-}
-function readRecords(): Records {
-  try {
-    const r = JSON.parse(localStorage.getItem(RECORDS) || 'null')
-    if (
-      r &&
-      Number.isInteger(r.wins) &&
-      r.wins >= 0 &&
-      r.best &&
-      typeof r.best === 'object'
-    )
-      return {
-        wins: r.wins,
-        best: Object.fromEntries(
-          Object.entries(r.best).filter(
-            ([k, v]) =>
-              ['easy', 'medium', 'hard'].includes(k) &&
-              typeof v === 'number' &&
-              Number.isFinite(v) &&
-              v >= 0,
-          ),
-        ),
-      }
-  } catch {
-    /* Records are optional. */
-  }
-  return {wins: 0, best: {}}
-}
 
 export default function IndexPage() {
-  const [game, setGame] = useState<Game>(restore)
   const [selected, setSelected] = useState<number | null>(null)
   const [noteMode, setNoteMode] = useState(false)
-  const [lang, setLang] = useState<Language>(() => {
-    try {
-      return localStorage.getItem('sudokutaro:language') === 'en' ? 'en' : 'zh'
-    } catch {
-      return 'zh'
-    }
-  })
+  const [lang, setLang] = useState(loadLanguage)
   const vibrationSupported = typeof navigator.vibrate === 'function'
-  const [vibration, setVibration] = useState(() => {
-    try {
-      return localStorage.getItem('sudokutaro:vibration') === 'true'
-    } catch {
-      return false
-    }
-  })
+  const [vibration, setVibration] = useState(loadVibration)
+  const courtyardState = useCourtyardState()
+  const courtyard = courtyardState.progress
   const [modal, updateModal] = useState<Modal>(null)
+  const {game, setGame, saveFailed} = useGameSession(!!modal)
   const [hintAccessBusy, setHintAccessBusy] = useState(false)
   const hintAccessRequest = useRef(createHintAdRequest()),
     hintAccessProvider = useRef<RewardedHintProvider | null>(null)
@@ -109,14 +76,19 @@ export default function IndexPage() {
   const [hint, setHint] = useState<{value: Hint; stage: number} | null>(null)
   const [conflicts, setConflicts] = useState<number[]>([])
   const [message, setMessage] = useState('')
-  const [records, setRecords] = useState<Records>(readRecords)
+  const [records, setRecords] = useState<GameRecords>(loadRecords)
   const [newBest, setNewBest] = useState(false)
-  const [celebration, setCelebration] = useState<'wave' | 'seams' | null>(null)
-  const celebrationRef = useRef(celebration)
-  celebrationRef.current = celebration
-  const celebrating = celebration !== null
   const reducedMotion = useReducedMotion()
+  const {celebration, setCelebration, celebrationRef, finishCelebration} =
+    useVictoryFlow(reducedMotion, !!modal, () =>
+      setModal((current) => (current === null ? 'won' : current)),
+    )
+  const celebrating = celebration !== null
   const canEnjoyLight = game.won && !celebrating && !reducedMotion
+  const [inkFeedback, setInkFeedback] = useState<{
+    cell: number
+    units: number[]
+  } | null>(null)
   const gameRef = useRef(game),
     hintRef = useRef(hint),
     winRecorded = useRef(game.won)
@@ -147,46 +119,50 @@ export default function IndexPage() {
   gameRef.current = game
   hintRef.current = hint
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE, JSON.stringify({...game, history: []}))
-    } catch {
-      /* Continue without persistence when storage is unavailable. */
-    }
-  }, [game])
-  useEffect(() => {
-    try {
-      localStorage.setItem('sudokutaro:language', lang)
-    } catch {
-      /* Optional preference. */
-    }
+    persistLanguage(lang)
   }, [lang])
   useEffect(() => {
-    try {
-      localStorage.setItem('sudokutaro:vibration', String(vibration))
-    } catch {
-      /* Optional preference. */
-    }
+    persistVibration(vibration)
   }, [vibration])
   useEffect(() => {
-    if (game.won || modal) return
-    const id = setInterval(() => {
-      if (!document.hidden)
-        setGame((g) => (g.won ? g : {...g, seconds: g.seconds + 1}))
-    }, 1000)
-    return () => clearInterval(id)
-  }, [game.won, modal])
+    if (saveFailed || courtyardState.saveFailed)
+      setMessage(
+        lang === 'en'
+          ? 'Progress could not be saved in this browser.'
+          : '当前浏览器未能保存进度。',
+      )
+  }, [saveFailed, courtyardState.saveFailed, lang])
+  useEffect(() => {
+    if (!inkFeedback) return
+    const id = setTimeout(() => setInkFeedback(null), 280)
+    return () => clearTimeout(id)
+  }, [inkFeedback])
+  useEffect(() => {
+    const stop = () => {
+      if (document.hidden) setInkFeedback(null)
+    }
+    document.addEventListener('visibilitychange', stop)
+    return () => document.removeEventListener('visibilitychange', stop)
+  }, [])
+  useEffect(() => {
+    if (reducedMotion) setInkFeedback(null)
+  }, [reducedMotion])
   useEffect(() => {
     if (!message) return
     const id = setTimeout(() => setMessage(''), 3500)
     return () => clearTimeout(id)
   }, [message])
   useEffect(() => () => clearTimeout(conflictTimer.current), [])
-  useEffect(() => () => {
-    hintAccessRequest.current.cancel()
-  }, [])
+  useEffect(
+    () => () => {
+      hintAccessRequest.current.cancel()
+    },
+    [],
+  )
   useEffect(() => {
     if (!game.won || winRecorded.current) return
     winRecorded.current = true
+    setInkFeedback(null)
     const oldBest = records.best[game.difficulty],
       best = oldBest === undefined || game.seconds < oldBest
     const next = {
@@ -200,27 +176,19 @@ export default function IndexPage() {
     if (vibrationSupported && vibration) navigator.vibrate([18, 45, 28])
     if (reducedMotion) setModal('won')
     else setCelebration('wave')
-    try {
-      localStorage.setItem(RECORDS, JSON.stringify(next))
-    } catch {
-      /* Keep the in-session achievement. */
-    }
-  }, [game.won, game.seconds, game.difficulty, records, vibration, vibrationSupported, reducedMotion])
-  const finishCelebration = useCallback(() => {
-    if (!celebrationRef.current) return
-    celebrationRef.current = null
-    setCelebration(null)
-    setModal((current) => (current === null ? 'won' : current))
-  }, [])
-  useEffect(() => {
-    if (!celebrating) return
-    // Opening any menu cancels either stage, even if it closes before it ends.
-    if (modal) {
-      setCelebration(null)
-      return
-    }
-    if (reducedMotion) finishCelebration()
-  }, [celebrating, modal, reducedMotion, finishCelebration])
+    persistRecords(next)
+    // Credit the authoritative first completion, independently of presentation.
+    courtyardState.complete(game.sessionId!)
+  }, [
+    game.won,
+    game.seconds,
+    game.difficulty,
+    game.sessionId,
+    records,
+    vibration,
+    vibrationSupported,
+    reducedMotion,
+  ])
   useEffect(() => {
     if (game.won && !modal && !celebrating)
       resultsTrigger.current?.focus({preventScroll: true})
@@ -278,6 +246,11 @@ export default function IndexPage() {
       const newUnits = completedUnits(result.game.board).filter(
         (u) => !old.celebrated.includes(u),
       )
+      // The winning move belongs exclusively to the victory presentation.
+      // Ordinary feedback must not survive a fast-forwarded wave into seams.
+      if (result.game.won) setInkFeedback(null)
+      else if (!reducedMotion && value > 0 && !noteMode)
+        setInkFeedback({cell: selected, units: newUnits})
       if (newUnits.length && !result.game.won)
         setMessage(
           say(
@@ -294,7 +267,7 @@ export default function IndexPage() {
         setMessage(say('这一格，由你解开', 'You worked this one out.'))
       }
     },
-    [selected, noteMode, vibration, vibrationSupported, say],
+    [selected, noteMode, vibration, vibrationSupported, reducedMotion, say],
   )
   const undo = useCallback(() => {
     clearTimeout(conflictTimer.current)
@@ -310,7 +283,8 @@ export default function IndexPage() {
     if (current.won) return
     const h = findHint(current)
     if (!h) return
-    if (!current.initial[Math.floor(h.index / 9)][h.index % 9]) setSelected(h.index)
+    if (!current.initial[Math.floor(h.index / 9)][h.index % 9])
+      setSelected(h.index)
     setHint({value: h, stage: 0})
     setConflicts([])
     setGame((g) => ({...g, hints: g.hints + 1}))
@@ -343,6 +317,7 @@ export default function IndexPage() {
   }
   const newGame = (d: Difficulty) => {
     clearTimeout(conflictTimer.current)
+    setInkFeedback(null)
     const next = createGame(d)
     gameRef.current = next
     winRecorded.current = false
@@ -392,15 +367,21 @@ export default function IndexPage() {
         let next = selected
         if (next === null) next = initial.flat().findIndex((n) => n === 0)
         else {
-          let row = Math.floor(next / 9) + dr, col = next % 9 + dc
+          let row = Math.floor(next / 9) + dr,
+            col = (next % 9) + dc
           while (row >= 0 && row < 9 && col >= 0 && col < 9) {
-            if (!initial[row][col]) { next = row * 9 + col; break }
-            row += dr; col += dc
+            if (!initial[row][col]) {
+              next = row * 9 + col
+              break
+            }
+            row += dr
+            col += dc
           }
         }
         if (next === null || next < 0) return
         choose(next)
-        document.querySelector<HTMLButtonElement>(`[data-cell="${next}"]`)
+        document
+          .querySelector<HTMLButtonElement>(`[data-cell="${next}"]`)
           ?.focus({preventScroll: true})
       }
     }
@@ -433,114 +414,72 @@ export default function IndexPage() {
   const lessonIsDemo = ['row', 'column', 'box'].includes(lesson.diagram)
   const lastLesson = ruleStep === tutorial[lang].length - 1
 
-  const renderedCells = useMemo(
-    () =>
-      game.board.flatMap((row, r) =>
-        row.map((value, c) => {
-          const index = r * 9 + c,
-            fixed = game.initial[r][c] !== 0
-          const sel = !fixed && focus === index,
-            related = focus !== null && peers(focus, index)
-          const same =
-            selected !== null &&
-            value !== 0 &&
-            value === game.board[Math.floor(selected / 9)][selected % 9]
-          return (
-            <button
-              type="button"
-              key={index}
-              data-cell={index}
-              style={
-                {
-                  '--celebration-order': r + c,
-                  '--wave-hue': (c * 40 + r * 6) % 360,
-                } as CSSProperties
-              }
-              data-fixed={fixed}
-              disabled={fixed}
-              className={[
-                'sudoku-cell',
-                related ? 'is-related' : '',
-                same ? 'is-same' : '',
-                sel ? 'is-selected' : '',
-                conflicts.includes(index) ? 'is-conflict' : '',
-                hintUnit?.includes(index) ? 'is-hint-unit' : '',
-                fixed ? 'is-given' : 'is-user',
-                c === 2 || c === 5 ? 'box-right' : '',
-                r === 2 || r === 5 ? 'box-bottom' : '',
-              ].join(' ')}
-              aria-label={`${cellLocation(index, lang)}: ${value || say('空格', 'empty')}${fixed ? say('，题目给定', ', given') : ''}${!value && game.notes[index].length ? `${say('，候选数', ', notes ')} ${game.notes[index].join(', ')}` : ''}`}
-              aria-pressed={!fixed && selected === index}
-              onClick={() => choose(index)}
-            >
-              {value ? (
-                <span className="cell-digit">{value}</span>
-              ) : (
-                <span className="cell-notes" aria-hidden="true">
-                  {DIGITS.map((n) => (
-                    <span key={n}>
-                      {game.notes[index].includes(n) ? n : ''}
-                    </span>
-                  ))}
-                </span>
-              )}
-            </button>
-          )
-        }),
-      ),
-    [
-      game.board,
-      game.initial,
-      game.notes,
-      focus,
-      selected,
-      conflicts,
-      hintUnit,
-      choose,
-      say,
-      lang,
-    ],
-  )
+  const feedbackMessage =
+    message ||
+    (saveFailed || courtyardState.saveFailed
+      ? say(
+          '当前浏览器未能保存进度。',
+          'Progress could not be saved in this browser.',
+        )
+      : '')
 
-  const phoneLayout = layout.mode !== 'wide' && layout.mode !== 'fold-horizontal'
+  const phoneLayout =
+    layout.mode !== 'wide' && layout.mode !== 'fold-horizontal'
   const gameMeta = (
     <div className="game-meta">
-              <button
-                type="button"
-                className="difficulty-button"
-                onClick={() => setModal('new')}
-              >
-                {say('自由练习', 'Practice')} · {label(game.difficulty)}{' '}
-                <span aria-hidden="true">⌄</span>
-              </button>
-              <span className="metrics">
-                <span aria-label={say('用时', 'Time')}>
-                  {time(game.seconds)}
-                </span>
-                <span>{filled} / 81</span>
-              </span>
-            </div>
+      <button
+        type="button"
+        className="difficulty-button"
+        onClick={() => setModal('new')}
+      >
+        {say('自由练习', 'Practice')} · {label(game.difficulty)}{' '}
+        <span aria-hidden="true">⌄</span>
+      </button>
+      <span className="metrics">
+        <span aria-label={say('用时', 'Time')}>{time(game.seconds)}</span>
+        <span>{filled} / 81</span>
+      </span>
+    </div>
   )
   const selectionCaption = (
-    <>{game.won ? (
-                <span data-victory-status role="status" aria-live="polite">
-                  {say('漂亮，解开了！', 'Beautifully solved!')}
-                </span>
-              ) : selected === null ? (
-                say('选一个空格，开始你的推理', 'Choose an empty cell to begin')
-              ) : (
-                `${cellLocation(selected, lang)} · ${selectedNotes.length ? say('候选数 ', 'Notes ') + selectedNotes.join('、') : noteMode ? say('笔记模式', 'Notes on') : say('点击数字填写', 'Tap a number to fill')}`
-              )}</>
+    <>
+      {game.won ? (
+        <span data-victory-status role="status" aria-live="polite">
+          {say('漂亮，解开了！', 'Beautifully solved!')}
+        </span>
+      ) : selected === null ? (
+        say('选一个空格，开始你的推理', 'Choose an empty cell to begin')
+      ) : (
+        `${cellLocation(selected, lang)} · ${selectedNotes.length ? say('候选数 ', 'Notes ') + selectedNotes.join('、') : noteMode ? say('笔记模式', 'Notes on') : say('点击数字填写', 'Tap a number to fill')}`
+      )}
+    </>
   )
 
   return (
     <main
-      className={`sudoku-app ${phoneLayout ? 'phone-layout' : ''} layout-${layout.mode} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''} ${celebration === 'wave' ? 'is-victory-wave' : ''} ${celebration === 'seams' ? 'is-victory-seams' : ''}`}
+      className={`sudoku-app ${phoneLayout ? 'phone-layout' : ''} layout-${layout.mode} ${layout.spaciousHeader ? 'spacious-header' : ''} ${layout.heightLimited ? 'height-limited' : ''} ${hint ? 'has-hint' : ''} ${celebrating ? 'is-celebrating' : ''} ${celebration === 'wave' ? 'is-victory-wave' : ''} ${celebration === 'seams' ? 'is-victory-seams' : ''}`}
       style={layout.style}
     >
       <div className="game-shell" ref={layout.ref}>
         <header className="topbar">
-          <span className="brand">方寸数独</span>
+          <button
+            type="button"
+            className="courtyard-entry"
+            data-courtyard-entry
+            aria-label={say('小院故事', 'Courtyard stories')}
+            onClick={() => setModal('courtyard')}
+          >
+            <span className="brand">方寸数独</span>
+            <span className="courtyard-entry-caption">
+              {say('小院故事', 'Courtyard')}
+              {courtyard.mode === 'story' &&
+                (courtyard.readChapterIds.length <= courtyard.unlockedThrough ||
+                  courtyardState.life.readNoteIds.length <
+                    courtyardState.life.creditedSessionIds.length) && (
+                  <i aria-label={say('有未读故事', 'Unread story')} />
+                )}
+            </span>
+          </button>
           <nav aria-label={say('游戏菜单', 'Game menu')}>
             <button
               type="button"
@@ -548,8 +487,12 @@ export default function IndexPage() {
               aria-label={say('新开一局', 'New game')}
               onClick={() => setModal('new')}
             >
-              <span className="new-game-label">{say('新开一局', 'New game')}</span>
-              <span className="new-game-short" aria-hidden="true">{say('新局', 'New')}</span>
+              <span className="new-game-label">
+                {say('新开一局', 'New game')}
+              </span>
+              <span className="new-game-short" aria-hidden="true">
+                {say('新局', 'New')}
+              </span>
             </button>
             <button
               type="button"
@@ -598,9 +541,23 @@ export default function IndexPage() {
                   }
                 }}
               >
-                {renderedCells}
+                <GameBoardCells
+                  game={game}
+                  focus={focus}
+                  selected={selected}
+                  conflicts={conflicts}
+                  hintUnit={hintUnit}
+                  lang={lang}
+                  inkFeedback={inkFeedback}
+                  choose={choose}
+                />
                 {celebration === 'seams' && (
-                  <VictorySeams onEnd={() => {if (celebrationRef.current === 'seams') finishCelebration()}} />
+                  <VictorySeams
+                    onEnd={() => {
+                      if (celebrationRef.current === 'seams')
+                        finishCelebration()
+                    }}
+                  />
                 )}
               </div>
               {celebration === 'wave' && <VictorySparkles />}
@@ -623,7 +580,14 @@ export default function IndexPage() {
               <div className="completed-controls glass-panel">
                 <GameIcon name="check" />
                 <h2>{say('这一局，由你完成', 'Puzzle complete')}</h2>
-                <p id="completed-glow-reason">{reducedMotion ? say('减少动态效果已开启，流光已停用。', 'Reduce Motion is on; lightshow is off.') : say('留一刻，欣赏你的答案。', 'Enjoy your solution.')}</p>
+                <p id="completed-glow-reason">
+                  {reducedMotion
+                    ? say(
+                        '减少动态效果已开启，流光已停用。',
+                        'Reduce Motion is on; lightshow is off.',
+                      )
+                    : say('留一刻，欣赏你的答案。', 'Enjoy your solution.')}
+                </p>
                 <div className="victory-actions">
                   <button
                     type="button"
@@ -638,7 +602,9 @@ export default function IndexPage() {
                     className="secondary-button"
                     data-victory-encore
                     disabled={!canEnjoyLight}
-                    aria-describedby={reducedMotion ? 'completed-glow-reason' : undefined}
+                    aria-describedby={
+                      reducedMotion ? 'completed-glow-reason' : undefined
+                    }
                     onClick={enjoyLight}
                   >
                     {say('再赏流光', 'See the glow')}
@@ -689,7 +655,9 @@ export default function IndexPage() {
                         aria-hidden="true"
                         key={stage}
                       >
-                        <span className="hint-measure-title">{hintTitles[stage]}</span>
+                        <span className="hint-measure-title">
+                          {hintTitles[stage]}
+                        </span>
                         <span className="hint-measure-text">{clue}</span>
                       </div>
                     ))}
@@ -780,44 +748,43 @@ export default function IndexPage() {
                   className="number-panel glass-panel"
                   aria-label={say('填写数字 1 到 9', 'Enter digits 1 to 9')}
                 >
-                  {DIGITS.map((n) => (
-                    <button
-                      type="button"
-                      key={n}
-                      className={`number-key ${noteMode && activeCandidates.has(n) ? 'is-noted' : ''}`}
-                      data-number={n}
-                      aria-label={
-                        noteMode
-                          ? say(`候选数 ${n}`, `Candidate ${n}`)
-                          : say(`填写 ${n}`, `Enter ${n}`)
-                      }
-                      aria-pressed={noteMode && activeCandidates.has(n)}
-                      disabled={!legalDigits.includes(n)}
-                      onClick={() => fill(n)}
-                    >
-                      {n}
-                    </button>
-                  ))}
+                  <GameDigits
+                    legalDigits={legalDigits}
+                    activeCandidates={activeCandidates}
+                    noteMode={noteMode}
+                    lang={lang}
+                    onFill={fill}
+                  />
                 </div>
               </div>
             )}
-            <div className={`input-caption ${message ? 'has-feedback' : ''}`}>
+            <div
+              className={`input-caption ${feedbackMessage ? 'has-feedback' : ''}`}
+            >
               <div
-                className={`feedback ${message ? 'feedback-visible' : ''} ${conflicts.length ? 'feedback-error' : ''}`}
+                className={`feedback ${feedbackMessage ? 'feedback-visible' : ''} ${conflicts.length ? 'feedback-error' : ''}`}
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
               >
-                {message && (
+                {feedbackMessage && (
                   <>
                     <GameIcon name={conflicts.length ? 'warning' : 'info'} />
-                    <span>{message}</span>
+                    <span>{feedbackMessage}</span>
                   </>
                 )}
               </div>
-              {!message && (hint ? (
-                <span>{say('理解之后，答案由你亲手填写。', 'Understand it, then make the move yourself.')}</span>
-              ) : <div className="selection-caption">{selectionCaption}</div>)}
+              {!feedbackMessage &&
+                (hint ? (
+                  <span>
+                    {say(
+                      '理解之后，答案由你亲手填写。',
+                      'Understand it, then make the move yourself.',
+                    )}
+                  </span>
+                ) : (
+                  <div className="selection-caption">{selectionCaption}</div>
+                ))}
             </div>
           </section>
         </div>
@@ -832,7 +799,7 @@ export default function IndexPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <DialogFocus context={modal} onClose={() => setModal(null)} />
-            {modal !== 'won' && (
+            {modal !== 'won' && modal !== 'courtyard' && (
               <div className="dialog-top">
                 <LanguageSwitch lang={lang} onChange={setLang} />
                 <button
@@ -845,15 +812,45 @@ export default function IndexPage() {
                 </button>
               </div>
             )}
+            {modal === 'courtyard' && (
+              <CourtyardStory
+                lang={lang}
+                progress={courtyard}
+                life={courtyardState.life}
+                world={courtyardState.world}
+                onRead={courtyardState.readChapter}
+                onReadLife={courtyardState.readLifeNote}
+                onMode={courtyardState.setMode}
+                onAtmosphere={courtyardState.chooseAtmosphere}
+                onMotion={courtyardState.chooseMotion}
+                onFavorite={courtyardState.chooseFavorite}
+                preparePresentation={courtyardState.preparePresentation}
+                saveFailed={courtyardState.saveFailed}
+                onLanguage={setLang}
+                onClose={() => setModal(null)}
+              />
+            )}
             {modal === 'rules' && (
               <>
                 <div className="eyebrow">
-                  {say('学会数独', 'LEARN SUDOKU')} · <span className="rules-progress">{ruleStep + 1} / {tutorial[lang].length}</span>
+                  {say('学会数独', 'LEARN SUDOKU')} ·{' '}
+                  <span className="rules-progress">
+                    {ruleStep + 1} / {tutorial[lang].length}
+                  </span>
                 </div>
                 <h1 id="dialog-title">{lesson.title}</h1>
-                <div className={`tutorial-body ${lessonIsDemo ? '' : 'tutorial-body-static'}`}>
-                  <RulesDiagram key={lesson.diagram} kind={lesson.diagram} lang={lang} body={lesson.body} />
-                  {!lessonIsDemo && <p className="dialog-copy">{lesson.body}</p>}
+                <div
+                  className={`tutorial-body ${lessonIsDemo ? '' : 'tutorial-body-static'}`}
+                >
+                  <RulesDiagram
+                    key={lesson.diagram}
+                    kind={lesson.diagram}
+                    lang={lang}
+                    body={lesson.body}
+                  />
+                  {!lessonIsDemo && (
+                    <p className="dialog-copy">{lesson.body}</p>
+                  )}
                 </div>
                 <div className="dialog-actions">
                   <button
@@ -893,7 +890,9 @@ export default function IndexPage() {
                     type="button"
                     className={`toggle ${vibrationSupported && vibration ? 'toggle-on' : ''}`}
                     disabled={!vibrationSupported}
-                    aria-describedby={!vibrationSupported ? 'vibration-unsupported' : undefined}
+                    aria-describedby={
+                      !vibrationSupported ? 'vibration-unsupported' : undefined
+                    }
                     role="switch"
                     aria-checked={vibrationSupported && vibration}
                     aria-label={say('轻触振动', 'Touch vibration')}
@@ -902,9 +901,17 @@ export default function IndexPage() {
                     <span />
                   </button>
                 </div>
-                {!vibrationSupported && <p id="vibration-unsupported" className="vibration-support-copy">
-                  {say('当前浏览器不支持网页振动。', 'This browser does not support web vibration.')}
-                </p>}
+                {!vibrationSupported && (
+                  <p
+                    id="vibration-unsupported"
+                    className="vibration-support-copy"
+                  >
+                    {say(
+                      '当前浏览器不支持网页振动。',
+                      'This browser does not support web vibration.',
+                    )}
+                  </p>
+                )}
                 <div className="settings-line settings-record">
                   <span>{say('已完成', 'Completed')}</span>
                   <strong>
@@ -930,13 +937,25 @@ export default function IndexPage() {
               <>
                 <h1 id="dialog-title">{say('获取本次提示', 'Get a hint')}</h1>
                 <p className="dialog-copy">
-                  {say('完整观看一段广告后，获得本次提示', 'Watch a complete ad to get this hint.')}
+                  {say(
+                    '完整观看一段广告后，获得本次提示',
+                    'Watch a complete ad to get this hint.',
+                  )}
                 </p>
                 <div className="dialog-actions">
-                  <button type="button" className="secondary-button" onClick={() => setModal(null)}>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setModal(null)}
+                  >
                     {say('取消', 'Cancel')}
                   </button>
-                  <button type="button" className="primary-button" disabled={hintAccessBusy} onClick={watchHint}>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={hintAccessBusy}
+                    onClick={watchHint}
+                  >
                     {hintAccessBusy
                       ? say('正在观看广告…', 'Ad in progress…')
                       : say('观看广告获取提示', 'Watch ad for a hint')}
@@ -980,22 +999,30 @@ export default function IndexPage() {
               </>
             )}
             {modal === 'won' && (
-              <VictoryResult
-                en={en}
-                board={game.board}
-                elapsed={time(game.seconds)}
-                hints={game.hints}
-                moves={game.moves}
-                usedNotes={game.usedNotes}
-                newBest={newBest}
-                onLanguage={setLang}
-                onClose={() => setModal(null)}
-                onViewBoard={() => setModal(null)}
-                onEnjoyLight={enjoyLight}
-                canEnjoyLight={canEnjoyLight}
-                reducedMotion={reducedMotion}
-                onPlayAgain={() => newGame(game.difficulty)}
-              />
+              <>
+                <VictoryResult
+                  en={en}
+                  board={game.board}
+                  elapsed={time(game.seconds)}
+                  hints={game.hints}
+                  moves={game.moves}
+                  usedNotes={game.usedNotes}
+                  newBest={newBest}
+                  onLanguage={setLang}
+                  onClose={() => setModal(null)}
+                  onViewBoard={() => setModal(null)}
+                  onEnjoyLight={enjoyLight}
+                  canEnjoyLight={canEnjoyLight}
+                  reducedMotion={reducedMotion}
+                  onPlayAgain={() => newGame(game.difficulty)}
+                  onStory={
+                    courtyard.mode === 'story'
+                      ? () => setModal('courtyard')
+                      : undefined
+                  }
+                  storyLabel={say('看看小院', 'Visit the courtyard')}
+                />
+              </>
             )}
           </section>
         </div>
@@ -1005,7 +1032,13 @@ export default function IndexPage() {
 }
 
 /** Keep keyboard focus inside a dialog and restore it without opening a mobile keyboard. */
-function DialogFocus({context, onClose}: {context: string; onClose: () => void}) {
+function DialogFocus({
+  context,
+  onClose,
+}: {
+  context: string
+  onClose: () => void
+}) {
   const marker = useRef<HTMLSpanElement>(null),
     closeRef = useRef(onClose)
   closeRef.current = onClose
@@ -1014,9 +1047,10 @@ function DialogFocus({context, onClose}: {context: string; onClose: () => void})
     const card = marker.current?.parentElement
     const buttons = () =>
       Array.from(
-        card?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ||
-          [],
-      )
+        card?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), [tabindex="0"]',
+        ) || [],
+      ).filter((element) => element.getClientRects().length > 0)
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
@@ -1027,7 +1061,13 @@ function DialogFocus({context, onClose}: {context: string; onClose: () => void})
       const list = buttons(),
         first = list[0],
         last = list[list.length - 1]
-      if (e.shiftKey && document.activeElement === first) {
+      if (
+        !card?.contains(document.activeElement) ||
+        !list.includes(document.activeElement as HTMLElement)
+      ) {
+        e.preventDefault()
+        ;(e.shiftKey ? last : first)?.focus({preventScroll: true})
+      } else if (e.shiftKey && document.activeElement === first) {
         e.preventDefault()
         last?.focus()
       } else if (!e.shiftKey && document.activeElement === last) {
@@ -1035,9 +1075,9 @@ function DialogFocus({context, onClose}: {context: string; onClose: () => void})
         first?.focus()
       }
     }
-    card?.addEventListener('keydown', onKey)
+    document.addEventListener('keydown', onKey)
     return () => {
-      card?.removeEventListener('keydown', onKey)
+      document.removeEventListener('keydown', onKey)
       previous?.focus({preventScroll: true})
     }
   }, [])

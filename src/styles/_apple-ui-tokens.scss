@@ -1,6 +1,6 @@
 @use 'sass:color';
 /**
- * 方寸数独 — 全量 UI 设计 token（Taro 主工程，与 theme.ts 同步）
+ * 方寸数独 — 历史共享 UI token（当前页面语义色由 glass-tokens 统一）
  * 不得在主样式中写裸 hex 表达语义色；仅此处与极少数 mix 可引用基础色。
  */
 

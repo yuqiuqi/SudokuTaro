@@ -1,0 +1,38 @@
+{
+  "source": "/workspace/SudokuTaro/dist",
+  "environment": "Same cloud host, localhost production files, system Chromium,393x720,reduce motion; not a real mobile-device measurement",
+  "method": "Three fresh browser contexts; readiness includes automation wait; input is programmatic selection followed by two animation frames, an observation proxy not hardware input latency",
+  "js": {
+    "files": 2,
+    "rawBytes": 243973,
+    "gzipBytes": 83424
+  },
+  "css": {
+    "files": 1,
+    "rawBytes": 54725,
+    "gzipBytes": 10484
+  },
+  "runs": [
+    {
+      "readyMs": 415,
+      "inputNextTwoFramesP50": 33.300000071525574,
+      "inputNextTwoFramesP95": 34.799999952316284,
+      "heapUsedBytes": 5898676,
+      "runtimeErrors": []
+    },
+    {
+      "readyMs": 399,
+      "inputNextTwoFramesP50": 33.299999952316284,
+      "inputNextTwoFramesP95": 33.699999928474426,
+      "heapUsedBytes": 5861544,
+      "runtimeErrors": []
+    },
+    {
+      "readyMs": 358,
+      "inputNextTwoFramesP50": 33.39999997615814,
+      "inputNextTwoFramesP95": 34.200000047683716,
+      "heapUsedBytes": 5875872,
+      "runtimeErrors": []
+    }
+  ]
+}

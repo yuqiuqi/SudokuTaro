@@ -1,4 +1,3 @@
-import Taro from '@tarojs/taro'
 
 /** 本地存档版本，字段变更时可 bump 并做迁移 */
 const STORAGE_KEY = 'yifang_sudoku_economy_v1'
@@ -46,7 +45,7 @@ function defaultState(): GameEconomyState {
 
 export function loadEconomy(): GameEconomyState {
   try {
-    const raw = Taro.getStorageSync(STORAGE_KEY) as string | GameEconomyState | undefined
+    const raw = localStorage.getItem(STORAGE_KEY) as string | GameEconomyState | undefined
     if (raw == null || raw === '') {
       return defaultState()
     }
@@ -72,7 +71,7 @@ function clampNum(v: unknown, min: number, max: number, fallback: number): numbe
 
 export function saveEconomy(state: GameEconomyState): void {
   try {
-    Taro.setStorageSync(STORAGE_KEY, state)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   } catch {
     /* ignore */
   }

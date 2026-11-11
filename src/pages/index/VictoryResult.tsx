@@ -19,6 +19,8 @@ type Props = {
   onEnjoyLight: () => void
   canEnjoyLight: boolean
   reducedMotion: boolean
+  storyLabel?: string
+  onStory?: () => void
 }
 
 export function VictoryResult(p: Props) {
@@ -66,7 +68,9 @@ export function VictoryResult(p: Props) {
           </div>
           <div className="victory-heading">
             <span className="victory-eyebrow" id="result-glow-reason">
-              {p.reducedMotion ? text('减少动态效果已开启', 'REDUCED MOTION ON') : text('数独完成', 'PUZZLE COMPLETE')}
+              {p.reducedMotion
+                ? text('减少动态效果已开启', 'REDUCED MOTION ON')
+                : text('数独完成', 'PUZZLE COMPLETE')}
             </span>
             <h1 id="dialog-title">
               {text('漂亮，解开了！', 'Beautifully solved!')}
@@ -128,7 +132,9 @@ export function VictoryResult(p: Props) {
             className="secondary-button"
             data-victory-encore
             disabled={!p.canEnjoyLight}
-            aria-describedby={p.reducedMotion ? 'result-glow-reason' : undefined}
+            aria-describedby={
+              p.reducedMotion ? 'result-glow-reason' : undefined
+            }
             onClick={p.onEnjoyLight}
           >
             {text('再赏流光', 'See the glow')}
@@ -142,6 +148,16 @@ export function VictoryResult(p: Props) {
           </button>
         </div>
       </div>
+      {p.onStory && (
+        <button
+          type="button"
+          className="story-result-link"
+          data-courtyard-entry
+          onClick={p.onStory}
+        >
+          {p.storyLabel}
+        </button>
+      )}
     </div>
   )
 }
@@ -177,7 +193,10 @@ export function VictorySeams({onEnd}: {onEnd: () => void}) {
       aria-hidden="true"
       focusable="false"
       onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget && event.animationName === 'victory-seam-light')
+        if (
+          event.target === event.currentTarget &&
+          event.animationName === 'victory-seam-light'
+        )
           onEnd()
       }}
     >
@@ -186,8 +205,22 @@ export function VictorySeams({onEnd}: {onEnd: () => void}) {
           <rect width="100%" height="100%" />
           {lines.map((i) => (
             <g key={i}>
-              <line data-seam={i} data-axis="x" x1={`${i * 100 / 9}%`} x2={`${i * 100 / 9}%`} y1="0" y2="100%" />
-              <line data-seam={i} data-axis="y" y1={`${i * 100 / 9}%`} y2={`${i * 100 / 9}%`} x1="0" x2="100%" />
+              <line
+                data-seam={i}
+                data-axis="x"
+                x1={`${(i * 100) / 9}%`}
+                x2={`${(i * 100) / 9}%`}
+                y1="0"
+                y2="100%"
+              />
+              <line
+                data-seam={i}
+                data-axis="y"
+                y1={`${(i * 100) / 9}%`}
+                y2={`${(i * 100) / 9}%`}
+                x1="0"
+                x2="100%"
+              />
             </g>
           ))}
         </g>
